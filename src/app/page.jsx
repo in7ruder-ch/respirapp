@@ -254,7 +254,7 @@ function App() {
 
         {showHeader && (
           <>
-            <h1>RESPIRApp</h1>
+            <h1>RESPIRA</h1>
             <h2>Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad</h2>
           </>
         )}
