@@ -1,5 +1,5 @@
 import './globals.css';
-import RegisterSW from '../components/RegisterSW';
+import RegisterSW from '@/components/RegisterSW';
 
 export const metadata = {
   title: 'RESPIRApp',
