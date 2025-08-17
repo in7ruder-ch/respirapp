@@ -254,8 +254,8 @@ function App() {
 
         {showHeader && (
           <>
-            <h1>AURA</h1>
-            <h2>Acompañamiento Universal para Regular la Ansiedad</h2>
+            <h1>RESPIRApp</h1>
+            <h2>Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad</h2>
           </>
         )}
 

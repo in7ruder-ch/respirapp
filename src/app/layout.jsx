@@ -1,8 +1,8 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'AURA',
-  description: 'Acompañamiento Universal para Regular la Ansiedad',
+  title: 'RESPIRApp',
+  description: 'Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad',
   icons: {
     icon: '/favicon.ico',
   },
