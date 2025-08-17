@@ -1,0 +1,38 @@
+.audio-recorder {
+  margin-top: 2rem;
+  padding: 0 1rem;
+}
+
+.audio-recorder h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: #1f2937;
+}
+
+/* Estilo común para TODOS los botones */
+.audio-button {
+  font-size: 1rem;
+  padding: 0.8rem 1.5rem;
+  margin: 0.5rem 0;
+  border: none;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 300px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  background-color: #2563eb;
+  color: white;
+}
+
+.audio-button:hover {
+  background-color: #1d4ed8;
+}
+
+/* Botón rojo de borrar */
+.delete-button {
+  background-color: #ef4444;
+}
+
+.delete-button:hover {
+  background-color: #dc2626;
+}

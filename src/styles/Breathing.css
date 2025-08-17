@@ -1,0 +1,116 @@
+.breathing-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 2rem;
+  text-align: center;
+}
+
+.circle {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  margin-bottom: 1.5rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: scale(1);
+}
+
+/* Contador de tiempo */
+.countdown {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+/* FASES con animaciones dinámicas */
+.inhalá {
+  animation-name: growInhala;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+  background-color: #60a5fa;
+  box-shadow: 0 0 40px rgba(96, 165, 250, 0.6);
+}
+
+.mantené {
+  animation-name: glowMantene;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+  background-color: #fde68a;
+  box-shadow: 0 0 30px rgba(253, 230, 138, 0.5);
+}
+
+.exhalá {
+  animation-name: shrinkExhala;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+  background-color: #6ee7b7;
+  box-shadow: 0 0 20px rgba(110, 231, 183, 0.4);
+}
+
+.vacío {
+  background-color: #e0e7ff;
+  box-shadow: 0 0 10px rgba(191, 219, 254, 0.4);
+}
+
+/* Animaciones */
+@keyframes growInhala {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.4);
+  }
+}
+
+@keyframes shrinkExhala {
+  0% {
+    transform: scale(1.4);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes glowMantene {
+  0%, 100% { box-shadow: 0 0 20px rgba(253, 230, 138, 0.5); transform: scale(1.4); }
+  50% { box-shadow: 0 0 35px rgba(253, 230, 138, 0.7); }
+}
+
+/* Texto de instrucción */
+.instruction {
+  font-size: clamp(1.2rem, 4vw, 1.8rem);
+  color: #1f2937;
+  font-weight: bold;
+  transition: opacity 0.4s ease-in-out;
+  max-width: 90%;
+  opacity: 0;
+  animation: fadeIn 0.8s ease-in-out forwards;
+  animation-delay: 0.2s;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .circle {
+    width: 120px;
+    height: 120px;
+  }
+
+  .countdown {
+    font-size: 1.5rem;
+  }
+
+  .instruction {
+    font-size: 1.2rem;
+  }
+}

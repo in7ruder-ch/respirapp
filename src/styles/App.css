@@ -1,0 +1,217 @@
+/* General setup */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f9fafb;
+  color: #111827;
+}
+
+.App {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100dvh; /* mejor soporte en móviles */
+  padding: 1rem;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.App-header {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  max-width: 480px;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative; /* para posicionar la ruedita arriba a la derecha */
+}
+
+/* Botón de configuración fijo arriba a la derecha */
+.header-actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+/* Tipografía */
+h1 {
+  margin-bottom: 1.5rem;
+  font-size: 2.5rem;
+  color: #111827;
+}
+
+h2 {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  color: #1f2937;
+}
+
+h3 {
+  margin-top: 2rem;
+  font-size: 1.2rem;
+  color: #1f2937;
+}
+
+/* Botones generales (home) */
+.help-button,
+.options button {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  padding: 1rem 1.5rem;
+  margin: 0.5rem 0;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  width: 100%;
+  max-width: 300px;
+}
+.help-button:hover,
+.options button:hover:enabled { background-color: #1d4ed8; }
+
+.options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 1rem;
+  gap: 0.75rem;
+}
+
+.options button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* ⚙️ Asegurar que la ruedita NO herede el estilo de los botones grandes */
+.options button.icon-button,
+.icon-button {
+  background: transparent !important;
+  color: inherit !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.icon-button:hover { opacity: .8; }
+
+/* Link de volver (estética liviana) */
+.back-link { color: #2563eb; text-decoration: underline; cursor: pointer; }
+.back-link:hover { opacity: .85; }
+
+/* Paneles (recorder / contacto / settings) */
+.panel {
+  text-align: left;
+}
+.panel h2 {
+  text-align: center;
+  margin-top: 0;
+}
+.panel .panel-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Secciones de configuración (sin inline en JSX) */
+.settings-section {
+  margin-top: 12px;
+  margin-bottom: 16px;
+}
+.settings-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Texto atenuado */
+.muted {
+  margin: 8px 0 0;
+  color: #6b7280;
+}
+
+/* Breathing */
+.breathing-container {
+  position: relative;
+  height: 250px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.breathing-circle {
+  width: 120px;
+  height: 120px;
+  background-color: #90caf9;
+  border-radius: 50%;
+  transition: transform 4s ease-in-out;
+}
+.breathing-text {
+  position: absolute;
+  top: calc(50% + 90px);
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+/* Confirmación */
+.confirmation-banner {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  padding: 0.8rem 1.2rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  font-size: 1rem;
+  animation: fadeOut 2s forwards;
+}
+.confirmation-banner.deleted {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border-color: #f87171;
+}
+@keyframes fadeOut {
+  0%   { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Botón borrar */
+.delete-button {
+  margin-top: 0.75rem;
+  background-color: #ef4444;
+  color: white;
+  padding: 1rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: 100%;
+  max-width: 300px;
+}
+.delete-button:hover { background-color: #dc2626; }
+
+/* Responsive (mobile) */
+@media (max-width: 480px) {
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.3rem; }
+  h3 { font-size: 1rem; }
+  .breathing-text { font-size: 1rem; top: calc(50% + 70px); }
+  button { font-size: 0.95rem; padding: 0.9rem 1rem; }
+  .App-header { padding: 1.2rem; }
+  .options { gap: 0.5rem; }
+}
+
+/* Textos auxiliares */
+.helper-text {
+  margin: 0.25rem 0 0.75rem 0;
+  font-size: 0.95rem;
+  color: #4b5563; /* gris 600 */
+}
