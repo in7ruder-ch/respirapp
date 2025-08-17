@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import '@/styles/App.css';
 import BreathingSelector from '@/components/BreathingSelector';
 import AudioRecorder from '@/components/AudioRecorder';
-import ContactCard from '@/components/ContactCard';
+import ContactCard from '@/components/contactCard';
 import { saveAudioBlob, getAudioBlob, deleteAudioBlob } from '@/lib/audioDB';
 import { loadContact } from '@/lib/contactsStore';
 
