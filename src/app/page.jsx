@@ -1,4 +1,3 @@
-// src/app/page.jsx
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -55,12 +54,14 @@ function App() {
     };
   }, []);
 
-  // Respiración
-  const handleBreathing = () => setMode('breathing');
+  // navegación simple
   const handleBackToOptions = (e) => {
     e?.preventDefault?.();
     setMode('options');
   };
+
+  // Respiración
+  const handleBreathing = () => setMode('breathing');
 
   // Audio
   const handlePlayAudio = async () => {
@@ -149,7 +150,6 @@ function App() {
     content = (
       <div className="panel">
         <h2>Registrar contacto de emergencia</h2>
-        {/* En panel de registro: solo guardar contacto */}
         <ContactCard
           onSaved={handleContactSaved}
           showDelete={false}
@@ -195,40 +195,77 @@ function App() {
       </div>
     );
   } else {
-    // mode === 'options' (home limpia)
+    // mode === 'options' (home estilo launcher con 4 tiles)
     content = (
-      <div className="options">
-        <h2>¿Querés ayuda ahora?</h2>
-
-        {/* Audio: si no hay => Grabar inline y autoStart; si hay => Escuchar */}
+      <div className="launcher-grid">
+        {/* AUDIO */}
         {!customUrl ? (
-          <>
-            {!showInlineRecorder ? (
-              <button onClick={() => setShowInlineRecorder(true)}>🎤 Grabar mensaje</button>
-            ) : (
+          !showInlineRecorder ? (
+            <button
+              className="launcher-item blue"
+              onClick={() => setShowInlineRecorder(true)}
+              aria-label="Grabar mensaje"
+            >
+              <div className="icon-bg bg-message" aria-hidden="true" />
+              <div className="label">Mensaje</div>
+            </button>
+          ) : (
+            <div className="tile-span-2">
               <AudioRecorder onAudioReady={handleAudioReady} hideTitle autoStart />
-            )}
-          </>
+            </div>
+          )
         ) : (
-          <button onClick={handlePlayAudio}>🔊 Escuchar mensaje personal</button>
+          <button
+            className="launcher-item blue"
+            onClick={handlePlayAudio}
+            aria-label="Escuchar mensaje"
+          >
+            <div className="icon-bg bg-message" aria-hidden="true" />
+            <div className="label">Mensaje</div>
+          </button>
         )}
 
-        {/* Respiración */}
-        <button onClick={handleBreathing}>💨 Respirar juntos</button>
+        {/* RESPIRACIÓN */}
+        <button
+          className="launcher-item green"
+          onClick={handleBreathing}
+          aria-label="Respirar juntos"
+        >
+          <div className="icon-bg bg-breath" aria-hidden="true" />
+          <div className="label">Respirar</div>
+        </button>
 
-        {/* Contacto: si no hay => Registrar; si hay => Llamar */}
+        {/* CONTACTO */}
         {!hasContact ? (
-          <button onClick={openRegisterContact}>
-            🧑‍🤝‍🧑 Registrar contacto de emergencia
+          <button
+            className="launcher-item red"
+            onClick={openRegisterContact}
+            aria-label="Registrar contacto"
+          >
+            <div className="icon-bg bg-contact" aria-hidden="true" />
+            <div className="label">Contacto</div>
           </button>
         ) : (
           <button
+            className="launcher-item orange"
             onClick={() => (window.location.href = callHref)}
             title={`Llamar a ${contact?.name || 'contacto'}`}
+            aria-label="Llamar contacto"
           >
-            📞 Llamar contacto de emergencia
+            <div className="icon-bg bg-contact" aria-hidden="true" />
+            <div className="label">Contacto</div>
           </button>
         )}
+
+        {/* CONFIGURACIÓN (cuarto tile) */}
+        <button
+          className="launcher-item yellow"
+          onClick={() => setMode('settings')}
+          aria-label="Configuración"
+        >
+          <div className="icon-bg bg-config" aria-hidden="true" />
+          <div className="label">Config.</div>
+        </button>
       </div>
     );
   }
@@ -237,21 +274,6 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        {/* ⚙️ Configuración solo visible en la home */}
-        {mode === 'options' && (
-          <div className="header-actions">
-            <button
-              type="button"
-              aria-label="Abrir configuración"
-              onClick={() => setMode('settings')}
-              title="Configuración"
-              className="icon-button"
-            >
-              ⚙️
-            </button>
-          </div>
-        )}
-
         {showHeader && (
           <>
             <h1>RESPIRA</h1>

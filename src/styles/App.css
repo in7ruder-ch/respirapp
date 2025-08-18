@@ -26,36 +26,29 @@ html, body {
   max-width: 480px;
   width: 100%;
   box-sizing: border-box;
-  position: relative; /* para posicionar la ruedita arriba a la derecha */
-}
-
-/* Botón de configuración fijo arriba a la derecha */
-.header-actions {
-  position: absolute;
-  top: 12px;
-  right: 12px;
+  position: relative;
 }
 
 /* Tipografía */
 h1 {
-  margin-bottom: 1.5rem;
-  font-size: 2.5rem;
+  margin-bottom: 1.2rem;
+  font-size: 2.4rem;
   color: #111827;
 }
 
 h2 {
-  margin-bottom: 1rem;
-  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.3rem;
   color: #1f2937;
 }
 
 h3 {
-  margin-top: 2rem;
-  font-size: 1.2rem;
+  margin-top: 1.25rem;
+  font-size: 1.1rem;
   color: #1f2937;
 }
 
-/* Botones generales (home) */
+/* Botones genéricos (otras vistas) */
 .help-button,
 .options button {
   background-color: #2563eb;
@@ -86,58 +79,93 @@ h3 {
   cursor: not-allowed;
 }
 
-/* ⚙️ Asegurar que la ruedita NO herede el estilo de los botones grandes */
-.options button.icon-button,
-.icon-button {
-  background: transparent !important;
-  color: inherit !important;
-  border: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  width: auto !important;
-  max-width: none !important;
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-}
-.icon-button:hover { opacity: .8; }
-
-/* Link de volver (estética liviana) */
+/* Link volver */
 .back-link { color: #2563eb; text-decoration: underline; cursor: pointer; }
 .back-link:hover { opacity: .85; }
 
-/* Paneles (recorder / contacto / settings) */
-.panel {
-  text-align: left;
-}
-.panel h2 {
-  text-align: center;
-  margin-top: 0;
-}
-.panel .panel-actions {
-  margin-top: 12px;
-  display: flex;
-  justify-content: center;
-}
+/* Paneles (contacto / settings / breathing selector) */
+.panel { text-align: left; }
+.panel h2 { text-align: center; margin-top: 0; }
 
-/* Secciones de configuración (sin inline en JSX) */
-.settings-section {
-  margin-top: 12px;
-  margin-bottom: 16px;
-}
-.settings-actions {
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-}
+/* Secciones de configuración */
+.settings-section { margin-top: 12px; margin-bottom: 16px; }
+.settings-actions { display: flex; justify-content: center; gap: 0.5rem; }
 
 /* Texto atenuado */
-.muted {
-  margin: 8px 0 0;
-  color: #6b7280;
+.muted { margin: 8px 0 0; color: #6b7280; }
+
+/* ----------------------------- */
+/* GRID ESTILO LAUNCHER (HOME)   */
+/* ----------------------------- */
+
+.launcher-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  padding: 8px 4px 0;
 }
 
-/* Breathing */
+.launcher-item {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+  cursor: pointer;
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  border: none;
+  overflow: hidden;
+}
+
+.launcher-item:hover { transform: scale(1.04); opacity: 0.95; }
+.launcher-item:active { transform: scale(0.98); }
+
+/* Capa del ícono (imagen sin texto) */
+.icon-bg {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 12%;
+  bottom: 28%; /* deja espacio para el texto dentro del tile */
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  pointer-events: none;
+}
+
+/* Texto dentro del tile */
+.launcher-item .label {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 10%;
+  font-size: 1rem;
+  text-align: center;
+  line-height: 1.1;
+  text-wrap: balance;
+  color: white;
+}
+
+/* Placeholders de imágenes (reemplazá por tus PNGs) */
+.bg-message { background-image: url('/icons/message.png'); }
+.bg-breath  { background-image: url('/icons/breath.png');  }
+.bg-contact { background-image: url('/icons/contact.png'); }
+.bg-config  { background-image: url('/icons/config.png');  }
+
+/* Colores de fondo (ajustables) */
+.launcher-item.blue   { background-color: #2563eb; } /* Mensaje */
+.launcher-item.green  { background-color: #10b981; } /* Respirar */
+.launcher-item.red { background-color: #f5130b; } /* Contacto */
+.launcher-item.yellow { background-color: #f4b000; } /* Config. */
+
+/* Tile que ocupa ambas columnas (grabador inline) */
+.tile-span-2 { grid-column: span 2; }
+
+/* Breathing (si usás el módulo animado) */
 .breathing-container {
   position: relative;
   height: 250px;
@@ -183,7 +211,7 @@ h3 {
   100% { opacity: 0; }
 }
 
-/* Botón borrar */
+/* Botón borrar (settings) */
 .delete-button {
   margin-top: 0.75rem;
   background-color: #ef4444;
@@ -201,12 +229,14 @@ h3 {
 /* Responsive (mobile) */
 @media (max-width: 480px) {
   h1 { font-size: 2rem; }
-  h2 { font-size: 1.3rem; }
+  h2 { font-size: 1.15rem; }
   h3 { font-size: 1rem; }
-  .breathing-text { font-size: 1rem; top: calc(50% + 70px); }
-  button { font-size: 0.95rem; padding: 0.9rem 1rem; }
-  .App-header { padding: 1.2rem; }
-  .options { gap: 0.5rem; }
+
+  .App-header { padding: 1.25rem; }
+
+  .launcher-grid { gap: 12px; padding: 4px 0 0; }
+  .launcher-item .label { bottom: 9%; font-size: 0.95rem; }
+  .icon-bg { left: 13%; right: 13%; top: 13%; bottom: 30%; }
 }
 
 /* Textos auxiliares */
