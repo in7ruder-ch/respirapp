@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import '@/styles/Breathing.css'; // Asegúrate de tener un archivo CSS para estilos
+import '@/styles/Breathing.css';
 
 export default function Breathing({ phases = [], onBack }) {
   // Duración inicial (en segundos) desde la primera fase si existe
@@ -45,9 +45,9 @@ export default function Breathing({ phases = [], onBack }) {
       <div className="breathing-container">
         <p className="instruction">No hay fases de respiración configuradas.</p>
         {onBack && (
-          <button className="back-button" onClick={onBack}>
+          <span className="back-link" onClick={onBack}>
             ← Volver
-          </button>
+          </span>
         )}
       </div>
     );
@@ -73,9 +73,9 @@ export default function Breathing({ phases = [], onBack }) {
       </p>
 
       {onBack && (
-        <button className="back-button" onClick={onBack}>
+        <span className="back-link" onClick={onBack}>
           ← Volver
-        </button>
+        </span>
       )}
     </div>
   );

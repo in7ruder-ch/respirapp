@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import '@/styles/App.css';
+import '@/styles/Navbar.css';
 import BreathingSelector from '@/components/BreathingSelector';
 import AudioRecorder from '@/components/AudioRecorder';
 import ContactCard from '@/components/contactCard';
@@ -13,8 +14,8 @@ function telHref(phone) {
   return clean ? `tel:${clean}` : '#';
 }
 
-function App() {
-  // modes: 'options' | 'breathing' | 'contact' | 'settings'
+export default function App() {
+  // modes: 'options' | 'breathing' | 'contact' | 'settings' | 'library' | 'explore' | 'profile'
   const [mode, setMode] = useState('options');
 
   const [customUrl, setCustomUrl] = useState(null);
@@ -194,6 +195,30 @@ function App() {
         </a>
       </div>
     );
+  } else if (mode === 'library') {
+    // Biblioteca (placeholder)
+    content = (
+      <div className="panel">
+        <h2>📚 Biblioteca</h2>
+        <p className="muted">Próximamente: tus audios, videos y técnicas favoritas.</p>
+      </div>
+    );
+  } else if (mode === 'explore') {
+    // Explorar (placeholder)
+    content = (
+      <div className="panel">
+        <h2>🧭 Explorar</h2>
+        <p className="muted">Próximamente: recursos y contenido recomendado.</p>
+      </div>
+    );
+  } else if (mode === 'profile') {
+    // Perfil (placeholder)
+    content = (
+      <div className="panel">
+        <h2>👤 Perfil</h2>
+        <p className="muted">Próximamente: tu cuenta y preferencias.</p>
+      </div>
+    );
   } else {
     // mode === 'options' (home estilo launcher con 4 tiles)
     content = (
@@ -257,7 +282,7 @@ function App() {
           </button>
         )}
 
-        {/* CONFIGURACIÓN (cuarto tile) */}
+        {/* CONFIGURACIÓN */}
         <button
           className="launcher-item yellow"
           onClick={() => setMode('settings')}
@@ -270,7 +295,16 @@ function App() {
     );
   }
 
-  const showHeader = mode === 'options'; // solo en home
+  const showHeader = mode === 'options';
+
+  // Estado activo del navbar (para color)
+  const activeNav =
+    mode === 'options' ? 'home'
+    : mode === 'library' ? 'library'
+    : mode === 'explore' ? 'explore'
+    : mode === 'profile' ? 'profile'
+    : 'home';
+
   return (
     <div className="App">
       <header className="App-header">
@@ -289,9 +323,50 @@ function App() {
         )}
 
         {content}
+
+        {/* NAVBAR dentro del wrapper, con emoji arriba y texto abajo */}
+        <nav className="navbar" role="navigation" aria-label="Navegación inferior">
+          <button
+            className={`nav-item ${activeNav === 'home' ? 'active' : ''}`}
+            onClick={() => setMode('options')}
+            type="button"
+            aria-label="Inicio"
+          >
+            <span className="nav-icon" aria-hidden="true">🏠</span>
+            <span className="nav-label">Inicio</span>
+          </button>
+
+          <button
+            className={`nav-item ${activeNav === 'library' ? 'active' : ''}`}
+            onClick={() => setMode('library')}
+            type="button"
+            aria-label="Biblioteca"
+          >
+            <span className="nav-icon" aria-hidden="true">📚</span>
+            <span className="nav-label">Biblioteca</span>
+          </button>
+
+          <button
+            className={`nav-item ${activeNav === 'explore' ? 'active' : ''}`}
+            onClick={() => setMode('explore')}
+            type="button"
+            aria-label="Explorar"
+          >
+            <span className="nav-icon" aria-hidden="true">🧭</span>
+            <span className="nav-label">Explorar</span>
+          </button>
+
+          <button
+            className={`nav-item ${activeNav === 'profile' ? 'active' : ''}`}
+            onClick={() => setMode('profile')}
+            type="button"
+            aria-label="Perfil"
+          >
+            <span className="nav-icon" aria-hidden="true">👤</span>
+            <span className="nav-label">Perfil</span>
+          </button>
+        </nav>
       </header>
     </div>
   );
 }
-
-export default App;

@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Breathing from './Breathing';
-import '@/styles/BreathingSelector.css'; // Asegúrate de tener un archivo CSS para estilos
+import '@/styles/BreathingSelector.css'; // estilos del launcher 2x2
 
 const TECHNIQUES = {
   diafragmatica: {
@@ -66,6 +66,15 @@ export default function BreathingSelector({ onBack, setAppTitle }) {
     }
   }, [selected, setAppTitle]);
 
+  // helper para separar emoji del nombre (visual/semántico)
+  const splitName = (name) => {
+    if (!name) return { emoji: '', label: '' };
+    const parts = name.split(' ');
+    const emoji = parts.shift() || '';
+    const label = parts.join(' ');
+    return { emoji, label };
+  };
+
   return (
     <div className="breathing-selector">
       {selected ? (
@@ -77,19 +86,26 @@ export default function BreathingSelector({ onBack, setAppTitle }) {
         </div>
       ) : (
         <div className="breathing-menu">
-          <div className="selector-buttons">
-            {Object.entries(TECHNIQUES).map(([key, val]) => (
-              <button
-                key={key}
-                onClick={() => setSelected(key)}
-                className="technique-button"
-              >
-                {val.name}
-              </button>
-            ))}
+          <div className="selector-buttons" role="list" aria-label="Técnicas de respiración">
+            {Object.entries(TECHNIQUES).map(([key, val], idx) => {
+              const { emoji, label } = splitName(val.name);
+              return (
+                <button
+                  key={key}
+                  onClick={() => setSelected(key)}
+                  className={`technique-button color-${idx + 1}`}
+                  role="listitem"
+                  aria-label={val.name}
+                >
+                  <span className="technique-emoji" aria-hidden="true">{emoji}</span>
+                  <span className="technique-label">{label}</span>
+                </button>
+              );
+            })}
           </div>
+
           <div className="back-wrapper">
-            <button className="back-button" onClick={onBack}>← Volver</button>
+            <span className="back-link" onClick={onBack}>← Volver</span>
           </div>
         </div>
       )}

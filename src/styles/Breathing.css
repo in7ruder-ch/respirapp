@@ -114,3 +114,9 @@
     font-size: 1.2rem;
   }
 }
+
+/* Ajuste visual del link "Volver" dentro del ejercicio */
+.breathing-container .back-link {
+  margin-top: 8px;
+  display: inline-block;
+}

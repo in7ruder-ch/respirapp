@@ -1,0 +1,65 @@
+/* Barra inferior fija (estilo apps modernas tipo Spotify) */
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  height: 64px;
+  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: center;
+
+  background: #ffffff;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.06);
+
+  z-index: 50;
+}
+
+/* Ítem */
+.bn-item {
+  height: 100%;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  outline: none;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 4px;
+  cursor: pointer;
+
+  color: #6b7280; /* gris 500 */
+  transition: color 140ms ease, transform 140ms ease;
+}
+
+.bn-item:hover {
+  transform: translateY(-1px);
+}
+
+.bn-item.is-active {
+  color: #2563eb; /* azul fuerte como App.css (.back-link y botones) */
+}
+
+/* Icono y etiqueta */
+.bn-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.bn-label {
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 700; /* consistente con launcher fuerte */
+}
+
+/* Evitar que el contenido quede tapado por la barra */
+.has-bottom-nav {
+  padding-bottom: calc(64px + max(env(safe-area-inset-bottom), 0px));
+}

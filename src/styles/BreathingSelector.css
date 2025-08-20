@@ -1,106 +1,85 @@
+/* Contenedor principal */
 .breathing-selector {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 2rem;
+  margin: 0 auto;
+  max-width: 960px;
+  padding: 16px;
 }
 
-.selector-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 100%;
-  max-width: 320px;
-}
-
-.selector-buttons button {
-  padding: 0.8rem 1.2rem;
-  font-size: 1rem;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  background-color: #93c5fd;
-  color: #1f2937;
-  font-weight: bold;
-  transition: background-color 0.3s;
-}
-
-.selector-buttons button:hover {
-  background-color: #60a5fa;
-}
-
-.selector-buttons button.active {
-  background-color: #2563eb;
-  color: #fff;
-}
-
-.breathing-exercise {
-  margin-top: 2rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.circle {
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  margin-bottom: 1.5rem;
-  background-color: #93c5fd;
-  transition: transform 1s ease-in-out;
-}
-
-.instruction {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #1f2937;
-}
-
-.back-button {
-  margin-top: 2rem;
-  background: none;
-  border: none;
-  color: #2563eb;
-  font-weight: bold;
-  cursor: pointer;
-  text-decoration: underline;
-  font-size: 1rem;
-}
-
-/* Mobile */
-@media (max-width: 480px) {
-  .circle {
-    width: 120px;
-    height: 120px;
-  }
-
-  .instruction {
-    font-size: 1.2rem;
-  }
-
-  .selector-buttons button {
-    font-size: 0.95rem;
-    padding: 0.7rem 1rem;
-  }
-}
-
+/* Menú */
 .breathing-menu {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 1.2rem;
+  gap: 16px;
 }
 
-.technique-buttons {
+/* Grilla 2x2 */
+.selector-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+/* Tile botón — idéntico a los tiles de Home */
+.technique-button {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+
+  aspect-ratio: 1 / 1;
   width: 100%;
-  max-width: 300px;
+  border-radius: 16px;
+
+  border: none;
+  cursor: pointer;
+  user-select: none;
+
+  transition: transform 160ms ease, filter 160ms ease;
+  outline: none;
+  padding: 20px;
+
+  color: white;
+  font-weight: 700;
+  font-size: clamp(14px, 2.5vw, 18px);
+  text-align: center;
 }
 
+.technique-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+/* Emoji grande */
+.technique-emoji {
+  font-size: clamp(36px, 9vw, 48px);
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+/* Texto debajo */
+.technique-label {
+  font-size: clamp(14px, 3.5vw, 18px);
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* Volver */
 .back-wrapper {
-  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
 }
 
+/* Colores fuertes para cada tile (match con App.css) */
+.technique-button.color-1 { background-color: #2563eb; } /* azul */
+.technique-button.color-2 { background-color: #10b981; } /* verde */
+.technique-button.color-3 { background-color: #f4b000; } /* amarillo */
+.technique-button.color-4 { background-color: #f5130b; } /* rojo */
+.technique-button.color-5 { background-color: #7c3aed; } /* violeta */
+
+/* Responsivo */
+@media (min-width: 768px) {
+  .breathing-selector { padding: 24px; }
+  .selector-buttons { gap: 20px; }
+}

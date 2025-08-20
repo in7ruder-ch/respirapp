@@ -1,0 +1,67 @@
+/* Navbar integrada dentro del wrapper (App-header) */
+.navbar {
+  margin-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+
+  /* Fondo gris translúcido suave que resalta */
+  background: rgba(17, 24, 39, 0.05); /* gris 900 al 5% */
+  backdrop-filter: blur(6px);
+
+  border-radius: 12px;
+  padding: 6px 8px;
+
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+/* Botón como columna: icono arriba, texto abajo */
+.nav-item {
+  background: transparent;
+  border: 0;
+  outline: none;
+
+  display: flex;
+  flex-direction: column;      /* emoji arriba, texto abajo */
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+
+  cursor: pointer;
+  padding: 6px 4px;
+  border-radius: 10px;
+
+  color: #6b7280;             /* gris 500 */
+  transition: color 140ms ease, transform 140ms ease, background 140ms ease;
+}
+
+.nav-item:hover {
+  transform: translateY(-1px);
+  background: rgba(17, 24, 39, 0.06);
+}
+
+.nav-item.active {
+  color: #2563eb;             /* azul fuerte consistente con App.css */
+  background: rgba(37, 99, 235, 0.10); /* leve highlight */
+}
+
+/* Tamaños separados para icono y texto */
+.nav-icon {
+  font-size: 1.25rem;         /* emoji más grande que el texto */
+  line-height: 1;
+  display: block;
+}
+
+.nav-label {
+  font-size: 1rem;            /* pedido: 1rem para el texto */
+  line-height: 1.1;
+  font-weight: 700;
+  display: block;
+  text-align: center;
+}
+
+/* Soporte para pantallas pequeñas */
+@media (max-width: 380px) {
+  .nav-icon { font-size: 1.15rem; }
+  .nav-label { font-size: 0.95rem; }
+}
