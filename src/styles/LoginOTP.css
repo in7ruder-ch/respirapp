@@ -1,0 +1,58 @@
+/* src/app/styles/LoginOTP.css */
+.otp-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 360px;
+  margin: 0 auto;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  text-align: center;
+}
+
+.otp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.otp-input {
+  padding: 12px;
+  border: 1px solid #444;
+  border-radius: 12px;
+  background: #111;
+  color: #eee;
+  font-size: 16px;
+  outline: none;
+  transition: border 0.2s;
+}
+
+.otp-input:focus {
+  border-color: #00c896;
+}
+
+.otp-button {
+  padding: 12px;
+  background: #00c896;
+  color: #111;
+  font-weight: bold;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.2s;
+}
+
+.otp-button:hover {
+  background: #00a77a;
+}
+
+.otp-message {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #ccc;
+}
+
+.otp-success {
+  padding: 16px;
+  color: #00c896;
+}

@@ -7,7 +7,8 @@ import '@/styles/BottomNav.css';
 import BreathingSelector from '@/components/BreathingSelector';
 import AudioRecorder from '@/components/AudioRecorder';
 import ContactCard from '@/components/contactCard';
-import AuthMagicLink from '@/components/AuthMagicLink';
+// REEMPLAZO: import AuthMagicLink from '@/components/AuthMagicLink';
+import LoginOTP from '@/components/LoginOTP';
 
 import { supabase } from '../../lib/supabaseClient';
 import { saveAudioBlob, getAudioBlob, deleteAudioBlob } from '../../lib/audioDB';
@@ -75,7 +76,7 @@ export default function Page() {
       // Rehidratá al montar
       await rehydrate();
 
-      // Si venís directo del callback, rehidratá de nuevo
+      // Si venís directo de un flujo de auth, rehidratá de nuevo
       try {
         if (sessionStorage.getItem('respirapp_just_signed_in') === '1') {
           sessionStorage.removeItem('respirapp_just_signed_in');
@@ -266,7 +267,7 @@ export default function Page() {
   } else if (mode === 'profile') {
     content = (
       <div className="panel">
-        <h2>👤 Perfil</h2>
+        {/* <h2>👤 Perfil</h2> */}
         {initializing ? (
           <p className="muted">Cargando...</p>
         ) : user ? (
@@ -278,8 +279,8 @@ export default function Page() {
           </>
         ) : (
           <>
-            <p className="muted">Iniciá sesión para sincronizar tu contenido.</p>
-            <AuthMagicLink onSent={() => {}} />
+            {/* <p className="muted">Iniciá sesión para sincronizar tu contenido.</p> */}
+            <LoginOTP onSuccess={() => { /* opcional: toast */ }} />
           </>
         )}
       </div>
@@ -288,7 +289,7 @@ export default function Page() {
     content = (
       <div className="panel">
         <h2>🔑 Iniciar sesión</h2>
-        <AuthMagicLink onSent={() => {}} />
+        <LoginOTP onSuccess={() => { /* opcional */ }} />
         <a href="#" className="back-link" onClick={handleBackToOptions}>← Volver</a>
       </div>
     );
