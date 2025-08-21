@@ -7,8 +7,11 @@ import '@/styles/BottomNav.css';
 import BreathingSelector from '@/components/BreathingSelector';
 import AudioRecorder from '@/components/AudioRecorder';
 import ContactCard from '@/components/contactCard';
-import { saveAudioBlob, getAudioBlob, deleteAudioBlob } from '@/lib/audioDB';
-import { loadContact } from '@/lib/contactsStore';
+import AuthMagicLink from '@/components/AuthMagicLink';
+
+import { supabase } from '../../lib/supabaseClient';
+import { saveAudioBlob, getAudioBlob, deleteAudioBlob } from '../../lib/audioDB';
+import { loadContact } from '../../lib/contactsStore';
 
 function telHref(phone) {
   const clean = String(phone || '').replace(/[^\d+]/g, '');
@@ -16,7 +19,7 @@ function telHref(phone) {
 }
 
 export default function Page() {
-  // modes: 'options' | 'breathing' | 'contact' | 'settings' | 'library' | 'explore' | 'profile'
+  // modes: 'options' | 'breathing' | 'contact' | 'settings' | 'library' | 'explore' | 'profile' | 'login'
   const [mode, setMode] = useState('options');
 
   const [customUrl, setCustomUrl] = useState(null);
@@ -26,13 +29,29 @@ export default function Page() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
+  const [user, setUser] = useState(null);           // auth
+  const [initializing, setInitializing] = useState(true);
+
   const urlRef = useRef(null);
   const audioRef = useRef(null);
 
-  // cargar audio/contacto al montar
+  // ===== Helpers de sesión
+  const rehydrate = async () => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      setUser(data.session?.user ?? null);
+    } catch (e) {
+      console.error('rehydrate error:', e);
+    } finally {
+      setInitializing(false);
+    }
+  };
+
+  // cargar audio/contacto al montar + sesión
   useEffect(() => {
     (async () => {
       try {
+        // Audio
         const blob = await getAudioBlob();
         if (blob instanceof Blob) {
           const url = URL.createObjectURL(blob);
@@ -44,9 +63,44 @@ export default function Page() {
       } catch (e) {
         console.error('IndexedDB get error:', e);
       }
-    })();
 
-    setContact(loadContact());
+      // Contacto
+      setContact(loadContact());
+
+      // Suscripción a cambios de auth (login/logout/refresh)
+      const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user ?? null);
+      });
+
+      // Rehidratá al montar
+      await rehydrate();
+
+      // Si venís directo del callback, rehidratá de nuevo
+      try {
+        if (sessionStorage.getItem('respirapp_just_signed_in') === '1') {
+          sessionStorage.removeItem('respirapp_just_signed_in');
+          setTimeout(() => { rehydrate(); }, 80);
+        }
+      } catch {}
+
+      // Si el tab vuelve a estar visible, rehidratá
+      const onVis = () => { if (!document.hidden) rehydrate(); };
+      document.addEventListener('visibilitychange', onVis);
+
+      // Si otra pestaña escribe la sesión, rehidratá
+      const onStorage = (e) => {
+        if (e.key && e.key.includes('sb-') && e.key.includes('-auth-token')) {
+          rehydrate();
+        }
+      };
+      window.addEventListener('storage', onStorage);
+
+      return () => {
+        sub?.subscription?.unsubscribe?.();
+        document.removeEventListener('visibilitychange', onVis);
+        window.removeEventListener('storage', onStorage);
+      };
+    })();
 
     return () => {
       if (urlRef.current) {
@@ -138,6 +192,12 @@ export default function Page() {
     if (mode === 'contact') setMode('options');
   };
 
+  // Logout
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setMode('options');
+  };
+
   // Render según modo
   let content = null;
 
@@ -214,11 +274,33 @@ export default function Page() {
     content = (
       <div className="panel">
         <h2>👤 Perfil</h2>
-        <p className="muted">Próximamente: tu cuenta y preferencias.</p>
+        {initializing ? (
+          <p className="muted">Cargando...</p>
+        ) : user ? (
+          <>
+            <p className="muted">Sesión iniciada como <strong>{user.email}</strong></p>
+            <div className="settings-actions" style={{ marginTop: 12 }}>
+              <button className="help-button" onClick={handleLogout}>Cerrar sesión</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="muted">Iniciá sesión para sincronizar tu contenido.</p>
+            <AuthMagicLink onSent={() => {}} />
+          </>
+        )}
+      </div>
+    );
+  } else if (mode === 'login') {
+    content = (
+      <div className="panel">
+        <h2>🔑 Iniciar sesión</h2>
+        <AuthMagicLink onSent={() => {}} />
+        <a href="#" className="back-link" onClick={handleBackToOptions}>← Volver</a>
       </div>
     );
   } else {
-    // mode === 'options' (home estilo launcher con 4 tiles)
+    // mode === 'options'
     content = (
       <div className="launcher-grid">
         {/* AUDIO */}
@@ -295,13 +377,12 @@ export default function Page() {
 
   const showHeader = mode === 'options';
 
-  // estado activo del BottomNav
   const activeNav =
     mode === 'options' ? 'home'
     : mode === 'library' ? 'library'
     : mode === 'explore' ? 'p1'
     : mode === 'profile' ? 'p2'
-    : 'home'; // en sub-vistas, mantenemos "Inicio" activo
+    : 'home';
 
   return (
     <div className="App has-bottom-nav">

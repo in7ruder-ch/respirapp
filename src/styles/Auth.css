@@ -1,0 +1,56 @@
+/* Tarjeta simple para login Magic Link */
+.auth-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  max-width: 420px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.auth-label {
+  display: block;
+  font-weight: 600;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  color: #111827;
+}
+
+.auth-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.auth-button {
+  width: 100%;
+  margin-top: 12px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.auth-button:hover:enabled { background-color: #1d4ed8; }
+.auth-button:disabled { opacity: .7; cursor: not-allowed; }
+
+.auth-message {
+  margin-top: 10px;
+  color: #1f2937;
+  font-size: 0.95rem;
+}
