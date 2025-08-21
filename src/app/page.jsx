@@ -9,7 +9,7 @@ import BottomNav from '@/components/BottomNav';
 import BreathingSelector from '@/components/BreathingSelector';
 import AudioRecorder from '@/components/AudioRecorder';
 import LoginOTP from '@/components/LoginOTP';
-import ContactCard from '@/components/ContactCard';
+import ContactCard from '@/components/contactCard';
 
 import { supabase } from '../../lib/supabaseClient';
 import { saveAudioBlob, getAudioBlob, deleteAudioBlob } from '../../lib/audioDB';
