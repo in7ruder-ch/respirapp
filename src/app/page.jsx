@@ -219,9 +219,6 @@ export default function Page() {
           showQuickActions={false}
           hideTitle
         />
-        <a href="#" className="back-link" onClick={handleBackToOptions}>
-          ← Volver
-        </a>
       </div>
     );
   } else if (mode === 'settings') {
@@ -250,10 +247,6 @@ export default function Page() {
             <p className="muted">No tenés un contacto de emergencia guardado.</p>
           )}
         </section>
-
-        <a href="#" className="back-link" onClick={handleBackToOptions}>
-          ← Volver
-        </a>
       </div>
     );
   } else if (mode === 'library') {

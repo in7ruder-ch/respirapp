@@ -103,10 +103,6 @@ export default function BreathingSelector({ onBack, setAppTitle }) {
               );
             })}
           </div>
-
-          <div className="back-wrapper">
-            <span className="back-link" onClick={onBack}>← Volver</span>
-          </div>
         </div>
       )}
     </div>
