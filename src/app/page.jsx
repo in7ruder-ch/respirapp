@@ -2,7 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import '@/styles/App.css';
-import '@/styles/Navbar.css';
+import BottomNav from '@/components/BottomNav';
+import '@/styles/BottomNav.css';
 import BreathingSelector from '@/components/BreathingSelector';
 import AudioRecorder from '@/components/AudioRecorder';
 import ContactCard from '@/components/contactCard';
@@ -14,7 +15,7 @@ function telHref(phone) {
   return clean ? `tel:${clean}` : '#';
 }
 
-export default function App() {
+export default function Page() {
   // modes: 'options' | 'breathing' | 'contact' | 'settings' | 'library' | 'explore' | 'profile'
   const [mode, setMode] = useState('options');
 
@@ -196,7 +197,6 @@ export default function App() {
       </div>
     );
   } else if (mode === 'library') {
-    // Biblioteca (placeholder)
     content = (
       <div className="panel">
         <h2>📚 Biblioteca</h2>
@@ -204,7 +204,6 @@ export default function App() {
       </div>
     );
   } else if (mode === 'explore') {
-    // Explorar (placeholder)
     content = (
       <div className="panel">
         <h2>🧭 Explorar</h2>
@@ -212,7 +211,6 @@ export default function App() {
       </div>
     );
   } else if (mode === 'profile') {
-    // Perfil (placeholder)
     content = (
       <div className="panel">
         <h2>👤 Perfil</h2>
@@ -297,16 +295,16 @@ export default function App() {
 
   const showHeader = mode === 'options';
 
-  // Estado activo del navbar (para color)
+  // estado activo del BottomNav
   const activeNav =
     mode === 'options' ? 'home'
     : mode === 'library' ? 'library'
-    : mode === 'explore' ? 'explore'
-    : mode === 'profile' ? 'profile'
-    : 'home';
+    : mode === 'explore' ? 'p1'
+    : mode === 'profile' ? 'p2'
+    : 'home'; // en sub-vistas, mantenemos "Inicio" activo
 
   return (
-    <div className="App">
+    <div className="App has-bottom-nav">
       <header className="App-header">
         {showHeader && (
           <>
@@ -323,50 +321,16 @@ export default function App() {
         )}
 
         {content}
-
-        {/* NAVBAR dentro del wrapper, con emoji arriba y texto abajo */}
-        <nav className="navbar" role="navigation" aria-label="Navegación inferior">
-          <button
-            className={`nav-item ${activeNav === 'home' ? 'active' : ''}`}
-            onClick={() => setMode('options')}
-            type="button"
-            aria-label="Inicio"
-          >
-            <span className="nav-icon" aria-hidden="true">🏠</span>
-            <span className="nav-label">Inicio</span>
-          </button>
-
-          <button
-            className={`nav-item ${activeNav === 'library' ? 'active' : ''}`}
-            onClick={() => setMode('library')}
-            type="button"
-            aria-label="Biblioteca"
-          >
-            <span className="nav-icon" aria-hidden="true">📚</span>
-            <span className="nav-label">Biblioteca</span>
-          </button>
-
-          <button
-            className={`nav-item ${activeNav === 'explore' ? 'active' : ''}`}
-            onClick={() => setMode('explore')}
-            type="button"
-            aria-label="Explorar"
-          >
-            <span className="nav-icon" aria-hidden="true">🧭</span>
-            <span className="nav-label">Explorar</span>
-          </button>
-
-          <button
-            className={`nav-item ${activeNav === 'profile' ? 'active' : ''}`}
-            onClick={() => setMode('profile')}
-            type="button"
-            aria-label="Perfil"
-          >
-            <span className="nav-icon" aria-hidden="true">👤</span>
-            <span className="nav-label">Perfil</span>
-          </button>
-        </nav>
       </header>
+
+      {/* Navbar fija EXTERNA al wrapper */}
+      <BottomNav
+        active={activeNav}
+        onHome={() => setMode('options')}
+        onLibrary={() => setMode('library')}
+        onPlaceholder1={() => setMode('explore')}
+        onPlaceholder2={() => setMode('profile')}
+      />
     </div>
   );
 }

@@ -26,7 +26,7 @@ export default function BottomNav({
   return (
     <nav className="bottom-nav" role="navigation" aria-label="Navegación inferior">
       <Item id="home"     label="Inicio"     emoji="🏠" onClick={onHome} />
-      <Item id="library"  label="Biblioteca" emoji="🎬" onClick={onLibrary} />
+      <Item id="library"  label="Biblioteca" emoji="📚" onClick={onLibrary} />
       <Item id="p1"       label="Explorar"   emoji="🧭" onClick={onPlaceholder1} />
       <Item id="p2"       label="Perfil"     emoji="👤" onClick={onPlaceholder2} />
     </nav>

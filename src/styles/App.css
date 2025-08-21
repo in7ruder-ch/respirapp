@@ -1,4 +1,6 @@
-/* General setup */
+/* ===========================
+   General setup (DESKTOP por defecto)
+   =========================== */
 html, body {
   margin: 0;
   padding: 0;
@@ -12,7 +14,7 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100dvh; /* mejor soporte en móviles */
+  min-height: 100dvh; /* mejor soporte en móviles y fallback en desktop */
   padding: 1rem;
   box-sizing: border-box;
   text-align: center;
@@ -97,7 +99,6 @@ h3 {
 /* ----------------------------- */
 /* GRID ESTILO LAUNCHER (HOME)   */
 /* ----------------------------- */
-
 .launcher-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -159,7 +160,7 @@ h3 {
 /* Colores de fondo (ajustables) */
 .launcher-item.blue   { background-color: #2563eb; } /* Mensaje */
 .launcher-item.green  { background-color: #10b981; } /* Respirar */
-.launcher-item.red { background-color: #f5130b; } /* Contacto */
+.launcher-item.red    { background-color: #f5130b; } /* Contacto */
 .launcher-item.yellow { background-color: #f4b000; } /* Config. */
 
 /* Tile que ocupa ambas columnas (grabador inline) */
@@ -226,22 +227,50 @@ h3 {
 }
 .delete-button:hover { background-color: #dc2626; }
 
-/* Responsive (mobile) */
-@media (max-width: 480px) {
-  h1 { font-size: 2rem; }
-  h2 { font-size: 1.15rem; }
-  h3 { font-size: 1rem; }
-
-  .App-header { padding: 1.25rem; }
-
-  .launcher-grid { gap: 12px; padding: 4px 0 0; }
-  .launcher-item .label { bottom: 9%; font-size: 0.95rem; }
-  .icon-bg { left: 13%; right: 13%; top: 13%; bottom: 30%; }
-}
-
 /* Textos auxiliares */
 .helper-text {
   margin: 0.25rem 0 0.75rem 0;
   font-size: 0.95rem;
   color: #4b5563; /* gris 600 */
+}
+
+/* ===========================
+   MOBILE: fullscreen + padding nav fijo (<=768px)
+   =========================== */
+@media (max-width: 768px) {
+  .App {
+    /* pantalla completa en mobile */
+    padding: 0;            /* sin padding externo */
+    width: 100vw;
+    min-height: 100dvh;
+    height: 100vh;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  .App.has-bottom-nav {
+    /* reserva espacio para la nav fija */
+    padding-bottom: calc(64px + max(env(safe-area-inset-bottom), 0px));
+  }
+
+  .App-header {
+    /* wrapper ocupa toda la pantalla (menos el espacio reservado arriba) */
+    border-radius: 0;
+    box-shadow: none;
+    max-width: none;
+    width: 100%;
+    min-height: 100%;
+    padding-top: calc(1rem + env(safe-area-inset-top));
+    padding-right: calc(0.75rem + env(safe-area-inset-right));
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    padding-left: calc(0.75rem + env(safe-area-inset-left));
+  }
+
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.15rem; }
+  h3 { font-size: 1rem; }
+
+  .launcher-grid { gap: 12px; padding: 4px 0 0; }
+  .launcher-item .label { bottom: 9%; font-size: 0.95rem; }
+  .icon-bg { left: 13%; right: 13%; top: 13%; bottom: 30%; }
 }
