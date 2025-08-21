@@ -8,7 +8,6 @@ import '@/styles/BottomNav.css';
 import BottomNav from '@/components/BottomNav';
 import BreathingSelector from '@/components/BreathingSelector';
 import AudioRecorder from '@/components/AudioRecorder';
-import ContactCard from '@/components/ContactCard';
 import LoginOTP from '@/components/LoginOTP';
 
 import { supabase } from '../../lib/supabaseClient';
