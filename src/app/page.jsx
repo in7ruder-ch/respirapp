@@ -20,6 +20,9 @@ function telHref(phone) {
   return clean ? `tel:${clean}` : '#';
 }
 
+/** Flag local usado por el AudioRecorder para el límite del plan Free */
+const FREE_AUDIO_FLAG = 'respirapp_free_audio_uploaded_v1';
+
 export default function Page() {
   const [mode, setMode] = useState('options');
   const [customUrl, setCustomUrl] = useState(null);
@@ -29,6 +32,9 @@ export default function Page() {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
+
+  // 🔄 Forzar remount del AudioRecorder tras logout (resetea estados internos)
+  const [recorderKey, setRecorderKey] = useState(0);
 
   const urlRef = useRef(null);
   const audioRef = useRef(null);
@@ -157,8 +163,30 @@ export default function Page() {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error('signOut error', e);
+    }
+
+    // 🧹 Limpieza total del estado local (evita “alcanzaste tu límite” post-logout)
+    try {
+      localStorage.removeItem(FREE_AUDIO_FLAG); // flag de plan Free en el cliente
+      sessionStorage.clear();                   // cualquier otro cache efímero
+    } catch (e) {
+      console.warn('storage clear warn', e);
+    }
+
+    // 🔄 Remontar el recorder para resetear estados internos
+    setRecorderKey((k) => k + 1);
+
+    // 🔁 Reset de UI
     setMode('options');
+    setShowConfirmation(false);
+    setShowDeleteConfirmation(false);
+
+    // 🔃 Rehidratar usuario (debería quedar null)
+    await rehydrate();
   };
 
   let content = null;
@@ -247,7 +275,8 @@ export default function Page() {
             </button>
           ) : (
             <div className="tile-span-2">
-              <AudioRecorder onAudioReady={handleAudioReady} hideTitle autoStart />
+              {/* Remontable via key para limpiar estado tras logout */}
+              <AudioRecorder key={recorderKey} onAudioReady={handleAudioReady} hideTitle autoStart />
             </div>
           )
         ) : (
