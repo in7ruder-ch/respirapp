@@ -3,23 +3,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import '@/styles/AudioRecorder.css';
 
-/**
- * 🔐 Planes:
- *  - free:  permite 1 (un) audio
- *  - premium: ilimitado
- *
- * En este componente aplicamos un guardado liviano en cliente (localStorage)
- * para bloquear múltiples audios en plan free. Más adelante, haremos la
- * verificación definitiva del lado servidor en /api/upload-url (PASO 4).
- */
-
-const PLAN = 'free'; // 'free' | 'premium'
 const FREE_AUDIO_FLAG = 'respirapp_free_audio_uploaded_v1';
+// ⚠️ Hasta integrar la sesión desde el servidor, usa tu UUID real aquí:
+const HARD_USER_ID = '417fe0ff-dca3-458c-adfe-39495af8cdeb';
 
-// ⚠️ Mientras no tomemos el user desde auth, usa temporalmente un UUID real:
-const HARD_USER_ID = 'REEMPLAZA_CON_TU_UUID_DE_SUPABASE';
-
-/** Elige el mejor MIME soportado por MediaRecorder en este navegador */
 function pickSupportedMime() {
   const candidates = [
     'audio/webm;codecs=opus',
@@ -36,9 +23,7 @@ function pickSupportedMime() {
     return null;
   }
   for (const c of candidates) {
-    try {
-      if (MediaRecorder.isTypeSupported(c)) return c;
-    } catch (_) {}
+    try { if (MediaRecorder.isTypeSupported(c)) return c; } catch {}
   }
   return null;
 }
@@ -47,69 +32,72 @@ export default function AudioRecorder({ hideTitle = false, autoStart = false }) 
   const [isRecording, setIsRecording] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
+  const [limitReached, setLimitReached] = useState(false);
+
   const mediaRef = useRef(null);
   const chunksRef = useRef([]);
   const streamRef = useRef(null);
 
   useEffect(() => {
+    try {
+      setLimitReached(localStorage.getItem(FREE_AUDIO_FLAG) === '1');
+    } catch {}
     if (autoStart) startRecording();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart]);
 
-  /** Subir blob usando signed URL desde /api/upload-url */
   async function uploadToSupabase(blob) {
-    try {
-      setStatus('Preparando subida…');
+    setError('');
+    setStatus('Preparando subida…');
 
-      // ⚠️ Por ahora pasamos userId desde el cliente para mantener simple la prueba.
-      // Más adelante lo obtendremos del server (auth-helpers).
-      const res = await fetch('/api/upload-url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: '417fe0ff-dca3-458c-adfe-39495af8cdeb', // 👈 Reemplaza con el UUID real del usuario autenticado
-          kind: 'audio',
-          contentType: blob.type || 'audio/webm',
-          duration: null,
-          size: blob.size ?? null,
-        }),
-      });
+    const res = await fetch('/api/upload-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: HARD_USER_ID,
+        kind: 'audio',
+        contentType: blob.type || 'audio/webm',
+        duration: null,
+        size: blob.size ?? null,
+      }),
+    });
 
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json?.error || 'No se pudo obtener la signed URL');
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      if (res.status === 403) {
+        // Límite alcanzado en backend
+        setLimitReached(true);
+        setError(j?.error || 'Alcanzaste tu límite de plan.');
+        setStatus('');
+        return null;
       }
-
-      const { signedUrl, path } = json;
-      setStatus('Subiendo audio…');
-
-      const put = await fetch(signedUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': blob.type || 'application/octet-stream' },
-        body: blob,
-      });
-      if (!put.ok) throw new Error('Error subiendo a Supabase');
-
-      setStatus('✅ Subida exitosa');
-      return path;
-    } catch (err) {
-      console.error(err);
-      setError(err.message || String(err));
-      setStatus('');
-      return null;
+      throw new Error(j?.error || 'No se pudo obtener la URL firmada');
     }
+
+    const { signedUrl } = await res.json();
+    setStatus('Subiendo audio…');
+
+    const put = await fetch(signedUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': blob.type || 'application/octet-stream' },
+      body: blob,
+    });
+
+    if (!put.ok) throw new Error('Error subiendo a Supabase');
+
+    // Flag local para la UI del plan Free
+    try { localStorage.setItem(FREE_AUDIO_FLAG, '1'); } catch {}
+    setLimitReached(true);
+    setStatus('✅ Subida exitosa');
+    return true;
   }
 
   async function startRecording() {
     setError('');
-
-    // Regla de plan free (cliente): solo 1 audio
-    if (PLAN === 'free' && typeof window !== 'undefined') {
-      const already = localStorage.getItem(FREE_AUDIO_FLAG);
-      if (already === '1') {
-        setError('Plan Free: ya guardaste tu único audio. Para más, pasa a Premium.');
-        return;
-      }
+    // Validación de UX (el backend igual valida)
+    if (limitReached) {
+      setError('Plan Free: ya guardaste tu único audio.');
+      return;
     }
 
     const mimeType = pickSupportedMime();
@@ -142,26 +130,15 @@ export default function AudioRecorder({ hideTitle = false, autoStart = false }) 
         const blob = new Blob(chunksRef.current, { type: mimeType });
         chunksRef.current = [];
 
-        // (1) Guardado local — si querés, aquí podrías usar IndexedDB (audioDB.js).
-        // Por simplicidad, lo omitimos en este paso.
-        // TODO: integrar audioDB.js si necesitas persistencia offline.
-
-        // (2) Subida a Supabase
-        if (navigator.onLine) {
-          const path = await uploadToSupabase(blob);
-          if (path && PLAN === 'free' && typeof window !== 'undefined') {
-            // Marcamos que el usuario free ya subió su único audio
-            localStorage.setItem(FREE_AUDIO_FLAG, '1');
-          }
-        } else {
-          setError('Estás sin conexión. Vuelve a intentar cuando tengas internet.');
+        if (!navigator.onLine) {
+          setError('Estás sin conexión. Intenta nuevamente con internet.');
           setStatus('');
+        } else {
+          try { await uploadToSupabase(blob); }
+          catch (err) { setError(err.message || String(err)); setStatus(''); }
         }
 
-        // Detener tracks del stream
-        try {
-          stream.getTracks().forEach((t) => t.stop());
-        } catch {}
+        try { stream.getTracks().forEach((t) => t.stop()); } catch {}
       };
 
       mr.start();
@@ -172,11 +149,7 @@ export default function AudioRecorder({ hideTitle = false, autoStart = false }) 
   }
 
   function stopRecording() {
-    try {
-      mediaRef.current?.stop();
-    } catch (err) {
-      console.error(err);
-    }
+    try { mediaRef.current?.stop(); } catch (err) { console.error(err); }
   }
 
   return (
@@ -187,7 +160,12 @@ export default function AudioRecorder({ hideTitle = false, autoStart = false }) 
       {error && <p style={{ color: 'crimson', marginBottom: 8 }}>{error}</p>}
 
       {!isRecording ? (
-        <button className="audio-button" onClick={startRecording}>
+        <button
+          className="audio-button"
+          onClick={startRecording}
+          disabled={limitReached}
+          aria-disabled={limitReached}
+        >
           🎤 Grabar mensaje
         </button>
       ) : (
@@ -196,11 +174,9 @@ export default function AudioRecorder({ hideTitle = false, autoStart = false }) 
         </button>
       )}
 
-      {PLAN === 'free' && (
-        <small style={{ display: 'block', marginTop: 8, opacity: 0.8 }}>
-          Plan Free: 1 audio permitido. Pasa a Premium para guardar ilimitados.
-        </small>
-      )}
+      <small style={{ display: 'block', marginTop: 8, opacity: 0.8 }}>
+        Plan Free: 1 audio permitido. Para ilimitados, pasá a Premium.
+      </small>
     </div>
   );
 }
