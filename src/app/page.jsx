@@ -12,7 +12,7 @@ import LoginOTP from '@/components/LoginOTP';
 import ContactCard from '@/components/contactCard';
 
 import { supabase } from '../../lib/supabaseClient';
-import { saveAudioBlob, getAudioBlob, deleteAudioBlob } from '../../lib/audioDB';
+import { getAudioBlob } from '../../lib/audioDB'; // dejamos solo lectura por si hubiera algo local previo
 import { loadContact } from '../../lib/contactsStore';
 
 function telHref(phone) {
@@ -33,7 +33,7 @@ export default function Page() {
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
 
-  // 🔄 Forzar remount del AudioRecorder tras logout (resetea estados internos)
+  // 🔄 Forzar remount del AudioRecorder tras logout o regrabar
   const [recorderKey, setRecorderKey] = useState(0);
 
   const urlRef = useRef(null);
@@ -51,6 +51,7 @@ export default function Page() {
 
   useEffect(() => {
     (async () => {
+      // Si hay un audio local viejo, lo dejamos reproducible
       try {
         const blob = await getAudioBlob();
         if (blob instanceof Blob) {
@@ -124,41 +125,39 @@ export default function Page() {
     }
   };
 
-  const handleAudioReady = async (blob) => {
-    try {
-      await saveAudioBlob(blob);
-      if (urlRef.current) {
-        URL.revokeObjectURL(urlRef.current);
-        urlRef.current = null;
-      }
-      const url = URL.createObjectURL(blob);
-      urlRef.current = url;
-      setCustomUrl(url);
-      setShowConfirmation(true);
-      setTimeout(() => setShowConfirmation(false), 2000);
-    } catch {
-      alert('No se pudo guardar el audio personalizado.');
-    }
+  // ✅ NUEVO: al terminar de grabar NO guardamos local; solo mostramos banner
+  const handleAudioReady = async (_blob) => {
+    setShowConfirmation(true);
+    setTimeout(() => setShowConfirmation(false), 2000);
     setShowInlineRecorder(false);
   };
 
-  const handleDeleteAudio = async () => {
+  // ✅ NUEVO: borrar en nube + DB y abrir grabadora dentro de Configuración
+  const handleDeleteAndReRecordInSettings = async () => {
+    if (!user?.id) {
+      alert('Tenés que iniciar sesión para borrar & regrabar.');
+      return;
+    }
     try {
-      await deleteAudioBlob();
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-        audioRef.current = null;
-      }
-      if (urlRef.current) {
-        URL.revokeObjectURL(urlRef.current);
-        urlRef.current = null;
-      }
-      setCustomUrl(null);
+      const res = await fetch('/api/media/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, kind: 'audio' }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j?.error || 'No se pudo eliminar el audio.');
+
+      // limpiar flag free local y abrir grabadora en Configuración
+      try { localStorage.removeItem(FREE_AUDIO_FLAG); } catch {}
       setShowDeleteConfirmation(true);
-      setTimeout(() => setShowDeleteConfirmation(false), 2000);
-    } catch {
-      alert('No se pudo eliminar el audio personalizado.');
+      setTimeout(() => setShowDeleteConfirmation(false), 1500);
+
+      // permanecer en Configuración y mostrar grabadora inline
+      setMode('settings');
+      setShowInlineRecorder(true);
+      setRecorderKey((k) => k + 1); // remount para estado limpio
+    } catch (e) {
+      alert(e.message || 'No se pudo eliminar el audio.');
     }
   };
 
@@ -168,24 +167,17 @@ export default function Page() {
     } catch (e) {
       console.error('signOut error', e);
     }
-
-    // 🧹 Limpieza total del estado local (evita “alcanzaste tu límite” post-logout)
+    // 🧹 limpieza de estado local para que no aparezca “alcanzaste tu límite”
     try {
-      localStorage.removeItem(FREE_AUDIO_FLAG); // flag de plan Free en el cliente
-      sessionStorage.clear();                   // cualquier otro cache efímero
+      localStorage.removeItem(FREE_AUDIO_FLAG);
+      sessionStorage.clear();
     } catch (e) {
       console.warn('storage clear warn', e);
     }
-
-    // 🔄 Remontar el recorder para resetear estados internos
     setRecorderKey((k) => k + 1);
-
-    // 🔁 Reset de UI
     setMode('options');
     setShowConfirmation(false);
     setShowDeleteConfirmation(false);
-
-    // 🔃 Rehidratar usuario (debería quedar null)
     await rehydrate();
   };
 
@@ -209,16 +201,33 @@ export default function Page() {
     content = (
       <div className="panel">
         <h2>⚙️ Configuración</h2>
+
+        {/* === Mensaje personal === */}
         <section className="settings-section">
           <h3>Mensaje personal</h3>
-          {!customUrl ? (
-            <p className="muted">No tenés un mensaje guardado.</p>
+
+          {!showInlineRecorder ? (
+            <div className="settings-actions" style={{ gap: 8 }}>
+              <button className="delete-button" onClick={handleDeleteAndReRecordInSettings}>
+                🗑️ Borrar & Regrabar
+              </button>
+            </div>
           ) : (
-            <div className="settings-actions">
-              <button className="delete-button" onClick={handleDeleteAudio}>🗑️ Borrar mensaje</button>
+            <div className="tile-span-2" style={{ marginTop: 12 }}>
+              <AudioRecorder
+                key={recorderKey}
+                onAudioReady={handleAudioReady}
+                hideTitle
+                autoStart
+              />
             </div>
           )}
+          <p className="muted" style={{ marginTop: 8 }}>
+            Plan Free: 1 audio permitido. Para ilimitados, pasá a Premium.
+          </p>
         </section>
+
+        {/* === Contacto de emergencia === */}
         <section className="settings-section">
           <h3>Contacto de emergencia</h3>
           {contact?.phone ? (
@@ -246,36 +255,41 @@ export default function Page() {
   } else if (mode === 'profile') {
     content = (
       <div className="panel">
-        {/* <h2>👤 Perfil</h2> */}
         {initializing ? (
           <p className="muted">Cargando...</p>
         ) : user ? (
           <>
-            <p className="muted">Sesión iniciada como <strong>{user.email}</strong></p>
+            <p className="muted">
+              Sesión iniciada como <strong>{user.email}</strong>
+            </p>
             <div className="settings-actions" style={{ marginTop: 12 }}>
               <button className="help-button" onClick={handleLogout}>Cerrar sesión</button>
             </div>
           </>
         ) : (
           <>
-            {/* <p className="muted">Iniciá sesión para sincronizar tu contenido.</p> */}
             <LoginOTP onSuccess={() => {}} />
           </>
         )}
       </div>
     );
   } else {
+    // HOME (launchers)
     content = (
       <div className="launcher-grid">
+        {/* Dejo el launcher Mensaje con reproducción local si existía algo previo */}
         {!customUrl ? (
           !showInlineRecorder ? (
-            <button className="launcher-item blue" onClick={() => setShowInlineRecorder(true)} aria-label="Grabar mensaje">
+            <button
+              className="launcher-item blue"
+              onClick={() => { setMode('settings'); setShowInlineRecorder(true); setRecorderKey(k => k + 1); }}
+              aria-label="Grabar mensaje"
+            >
               <div className="icon-bg bg-message" aria-hidden="true" />
               <div className="label">Mensaje</div>
             </button>
           ) : (
             <div className="tile-span-2">
-              {/* Remontable via key para limpiar estado tras logout */}
               <AudioRecorder key={recorderKey} onAudioReady={handleAudioReady} hideTitle autoStart />
             </div>
           )
@@ -285,21 +299,29 @@ export default function Page() {
             <div className="label">Mensaje</div>
           </button>
         )}
+
         <button className="launcher-item green" onClick={handleBreathing} aria-label="Respirar juntos">
           <div className="icon-bg bg-breath" aria-hidden="true" />
           <div className="label">Respirar</div>
         </button>
+
         {!contact?.phone ? (
           <button className="launcher-item red" onClick={openRegisterContact} aria-label="Registrar contacto">
             <div className="icon-bg bg-contact" aria-hidden="true" />
             <div className="label">Contacto</div>
           </button>
         ) : (
-          <button className="launcher-item orange" onClick={() => (window.location.href = telHref(contact.phone))} title={`Llamar a ${contact?.name || 'contacto'}`} aria-label="Llamar contacto">
+          <button
+            className="launcher-item orange"
+            onClick={() => (window.location.href = telHref(contact.phone))}
+            title={`Llamar a ${contact?.name || 'contacto'}`}
+            aria-label="Llamar contacto"
+          >
             <div className="icon-bg bg-contact" aria-hidden="true" />
             <div className="label">Contacto</div>
           </button>
         )}
+
         <button className="launcher-item yellow" onClick={() => setMode('settings')} aria-label="Configuración">
           <div className="icon-bg bg-config" aria-hidden="true" />
           <div className="label">Config.</div>
