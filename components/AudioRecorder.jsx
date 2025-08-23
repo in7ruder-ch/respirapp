@@ -28,7 +28,12 @@ function pickSupportedMime() {
   return null;
 }
 
-export default function AudioRecorder({ hideTitle = false, autoStart = false }) {
+export default function AudioRecorder({
+  hideTitle = false,
+  // autoStart ya no se usa en Paso 1; se deja para compatibilidad pero se ignora
+  autoStart = false,
+  onAudioReady, // callback opcional: se llama tras subida exitosa
+}) {
   const [isRecording, setIsRecording] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
@@ -42,9 +47,10 @@ export default function AudioRecorder({ hideTitle = false, autoStart = false }) 
     try {
       setLimitReached(localStorage.getItem(FREE_AUDIO_FLAG) === '1');
     } catch {}
-    if (autoStart) startRecording();
+    // 🚫 Paso 1: NO auto-start
+    // if (autoStart) startRecording();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoStart]);
+  }, []);
 
   async function uploadToSupabase(blob) {
     setError('');
@@ -69,7 +75,7 @@ export default function AudioRecorder({ hideTitle = false, autoStart = false }) 
         setLimitReached(true);
         setError(j?.error || 'Alcanzaste tu límite de plan.');
         setStatus('');
-        return null;
+        return false;
       }
       throw new Error(j?.error || 'No se pudo obtener la URL firmada');
     }
@@ -134,8 +140,16 @@ export default function AudioRecorder({ hideTitle = false, autoStart = false }) 
           setError('Estás sin conexión. Intenta nuevamente con internet.');
           setStatus('');
         } else {
-          try { await uploadToSupabase(blob); }
-          catch (err) { setError(err.message || String(err)); setStatus(''); }
+          try {
+            const ok = await uploadToSupabase(blob);
+            if (ok) {
+              // Aviso al contenedor (Home) para banner + cerrar inline recorder
+              try { onAudioReady && onAudioReady(blob); } catch {}
+            }
+          } catch (err) {
+            setError(err.message || String(err));
+            setStatus('');
+          }
         }
 
         try { stream.getTracks().forEach((t) => t.stop()); } catch {}

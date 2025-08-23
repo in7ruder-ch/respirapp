@@ -33,7 +33,11 @@ export default function Page() {
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
 
-  // 🔄 Forzar remount del AudioRecorder tras logout o regrabar
+  // Estado de media en nube para pintar Configuración correctamente
+  const [hasAudio, setHasAudio] = useState(false);
+  const [audioCount, setAudioCount] = useState(0);
+
+  // 🔄 Forzar remount del AudioRecorder tras logout
   const [recorderKey, setRecorderKey] = useState(0);
 
   const urlRef = useRef(null);
@@ -46,6 +50,27 @@ export default function Page() {
     } catch {
     } finally {
       setInitializing(false);
+    }
+  };
+
+  const refreshMediaStatus = async () => {
+    try {
+      const res = await fetch('/api/media/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'audio' }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (res.ok && j) {
+        setHasAudio(Boolean(j.has));
+        setAudioCount(Number(j.count || 0));
+      } else {
+        setHasAudio(false);
+        setAudioCount(0);
+      }
+    } catch {
+      setHasAudio(false);
+      setAudioCount(0);
     }
   };
 
@@ -65,9 +90,12 @@ export default function Page() {
 
       const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
         setUser(session?.user ?? null);
+        // Cambia sesión => refresco estado de media
+        refreshMediaStatus();
       });
 
       await rehydrate();
+      await refreshMediaStatus();
 
       try {
         if (sessionStorage.getItem('respirapp_just_signed_in') === '1') {
@@ -76,12 +104,13 @@ export default function Page() {
         }
       } catch {}
 
-      const onVis = () => { if (!document.hidden) rehydrate(); };
+      const onVis = () => { if (!document.hidden) { rehydrate(); refreshMediaStatus(); } };
       document.addEventListener('visibilitychange', onVis);
 
       const onStorage = (e) => {
         if (e.key && e.key.includes('sb-') && e.key.includes('-auth-token')) {
           rehydrate();
+          refreshMediaStatus();
         }
       };
       window.addEventListener('storage', onStorage);
@@ -100,6 +129,11 @@ export default function Page() {
       }
     };
   }, []);
+
+  // ✅ Importante: en cualquier cambio de mode, ocultar inline recorder para evitar autograbados
+  useEffect(() => {
+    setShowInlineRecorder(false);
+  }, [mode]);
 
   const handleBreathing = () => setMode('breathing');
   const openRegisterContact = () => setMode('contact');
@@ -125,17 +159,18 @@ export default function Page() {
     }
   };
 
-  // ✅ NUEVO: al terminar de grabar NO guardamos local; solo mostramos banner
+  // Al terminar de grabar: banner + cerrar grabadora inline + refrescar estado de media
   const handleAudioReady = async (_blob) => {
     setShowConfirmation(true);
     setTimeout(() => setShowConfirmation(false), 2000);
     setShowInlineRecorder(false);
+    refreshMediaStatus();
   };
 
-  // ✅ NUEVO: borrar en nube + DB y abrir grabadora dentro de Configuración
-  const handleDeleteAndReRecordInSettings = async () => {
+  // Borrar en nube + DB (solo borra, no regraba ni abre grabadora en Configuración)
+  const handleDeleteInSettings = async () => {
     if (!user?.id) {
-      alert('Tenés que iniciar sesión para borrar & regrabar.');
+      alert('Tenés que iniciar sesión para borrar tu mensaje.');
       return;
     }
     try {
@@ -147,15 +182,11 @@ export default function Page() {
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j?.error || 'No se pudo eliminar el audio.');
 
-      // limpiar flag free local y abrir grabadora en Configuración
       try { localStorage.removeItem(FREE_AUDIO_FLAG); } catch {}
       setShowDeleteConfirmation(true);
       setTimeout(() => setShowDeleteConfirmation(false), 1500);
-
-      // permanecer en Configuración y mostrar grabadora inline
-      setMode('settings');
-      setShowInlineRecorder(true);
-      setRecorderKey((k) => k + 1); // remount para estado limpio
+      await refreshMediaStatus();
+      setRecorderKey((k) => k + 1); // por si el usuario vuelve a grabar desde Home
     } catch (e) {
       alert(e.message || 'No se pudo eliminar el audio.');
     }
@@ -179,6 +210,7 @@ export default function Page() {
     setShowConfirmation(false);
     setShowDeleteConfirmation(false);
     await rehydrate();
+    await refreshMediaStatus();
   };
 
   let content = null;
@@ -206,22 +238,16 @@ export default function Page() {
         <section className="settings-section">
           <h3>Mensaje personal</h3>
 
-          {!showInlineRecorder ? (
+          {hasAudio ? (
             <div className="settings-actions" style={{ gap: 8 }}>
-              <button className="delete-button" onClick={handleDeleteAndReRecordInSettings}>
-                🗑️ Borrar & Regrabar
+              <button className="delete-button" onClick={handleDeleteInSettings}>
+                🗑️ Borrar mensaje
               </button>
             </div>
           ) : (
-            <div className="tile-span-2" style={{ marginTop: 12 }}>
-              <AudioRecorder
-                key={recorderKey}
-                onAudioReady={handleAudioReady}
-                hideTitle
-                autoStart
-              />
-            </div>
+            <p className="muted">No tenés un mensaje guardado.</p>
           )}
+
           <p className="muted" style={{ marginTop: 8 }}>
             Plan Free: 1 audio permitido. Para ilimitados, pasá a Premium.
           </p>
@@ -277,12 +303,12 @@ export default function Page() {
     // HOME (launchers)
     content = (
       <div className="launcher-grid">
-        {/* Dejo el launcher Mensaje con reproducción local si existía algo previo */}
+        {/* Launcher Mensaje: ya NO navega a settings; abre grabadora inline sin autoStart */}
         {!customUrl ? (
           !showInlineRecorder ? (
             <button
               className="launcher-item blue"
-              onClick={() => { setMode('settings'); setShowInlineRecorder(true); setRecorderKey(k => k + 1); }}
+              onClick={() => { setShowInlineRecorder(true); setRecorderKey(k => k + 1); }}
               aria-label="Grabar mensaje"
             >
               <div className="icon-bg bg-message" aria-hidden="true" />
@@ -290,7 +316,11 @@ export default function Page() {
             </button>
           ) : (
             <div className="tile-span-2">
-              <AudioRecorder key={recorderKey} onAudioReady={handleAudioReady} hideTitle autoStart />
+              <AudioRecorder
+                key={recorderKey}
+                onAudioReady={handleAudioReady}
+                hideTitle
+              />
             </div>
           )
         ) : (
