@@ -33,7 +33,7 @@ export default function Page() {
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
 
-  // Estado de media en nube para pintar Configuración correctamente
+  // Estado de media en nube para pintar Configuración/Home correctamente
   const [hasAudio, setHasAudio] = useState(false);
   const [audioCount, setAudioCount] = useState(0);
 
@@ -53,12 +53,18 @@ export default function Page() {
     }
   };
 
-  const refreshMediaStatus = async () => {
+  // ⬇️ AHORA envia userId al endpoint
+  const refreshMediaStatus = async (uid = user?.id) => {
+    if (!uid) {
+      setHasAudio(false);
+      setAudioCount(0);
+      return;
+    }
     try {
       const res = await fetch('/api/media/status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'audio' }),
+        body: JSON.stringify({ userId: uid, kind: 'audio' }),
       });
       const j = await res.json().catch(() => ({}));
       if (res.ok && j) {
@@ -84,27 +90,33 @@ export default function Page() {
           urlRef.current = url;
           setCustomUrl(url);
         }
-      } catch { }
+      } catch {}
 
       setContact(loadContact());
 
       const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-        setUser(session?.user ?? null);
-        // Cambia sesión => refresco estado de media
-        refreshMediaStatus();
+        const u = session?.user ?? null;
+        setUser(u);
+        // Refrescar con el nuevo userId
+        refreshMediaStatus(u?.id);
       });
 
       await rehydrate();
-      await refreshMediaStatus();
+      await refreshMediaStatus(); // usa user?.id actual si ya está
 
       try {
         if (sessionStorage.getItem('respirapp_just_signed_in') === '1') {
           sessionStorage.removeItem('respirapp_just_signed_in');
           setTimeout(() => rehydrate(), 80);
         }
-      } catch { }
+      } catch {}
 
-      const onVis = () => { if (!document.hidden) { rehydrate(); refreshMediaStatus(); } };
+      const onVis = () => {
+        if (!document.hidden) {
+          rehydrate();
+          refreshMediaStatus();
+        }
+      };
       document.addEventListener('visibilitychange', onVis);
 
       const onStorage = (e) => {
@@ -130,7 +142,7 @@ export default function Page() {
     };
   }, []);
 
-  // ✅ Importante: en cualquier cambio de mode, ocultar inline recorder para evitar autograbados
+  // ✅ En cualquier cambio de mode, ocultar inline recorder para evitar autograbados
   useEffect(() => {
     setShowInlineRecorder(false);
   }, [mode]);
@@ -164,10 +176,10 @@ export default function Page() {
     setShowConfirmation(true);
     setTimeout(() => setShowConfirmation(false), 2000);
     setShowInlineRecorder(false);
-    refreshMediaStatus();
+    refreshMediaStatus(); // server ahora verá el nuevo audio
   };
 
-  // Borrar en nube + DB (solo borra, no regraba ni abre grabadora en Configuración)
+  // Borrar en nube + DB (solo borra; no abre grabadora)
   const handleDeleteInSettings = async () => {
     if (!user?.id) {
       alert('Tenés que iniciar sesión para borrar tu mensaje.');
@@ -182,10 +194,10 @@ export default function Page() {
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j?.error || 'No se pudo eliminar el audio.');
 
-      try { localStorage.removeItem(FREE_AUDIO_FLAG); } catch { }
+      try { localStorage.removeItem(FREE_AUDIO_FLAG); } catch {}
       setShowDeleteConfirmation(true);
       setTimeout(() => setShowDeleteConfirmation(false), 1500);
-      await refreshMediaStatus();
+      await refreshMediaStatus(user?.id);
       setRecorderKey((k) => k + 1); // por si el usuario vuelve a grabar desde Home
     } catch (e) {
       alert(e.message || 'No se pudo eliminar el audio.');
@@ -219,7 +231,7 @@ export default function Page() {
     content = (
       <div className="panel">
         <h2>Elegí una técnica de respiración</h2>
-        <BreathingSelector onBack={() => setMode('options')} setAppTitle={() => { }} />
+        <BreathingSelector onBack={() => setMode('options')} setAppTitle={() => {}} />
       </div>
     );
   } else if (mode === 'contact') {
@@ -294,13 +306,12 @@ export default function Page() {
           </>
         ) : (
           <>
-            <LoginOTP onSuccess={() => { }} />
+            <LoginOTP onSuccess={() => {}} />
           </>
         )}
       </div>
     );
   } else {
-    // HOME (launchers)
     // HOME (launchers)
     content = (
       <div className="launcher-grid">
@@ -333,7 +344,7 @@ export default function Page() {
                   key={recorderKey}
                   onAudioReady={handleAudioReady}
                   hideTitle
-                  locked={hasAudio}   // 👈 NUEVO: si hay audio, el botón queda deshabilitado
+                  locked={hasAudio}   // si hay audio, queda deshabilitado
                 />
               </div>
             )
@@ -344,7 +355,6 @@ export default function Page() {
             <div className="label">Mensaje</div>
           </button>
         )}
-
 
         <button className="launcher-item green" onClick={handleBreathing} aria-label="Respirar juntos">
           <div className="icon-bg bg-breath" aria-hidden="true" />
@@ -379,10 +389,10 @@ export default function Page() {
   const showHeader = mode === 'options';
   const activeNav =
     mode === 'options' ? 'home'
-      : mode === 'library' ? 'library'
-        : mode === 'explore' ? 'p1'
-          : mode === 'profile' ? 'p2'
-            : 'home';
+    : mode === 'library' ? 'library'
+    : mode === 'explore' ? 'p1'
+    : mode === 'profile' ? 'p2'
+    : 'home';
 
   return (
     <div className="App has-bottom-nav">
