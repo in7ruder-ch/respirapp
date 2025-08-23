@@ -84,7 +84,7 @@ export default function Page() {
           urlRef.current = url;
           setCustomUrl(url);
         }
-      } catch {}
+      } catch { }
 
       setContact(loadContact());
 
@@ -102,7 +102,7 @@ export default function Page() {
           sessionStorage.removeItem('respirapp_just_signed_in');
           setTimeout(() => rehydrate(), 80);
         }
-      } catch {}
+      } catch { }
 
       const onVis = () => { if (!document.hidden) { rehydrate(); refreshMediaStatus(); } };
       document.addEventListener('visibilitychange', onVis);
@@ -182,7 +182,7 @@ export default function Page() {
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j?.error || 'No se pudo eliminar el audio.');
 
-      try { localStorage.removeItem(FREE_AUDIO_FLAG); } catch {}
+      try { localStorage.removeItem(FREE_AUDIO_FLAG); } catch { }
       setShowDeleteConfirmation(true);
       setTimeout(() => setShowDeleteConfirmation(false), 1500);
       await refreshMediaStatus();
@@ -219,7 +219,7 @@ export default function Page() {
     content = (
       <div className="panel">
         <h2>Elegí una técnica de respiración</h2>
-        <BreathingSelector onBack={() => setMode('options')} setAppTitle={() => {}} />
+        <BreathingSelector onBack={() => setMode('options')} setAppTitle={() => { }} />
       </div>
     );
   } else if (mode === 'contact') {
@@ -294,34 +294,49 @@ export default function Page() {
           </>
         ) : (
           <>
-            <LoginOTP onSuccess={() => {}} />
+            <LoginOTP onSuccess={() => { }} />
           </>
         )}
       </div>
     );
   } else {
     // HOME (launchers)
+    // HOME (launchers)
     content = (
       <div className="launcher-grid">
-        {/* Launcher Mensaje: ya NO navega a settings; abre grabadora inline sin autoStart */}
+        {/* Launcher Mensaje */}
         {!customUrl ? (
-          !showInlineRecorder ? (
+          hasAudio ? (
+            // Ya hay audio en la nube: no abrimos grabadora
             <button
               className="launcher-item blue"
-              onClick={() => { setShowInlineRecorder(true); setRecorderKey(k => k + 1); }}
-              aria-label="Grabar mensaje"
+              onClick={() => setMode('settings')}
+              aria-label="Ver mensaje guardado"
+              title="Ya tenés un mensaje guardado. Gestionarlo en Configuración."
             >
               <div className="icon-bg bg-message" aria-hidden="true" />
               <div className="label">Mensaje</div>
             </button>
           ) : (
-            <div className="tile-span-2">
-              <AudioRecorder
-                key={recorderKey}
-                onAudioReady={handleAudioReady}
-                hideTitle
-              />
-            </div>
+            !showInlineRecorder ? (
+              <button
+                className="launcher-item blue"
+                onClick={() => { setShowInlineRecorder(true); setRecorderKey(k => k + 1); }}
+                aria-label="Grabar mensaje"
+              >
+                <div className="icon-bg bg-message" aria-hidden="true" />
+                <div className="label">Mensaje</div>
+              </button>
+            ) : (
+              <div className="tile-span-2">
+                <AudioRecorder
+                  key={recorderKey}
+                  onAudioReady={handleAudioReady}
+                  hideTitle
+                  locked={hasAudio}   // 👈 NUEVO: si hay audio, el botón queda deshabilitado
+                />
+              </div>
+            )
           )
         ) : (
           <button className="launcher-item blue" onClick={handlePlayAudio} aria-label="Escuchar mensaje">
@@ -329,6 +344,7 @@ export default function Page() {
             <div className="label">Mensaje</div>
           </button>
         )}
+
 
         <button className="launcher-item green" onClick={handleBreathing} aria-label="Respirar juntos">
           <div className="icon-bg bg-breath" aria-hidden="true" />
@@ -363,10 +379,10 @@ export default function Page() {
   const showHeader = mode === 'options';
   const activeNav =
     mode === 'options' ? 'home'
-    : mode === 'library' ? 'library'
-    : mode === 'explore' ? 'p1'
-    : mode === 'profile' ? 'p2'
-    : 'home';
+      : mode === 'library' ? 'library'
+        : mode === 'explore' ? 'p1'
+          : mode === 'profile' ? 'p2'
+            : 'home';
 
   return (
     <div className="App has-bottom-nav">

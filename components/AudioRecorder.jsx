@@ -30,9 +30,9 @@ function pickSupportedMime() {
 
 export default function AudioRecorder({
   hideTitle = false,
-  // autoStart ya no se usa en Paso 1; se deja para compatibilidad pero se ignora
-  autoStart = false,
-  onAudioReady, // callback opcional: se llama tras subida exitosa
+  autoStart = false, // ignorado en Paso 1
+  onAudioReady,      // callback opcional
+  locked = false,    // NUEVO: si true, bloquear grabación (servidor dice que ya hay audio)
 }) {
   const [isRecording, setIsRecording] = useState(false);
   const [status, setStatus] = useState('');
@@ -43,14 +43,18 @@ export default function AudioRecorder({
   const chunksRef = useRef([]);
   const streamRef = useRef(null);
 
+  // Inicializa límite local; si viene locked=true desde el padre, manda ese estado.
   useEffect(() => {
-    try {
-      setLimitReached(localStorage.getItem(FREE_AUDIO_FLAG) === '1');
-    } catch {}
-    // 🚫 Paso 1: NO auto-start
-    // if (autoStart) startRecording();
+    let local = false;
+    try { local = localStorage.getItem(FREE_AUDIO_FLAG) === '1'; } catch {}
+    setLimitReached(locked || local);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Si locked cambia en caliente (p.ej., después de refrescar status), actualizar
+  useEffect(() => {
+    setLimitReached((prev) => locked ? true : prev);
+  }, [locked]);
 
   async function uploadToSupabase(blob) {
     setError('');
@@ -71,7 +75,6 @@ export default function AudioRecorder({
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
       if (res.status === 403) {
-        // Límite alcanzado en backend
         setLimitReached(true);
         setError(j?.error || 'Alcanzaste tu límite de plan.');
         setStatus('');
@@ -91,7 +94,6 @@ export default function AudioRecorder({
 
     if (!put.ok) throw new Error('Error subiendo a Supabase');
 
-    // Flag local para la UI del plan Free
     try { localStorage.setItem(FREE_AUDIO_FLAG, '1'); } catch {}
     setLimitReached(true);
     setStatus('✅ Subida exitosa');
@@ -100,7 +102,6 @@ export default function AudioRecorder({
 
   async function startRecording() {
     setError('');
-    // Validación de UX (el backend igual valida)
     if (limitReached) {
       setError('Plan Free: ya guardaste tu único audio.');
       return;
@@ -143,7 +144,6 @@ export default function AudioRecorder({
           try {
             const ok = await uploadToSupabase(blob);
             if (ok) {
-              // Aviso al contenedor (Home) para banner + cerrar inline recorder
               try { onAudioReady && onAudioReady(blob); } catch {}
             }
           } catch (err) {
