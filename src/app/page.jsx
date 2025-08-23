@@ -32,6 +32,9 @@ export default function Page() {
   const [hasAudio, setHasAudio] = useState(false);
   const [audioCount, setAudioCount] = useState(0);
 
+  // Loader/lock para "Escuchar mensaje"
+  const [isPlayLoading, setIsPlayLoading] = useState(false);
+
   // 🔄 Forzar remount del AudioRecorder tras borrar / logout
   const [recorderKey, setRecorderKey] = useState(0);
 
@@ -47,18 +50,17 @@ export default function Page() {
     }
   };
 
-  // Consulta al backend para saber si el usuario tiene audio en nube
-  const refreshMediaStatus = async (uid = user?.id) => {
-    if (!uid) {
+  // Consulta al backend (GET, no-store) para saber si el usuario tiene audio en nube
+  const refreshMediaStatus = async () => {
+    if (!user?.id) {
       setHasAudio(false);
       setAudioCount(0);
       return;
     }
     try {
-      const res = await fetch('/api/media/status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: uid, kind: 'audio' }),
+      const res = await fetch(`/api/media/status?kind=audio`, {
+        method: 'GET',
+        headers: { 'Cache-Control': 'no-store' },
       });
       const j = await res.json().catch(() => ({}));
       if (res.ok && j) {
@@ -75,13 +77,13 @@ export default function Page() {
   };
 
   // Pide una URL firmada de descarga desde la nube
-  const fetchSignedDownloadUrl = async (uid = user?.id) => {
-    if (!uid) return null;
+  const fetchSignedDownloadUrl = async () => {
+    if (!user?.id) return null;
     try {
       const res = await fetch('/api/media/sign-download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: uid, kind: 'audio' }),
+        body: JSON.stringify({ kind: 'audio' }), // user se resuelve por sesión
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok || !j?.url) throw new Error(j?.error || 'No se pudo obtener URL de descarga');
@@ -99,7 +101,7 @@ export default function Page() {
       const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
         const u = session?.user ?? null;
         setUser(u);
-        await refreshMediaStatus(u?.id);
+        await refreshMediaStatus(); // ✅ refrescar inmediatamente al cambiar sesión
       });
 
       await rehydrate();
@@ -159,10 +161,13 @@ export default function Page() {
   };
 
   const handlePlayAudio = async () => {
+    if (isPlayLoading) return;
+    setIsPlayLoading(true);
     try {
-      const signedUrl = await fetchSignedDownloadUrl(user?.id);
+      const signedUrl = await fetchSignedDownloadUrl();
       if (!signedUrl) {
         alert('No se pudo obtener tu mensaje para reproducirlo. Probá nuevamente más tarde.');
+        setIsPlayLoading(false);
         return;
       }
       if (audioRef.current) {
@@ -176,6 +181,9 @@ export default function Page() {
       await audio.play();
     } catch {
       alert('No se pudo reproducir el audio. Verificá permisos del navegador.');
+    } finally {
+      // mantenemos el botón habilitado al final (por si quiere volver a escuchar)
+      setIsPlayLoading(false);
     }
   };
 
@@ -197,14 +205,14 @@ export default function Page() {
       const res = await fetch('/api/media/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, kind: 'audio' }),
+        body: JSON.stringify({ kind: 'audio' }),
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j?.error || 'No se pudo eliminar el audio.');
 
       setShowDeleteConfirmation(true);
       setTimeout(() => setShowDeleteConfirmation(false), 1500);
-      await refreshMediaStatus(user?.id);
+      await refreshMediaStatus();
       setRecorderKey((k) => k + 1);
     } catch (e) {
       alert(e.message || 'No se pudo eliminar el audio.');
@@ -231,8 +239,6 @@ export default function Page() {
     setUser(null);
     setHasAudio(false);
     setAudioCount(0);
-
-    // No consultamos status sin usuario (lo deja en false)
   };
 
   let content = null;
@@ -332,9 +338,12 @@ export default function Page() {
             onClick={handlePlayAudio}
             aria-label="Escuchar mensaje"
             title="Escuchar tu mensaje guardado"
+            disabled={isPlayLoading}
           >
             <div className="icon-bg bg-message" aria-hidden="true" />
-            <div className="label">Escuchar mensaje</div>
+            <div className="label">
+              {isPlayLoading ? 'Cargando…' : 'Escuchar mensaje'}
+            </div>
           </button>
         ) : (
           !showInlineRecorder ? (
