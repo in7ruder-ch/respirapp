@@ -12,7 +12,7 @@ import LoginOTP from '@/components/LoginOTP';
 import ContactCard from '@/components/contactCard';
 
 import { supabase } from '../../lib/supabaseClient';
-import { getAudioBlob } from '../../lib/audioDB'; // dejamos solo lectura por si hubiera algo local previo
+import { getAudioBlob } from '../../lib/audioDB'; // lectura de blob local (si existiera)
 import { loadContact } from '../../lib/contactsStore';
 
 function telHref(phone) {
@@ -25,7 +25,7 @@ const FREE_AUDIO_FLAG = 'respirapp_free_audio_uploaded_v1';
 
 export default function Page() {
   const [mode, setMode] = useState('options');
-  const [customUrl, setCustomUrl] = useState(null);
+  const [customUrl, setCustomUrl] = useState(null); // blob local si existía
   const [contact, setContact] = useState(null);
   const [showInlineRecorder, setShowInlineRecorder] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -33,11 +33,11 @@ export default function Page() {
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
 
-  // Estado de media en nube para pintar Configuración/Home correctamente
+  // Estado de media en nube
   const [hasAudio, setHasAudio] = useState(false);
   const [audioCount, setAudioCount] = useState(0);
 
-  // 🔄 Forzar remount del AudioRecorder tras logout
+  // 🔄 Forzar remount del AudioRecorder tras logout / borrar
   const [recorderKey, setRecorderKey] = useState(0);
 
   const urlRef = useRef(null);
@@ -53,7 +53,7 @@ export default function Page() {
     }
   };
 
-  // ⬇️ AHORA envia userId al endpoint
+  // Consulta al backend para saber si el usuario tiene audio en nube
   const refreshMediaStatus = async (uid = user?.id) => {
     if (!uid) {
       setHasAudio(false);
@@ -80,6 +80,24 @@ export default function Page() {
     }
   };
 
+  // Pide una URL firmada de descarga cuando no hay blob local
+  const fetchSignedDownloadUrl = async (uid = user?.id) => {
+    if (!uid) return null;
+    try {
+      const res = await fetch('/api/media/sign-download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: uid, kind: 'audio' }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j?.url) throw new Error(j?.error || 'No se pudo obtener URL de descarga');
+      return j.url;
+    } catch (e) {
+      console.warn('sign-download error', e);
+      return null;
+    }
+  };
+
   useEffect(() => {
     (async () => {
       // Si hay un audio local viejo, lo dejamos reproducible
@@ -94,11 +112,10 @@ export default function Page() {
 
       setContact(loadContact());
 
-      const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
         const u = session?.user ?? null;
         setUser(u);
-        // Refrescar con el nuevo userId
-        refreshMediaStatus(u?.id);
+        await refreshMediaStatus(u?.id); // ✅ refrescar inmediatamente al loguear
       });
 
       await rehydrate();
@@ -107,7 +124,11 @@ export default function Page() {
       try {
         if (sessionStorage.getItem('respirapp_just_signed_in') === '1') {
           sessionStorage.removeItem('respirapp_just_signed_in');
-          setTimeout(() => rehydrate(), 80);
+          // ✅ antes solo rehydrate; ahora también status
+          setTimeout(async () => {
+            await rehydrate();
+            await refreshMediaStatus();
+          }, 80);
         }
       } catch {}
 
@@ -155,14 +176,32 @@ export default function Page() {
   };
 
   const handlePlayAudio = async () => {
-    if (!customUrl) return;
     try {
+      // 1) Si tenemos blob local previo, reproducirlo
+      if (customUrl) {
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = '';
+          audioRef.current = null;
+        }
+        const audio = new Audio(customUrl);
+        audioRef.current = audio;
+        audio.load();
+        await audio.play();
+        return;
+      }
+      // 2) Si no hay blob local, intentar desde la nube con URL firmada
+      const signedUrl = await fetchSignedDownloadUrl(user?.id);
+      if (!signedUrl) {
+        alert('No se pudo obtener tu mensaje para reproducirlo. Probá nuevamente más tarde.');
+        return;
+      }
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = '';
         audioRef.current = null;
       }
-      const audio = new Audio(customUrl);
+      const audio = new Audio(signedUrl);
       audioRef.current = audio;
       audio.load();
       await audio.play();
@@ -315,18 +354,18 @@ export default function Page() {
     // HOME (launchers)
     content = (
       <div className="launcher-grid">
-        {/* Launcher Mensaje */}
+        {/* Launcher Mensaje dinámico */}
         {!customUrl ? (
           hasAudio ? (
-            // Ya hay audio en la nube: no abrimos grabadora
+            // Hay audio en nube => reproducir
             <button
               className="launcher-item blue"
-              onClick={() => setMode('settings')}
-              aria-label="Ver mensaje guardado"
-              title="Ya tenés un mensaje guardado. Gestionarlo en Configuración."
+              onClick={handlePlayAudio}
+              aria-label="Escuchar mensaje"
+              title="Escuchar tu mensaje guardado"
             >
               <div className="icon-bg bg-message" aria-hidden="true" />
-              <div className="label">Mensaje</div>
+              <div className="label">Escuchar mensaje</div>
             </button>
           ) : (
             !showInlineRecorder ? (
@@ -336,7 +375,7 @@ export default function Page() {
                 aria-label="Grabar mensaje"
               >
                 <div className="icon-bg bg-message" aria-hidden="true" />
-                <div className="label">Mensaje</div>
+                <div className="label">Grabar mensaje</div>
               </button>
             ) : (
               <div className="tile-span-2">
@@ -350,9 +389,10 @@ export default function Page() {
             )
           )
         ) : (
+          // Si hay blob local previo, usamos la misma UX de "Escuchar"
           <button className="launcher-item blue" onClick={handlePlayAudio} aria-label="Escuchar mensaje">
             <div className="icon-bg bg-message" aria-hidden="true" />
-            <div className="label">Mensaje</div>
+            <div className="label">Escuchar mensaje</div>
           </button>
         )}
 
