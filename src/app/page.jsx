@@ -12,7 +12,6 @@ import LoginOTP from '@/components/LoginOTP';
 import ContactCard from '@/components/contactCard';
 
 import { supabase } from '../../lib/supabaseClient';
-import { getAudioBlob } from '../../lib/audioDB'; // lectura de blob local (si existiera)
 import { loadContact } from '../../lib/contactsStore';
 
 function telHref(phone) {
@@ -20,12 +19,8 @@ function telHref(phone) {
   return clean ? `tel:${clean}` : '#';
 }
 
-/** Flag local usado por el AudioRecorder para el límite del plan Free */
-const FREE_AUDIO_FLAG = 'respirapp_free_audio_uploaded_v1';
-
 export default function Page() {
   const [mode, setMode] = useState('options');
-  const [customUrl, setCustomUrl] = useState(null); // blob local si existía
   const [contact, setContact] = useState(null);
   const [showInlineRecorder, setShowInlineRecorder] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -37,10 +32,9 @@ export default function Page() {
   const [hasAudio, setHasAudio] = useState(false);
   const [audioCount, setAudioCount] = useState(0);
 
-  // 🔄 Forzar remount del AudioRecorder tras logout / borrar
+  // 🔄 Forzar remount del AudioRecorder tras borrar / logout
   const [recorderKey, setRecorderKey] = useState(0);
 
-  const urlRef = useRef(null);
   const audioRef = useRef(null);
 
   const rehydrate = async () => {
@@ -80,7 +74,7 @@ export default function Page() {
     }
   };
 
-  // Pide una URL firmada de descarga cuando no hay blob local
+  // Pide una URL firmada de descarga desde la nube
   const fetchSignedDownloadUrl = async (uid = user?.id) => {
     if (!uid) return null;
     try {
@@ -100,31 +94,20 @@ export default function Page() {
 
   useEffect(() => {
     (async () => {
-      // Si hay un audio local viejo, lo dejamos reproducible
-      try {
-        const blob = await getAudioBlob();
-        if (blob instanceof Blob) {
-          const url = URL.createObjectURL(blob);
-          urlRef.current = url;
-          setCustomUrl(url);
-        }
-      } catch {}
-
       setContact(loadContact());
 
       const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
         const u = session?.user ?? null;
         setUser(u);
-        await refreshMediaStatus(u?.id); // ✅ refrescar inmediatamente al loguear
+        await refreshMediaStatus(u?.id);
       });
 
       await rehydrate();
-      await refreshMediaStatus(); // usa user?.id actual si ya está
+      await refreshMediaStatus();
 
       try {
         if (sessionStorage.getItem('respirapp_just_signed_in') === '1') {
           sessionStorage.removeItem('respirapp_just_signed_in');
-          // ✅ antes solo rehydrate; ahora también status
           setTimeout(async () => {
             await rehydrate();
             await refreshMediaStatus();
@@ -156,9 +139,9 @@ export default function Page() {
     })();
 
     return () => {
-      if (urlRef.current) {
-        URL.revokeObjectURL(urlRef.current);
-        urlRef.current = null;
+      if (audioRef.current) {
+        try { audioRef.current.pause(); } catch {}
+        audioRef.current = null;
       }
     };
   }, []);
@@ -177,20 +160,6 @@ export default function Page() {
 
   const handlePlayAudio = async () => {
     try {
-      // 1) Si tenemos blob local previo, reproducirlo
-      if (customUrl) {
-        if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current.src = '';
-          audioRef.current = null;
-        }
-        const audio = new Audio(customUrl);
-        audioRef.current = audio;
-        audio.load();
-        await audio.play();
-        return;
-      }
-      // 2) Si no hay blob local, intentar desde la nube con URL firmada
       const signedUrl = await fetchSignedDownloadUrl(user?.id);
       if (!signedUrl) {
         alert('No se pudo obtener tu mensaje para reproducirlo. Probá nuevamente más tarde.');
@@ -215,7 +184,7 @@ export default function Page() {
     setShowConfirmation(true);
     setTimeout(() => setShowConfirmation(false), 2000);
     setShowInlineRecorder(false);
-    refreshMediaStatus(); // server ahora verá el nuevo audio
+    refreshMediaStatus();
   };
 
   // Borrar en nube + DB (solo borra; no abre grabadora)
@@ -233,11 +202,10 @@ export default function Page() {
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j?.error || 'No se pudo eliminar el audio.');
 
-      try { localStorage.removeItem(FREE_AUDIO_FLAG); } catch {}
       setShowDeleteConfirmation(true);
       setTimeout(() => setShowDeleteConfirmation(false), 1500);
       await refreshMediaStatus(user?.id);
-      setRecorderKey((k) => k + 1); // por si el usuario vuelve a grabar desde Home
+      setRecorderKey((k) => k + 1);
     } catch (e) {
       alert(e.message || 'No se pudo eliminar el audio.');
     }
@@ -249,19 +217,22 @@ export default function Page() {
     } catch (e) {
       console.error('signOut error', e);
     }
-    // 🧹 limpieza de estado local para que no aparezca “alcanzaste tu límite”
-    try {
-      localStorage.removeItem(FREE_AUDIO_FLAG);
-      sessionStorage.clear();
-    } catch (e) {
-      console.warn('storage clear warn', e);
+
+    // 🧹 Limpiar TODO el estado de la app (estado cero)
+    try { sessionStorage.clear(); } catch {}
+    if (audioRef.current) {
+      try { audioRef.current.pause(); } catch {}
+      audioRef.current = null;
     }
     setRecorderKey((k) => k + 1);
     setMode('options');
     setShowConfirmation(false);
     setShowDeleteConfirmation(false);
-    await rehydrate();
-    await refreshMediaStatus();
+    setUser(null);
+    setHasAudio(false);
+    setAudioCount(0);
+
+    // No consultamos status sin usuario (lo deja en false)
   };
 
   let content = null;
@@ -354,46 +325,37 @@ export default function Page() {
     // HOME (launchers)
     content = (
       <div className="launcher-grid">
-        {/* Launcher Mensaje dinámico */}
-        {!customUrl ? (
-          hasAudio ? (
-            // Hay audio en nube => reproducir
-            <button
-              className="launcher-item blue"
-              onClick={handlePlayAudio}
-              aria-label="Escuchar mensaje"
-              title="Escuchar tu mensaje guardado"
-            >
-              <div className="icon-bg bg-message" aria-hidden="true" />
-              <div className="label">Escuchar mensaje</div>
-            </button>
-          ) : (
-            !showInlineRecorder ? (
-              <button
-                className="launcher-item blue"
-                onClick={() => { setShowInlineRecorder(true); setRecorderKey(k => k + 1); }}
-                aria-label="Grabar mensaje"
-              >
-                <div className="icon-bg bg-message" aria-hidden="true" />
-                <div className="label">Grabar mensaje</div>
-              </button>
-            ) : (
-              <div className="tile-span-2">
-                <AudioRecorder
-                  key={recorderKey}
-                  onAudioReady={handleAudioReady}
-                  hideTitle
-                  locked={hasAudio}   // si hay audio, queda deshabilitado
-                />
-              </div>
-            )
-          )
-        ) : (
-          // Si hay blob local previo, usamos la misma UX de "Escuchar"
-          <button className="launcher-item blue" onClick={handlePlayAudio} aria-label="Escuchar mensaje">
+        {/* Launcher Mensaje dinámico, siempre nube */}
+        {hasAudio ? (
+          <button
+            className="launcher-item blue"
+            onClick={handlePlayAudio}
+            aria-label="Escuchar mensaje"
+            title="Escuchar tu mensaje guardado"
+          >
             <div className="icon-bg bg-message" aria-hidden="true" />
             <div className="label">Escuchar mensaje</div>
           </button>
+        ) : (
+          !showInlineRecorder ? (
+            <button
+              className="launcher-item blue"
+              onClick={() => { setShowInlineRecorder(true); setRecorderKey(k => k + 1); }}
+              aria-label="Grabar mensaje"
+            >
+              <div className="icon-bg bg-message" aria-hidden="true" />
+              <div className="label">Grabar mensaje</div>
+            </button>
+          ) : (
+            <div className="tile-span-2">
+              <AudioRecorder
+                key={recorderKey}
+                onAudioReady={handleAudioReady}
+                hideTitle
+                locked={hasAudio}
+              />
+            </div>
+          )
         )}
 
         <button className="launcher-item green" onClick={handleBreathing} aria-label="Respirar juntos">

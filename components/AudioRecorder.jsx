@@ -3,10 +3,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import '@/styles/AudioRecorder.css';
 
-const FREE_AUDIO_FLAG = 'respirapp_free_audio_uploaded_v1';
-// ⚠️ Hasta integrar la sesión desde el servidor, usa tu UUID real aquí:
-const HARD_USER_ID = '417fe0ff-dca3-458c-adfe-39495af8cdeb';
-
 function pickSupportedMime() {
   const candidates = [
     'audio/webm;codecs=opus',
@@ -23,37 +19,27 @@ function pickSupportedMime() {
     return null;
   }
   for (const c of candidates) {
-    try { if (MediaRecorder.isTypeSupported(c)) return c; } catch { }
+    try { if (MediaRecorder.isTypeSupported(c)) return c; } catch {}
   }
   return null;
 }
 
 export default function AudioRecorder({
   hideTitle = false,
-  autoStart = false, // ignorado en Paso 1
-  onAudioReady,      // callback opcional
-  locked = false,    // NUEVO: si true, bloquear grabación (servidor dice que ya hay audio)
+  onAudioReady,      // callback opcional: se llama tras subida exitosa
+  locked = false,    // si true, bloquear grabación (servidor dice que ya hay audio)
 }) {
   const [isRecording, setIsRecording] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
-  const [limitReached, setLimitReached] = useState(false);
+  const [disabled, setDisabled] = useState(locked);
 
   const mediaRef = useRef(null);
   const chunksRef = useRef([]);
   const streamRef = useRef(null);
 
-  // Inicializa límite local; si viene locked=true desde el padre, manda ese estado.
   useEffect(() => {
-    let local = false;
-    try { local = localStorage.getItem(FREE_AUDIO_FLAG) === '1'; } catch { }
-    setLimitReached(locked || local);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Si locked cambia en caliente (p.ej., después de refrescar status), actualizar
-  useEffect(() => {
-    setLimitReached((prev) => locked ? true : prev);
+    setDisabled(locked);
   }, [locked]);
 
   async function uploadToSupabase(blob) {
@@ -73,9 +59,14 @@ export default function AudioRecorder({
 
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        setError('Necesitás iniciar sesión para guardar tu mensaje.');
+        setStatus('');
+        return false;
+      }
       if (res.status === 403) {
-        setLimitReached(true);
         setError(j?.error || 'Alcanzaste tu límite de plan.');
+        setDisabled(true);
         setStatus('');
         return false;
       }
@@ -93,16 +84,14 @@ export default function AudioRecorder({
 
     if (!put.ok) throw new Error('Error subiendo a Supabase');
 
-    try { localStorage.setItem(FREE_AUDIO_FLAG, '1'); } catch { }
-    setLimitReached(true);
+    setDisabled(true);       // ya no permitir regrabar (plan free)
     setStatus('✅ Subida exitosa');
     return true;
   }
 
-
   async function startRecording() {
     setError('');
-    if (limitReached) {
+    if (disabled) {
       setError('Plan Free: ya guardaste tu único audio.');
       return;
     }
@@ -144,7 +133,7 @@ export default function AudioRecorder({
           try {
             const ok = await uploadToSupabase(blob);
             if (ok) {
-              try { onAudioReady && onAudioReady(blob); } catch { }
+              try { onAudioReady && onAudioReady(blob); } catch {}
             }
           } catch (err) {
             setError(err.message || String(err));
@@ -152,7 +141,7 @@ export default function AudioRecorder({
           }
         }
 
-        try { stream.getTracks().forEach((t) => t.stop()); } catch { }
+        try { stream.getTracks().forEach((t) => t.stop()); } catch {}
       };
 
       mr.start();
@@ -177,8 +166,8 @@ export default function AudioRecorder({
         <button
           className="audio-button"
           onClick={startRecording}
-          disabled={limitReached}
-          aria-disabled={limitReached}
+          disabled={disabled}
+          aria-disabled={disabled}
         >
           🎤 Grabar mensaje
         </button>
