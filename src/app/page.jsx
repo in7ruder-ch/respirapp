@@ -96,7 +96,7 @@ export default function Page() {
             await refreshMediaStatus(u2?.id);
           }, 80);
         }
-      } catch {}
+      } catch { }
 
       const onVis = async () => {
         if (!document.hidden) {
@@ -123,7 +123,7 @@ export default function Page() {
 
     return () => {
       if (audioRef.current) {
-        try { audioRef.current.pause(); } catch {}
+        try { audioRef.current.pause(); } catch { }
         audioRef.current = null;
       }
     };
@@ -141,7 +141,7 @@ export default function Page() {
         return;
       }
       if (audioRef.current) {
-        try { audioRef.current.pause(); } catch {}
+        try { audioRef.current.pause(); } catch { }
         audioRef.current.src = '';
         audioRef.current = null;
       }
@@ -233,13 +233,13 @@ export default function Page() {
             </button>
           ) : (
             <button
-              className="launcher-item orange"
+              className="launcher-item red"
               onClick={() => (window.location.href = telHref(contact.phone))}
               title={`Llamar a ${contact?.name || 'contacto'}`}
               aria-label="Llamar contacto"
             >
               <div className="icon-bg bg-contact" aria-hidden="true" />
-              <div className="label">Contacto</div>
+              <div className="label">Llamar</div>
             </button>
           )}
 
