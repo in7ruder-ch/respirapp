@@ -3,11 +3,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@/components/*": ["components/*"],
-      "@/lib/*": ["lib/*"],
-      "@/styles/*": ["src/styles/*"]
+      "@lib/*": ["./lib/*"],
+      "@components/*": ["./components/*"],
+      "@src/*": ["./src/*"]
     }
-  },
-  "include": ["next-env.d.ts", "**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"]
+  }
 }

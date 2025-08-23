@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import '@/styles/AudioRecorder.css';
+import { apiFetch } from '@lib/apiFetch'; // ⬅️ nuevo helper para /api/*
 
 function pickSupportedMime() {
   const candidates = [
@@ -46,39 +47,46 @@ export default function AudioRecorder({
     setError('');
     setStatus('Preparando subida…');
 
-    const res = await fetch('/api/upload-url', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        kind: 'audio',
-        contentType: blob.type || 'audio/webm',
-        duration: null,
-        size: blob.size ?? null,
-      }),
-    });
-
-    if (!res.ok) {
-      const j = await res.json().catch(() => ({}));
-      if (res.status === 401) {
+    let signedUrl;
+    try {
+      // ✅ ahora con apiFetch (maneja JSON, errores y no-store)
+      const res = await apiFetch('/api/upload-url', {
+        method: 'POST',
+        body: {
+          kind: 'audio',
+          contentType: blob.type || 'audio/webm',
+          duration: null,
+          size: blob.size ?? null,
+        },
+      });
+      signedUrl = res?.signedUrl;
+      if (!signedUrl) throw new Error('No se pudo obtener la URL firmada');
+    } catch (e) {
+      if (e.status === 401) {
         setError('Necesitás iniciar sesión para guardar tu mensaje.');
         setStatus('');
         return false;
       }
-      if (res.status === 403) {
-        setError(j?.error || 'Alcanzaste tu límite de plan.');
+      if (e.status === 403) {
+        setError(e.message || 'Alcanzaste tu límite de plan.');
         setDisabled(true);
         setStatus('');
         return false;
       }
-      throw new Error(j?.error || 'No se pudo obtener la URL firmada');
+      setError(e.message || 'No se pudo obtener la URL firmada');
+      setStatus('');
+      return false;
     }
 
-    const { signedUrl } = await res.json();
     setStatus('Subiendo audio…');
 
+    // El PUT al signed URL no es JSON; mantenemos fetch directo
     const put = await fetch(signedUrl, {
       method: 'PUT',
-      headers: { 'Content-Type': blob.type || 'application/octet-stream' },
+      headers: {
+        'Content-Type': blob.type || 'application/octet-stream',
+        'Cache-Control': 'no-store',
+      },
       body: blob,
     });
 

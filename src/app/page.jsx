@@ -13,6 +13,7 @@ import ContactCard from '@/components/contactCard';
 
 import { supabase } from '../../lib/supabaseClient';
 import { loadContact } from '../../lib/contactsStore';
+import { apiFetch } from '@lib/apiFetch'; // ⬅️ NUEVO: helper unificado
 
 function telHref(phone) {
   const clean = String(phone || '').replace(/[^\d+]/g, '');
@@ -63,19 +64,13 @@ export default function Page() {
       return;
     }
     try {
-      const res = await fetch('/api/media/status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-        body: JSON.stringify({ kind: 'audio' }),
+      const j = await apiFetch('/api/media/status', {
+        method: 'POST', // mantenemos tu POST actual
+        headers: { 'Cache-Control': 'no-store' },
+        body: { kind: 'audio' },
       });
-      const j = await res.json().catch(() => ({}));
-      if (res.ok && j) {
-        setHasAudio(Boolean(j.has));
-        setAudioCount(Number(j.count || 0));
-      } else {
-        setHasAudio(false);
-        setAudioCount(0);
-      }
+      setHasAudio(Boolean(j?.has));
+      setAudioCount(Number(j?.count || 0));
     } catch {
       setHasAudio(false);
       setAudioCount(0);
@@ -85,14 +80,12 @@ export default function Page() {
   const fetchSignedDownloadUrl = async () => {
     if (!user?.id) return null;
     try {
-      const res = await fetch('/api/media/sign-download', {
+      const { url } = await apiFetch('/api/media/sign-download', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'audio' }),
+        body: { kind: 'audio' },
       });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok || !j?.url) throw new Error(j?.error || 'No se pudo obtener URL de descarga');
-      return j.url;
+      if (!url) throw new Error('No se pudo obtener URL de descarga');
+      return url;
     } catch (e) {
       console.warn('sign-download error', e);
       return null;
@@ -205,13 +198,10 @@ export default function Page() {
       return;
     }
     try {
-      const res = await fetch('/api/media/delete', {
+      await apiFetch('/api/media/delete', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'audio' }),
+        body: { kind: 'audio' },
       });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(j?.error || 'No se pudo eliminar el audio.');
 
       setShowDeleteConfirmation(true);
       setTimeout(() => setShowDeleteConfirmation(false), 1500);
