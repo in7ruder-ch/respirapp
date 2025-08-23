@@ -50,7 +50,7 @@ export default function Page() {
     }
   };
 
-  // Consulta al backend (GET, no-store) para saber si el usuario tiene audio en nube
+  // Consulta al backend (POST) para saber si el usuario tiene audio en nube
   const refreshMediaStatus = async () => {
     if (!user?.id) {
       setHasAudio(false);
@@ -58,9 +58,10 @@ export default function Page() {
       return;
     }
     try {
-      const res = await fetch(`/api/media/status?kind=audio`, {
-        method: 'GET',
-        headers: { 'Cache-Control': 'no-store' },
+      const res = await fetch('/api/media/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        body: JSON.stringify({ kind: 'audio' }),
       });
       const j = await res.json().catch(() => ({}));
       if (res.ok && j) {
@@ -83,7 +84,7 @@ export default function Page() {
       const res = await fetch('/api/media/sign-download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'audio' }), // user se resuelve por sesión
+        body: JSON.stringify({ kind: 'audio' }), // 👈 ahora solo kind
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok || !j?.url) throw new Error(j?.error || 'No se pudo obtener URL de descarga');
@@ -101,7 +102,7 @@ export default function Page() {
       const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
         const u = session?.user ?? null;
         setUser(u);
-        await refreshMediaStatus(); // ✅ refrescar inmediatamente al cambiar sesión
+        await refreshMediaStatus(); // refrescar inmediatamente al cambiar sesión
       });
 
       await rehydrate();
@@ -182,7 +183,6 @@ export default function Page() {
     } catch {
       alert('No se pudo reproducir el audio. Verificá permisos del navegador.');
     } finally {
-      // mantenemos el botón habilitado al final (por si quiere volver a escuchar)
       setIsPlayLoading(false);
     }
   };
