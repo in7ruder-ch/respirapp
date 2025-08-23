@@ -40,19 +40,24 @@ export default function Page() {
 
   const audioRef = useRef(null);
 
+  // 👉 rehydrate ahora devuelve el usuario para encadenar refresh con uid correcto
   const rehydrate = async () => {
     try {
       const { data } = await supabase.auth.getSession();
-      setUser(data.session?.user ?? null);
+      const u = data.session?.user ?? null;
+      setUser(u);
+      return u;
     } catch {
+      return null;
     } finally {
       setInitializing(false);
     }
   };
 
-  // Consulta al backend (POST) para saber si el usuario tiene audio en nube
-  const refreshMediaStatus = async () => {
-    if (!user?.id) {
+  // Acepta uid explícito para no depender de cuándo se setea el estado `user`
+  const refreshMediaStatus = async (uidExplicit) => {
+    const uid = uidExplicit ?? user?.id;
+    if (!uid) {
       setHasAudio(false);
       setAudioCount(0);
       return;
@@ -77,14 +82,13 @@ export default function Page() {
     }
   };
 
-  // Pide una URL firmada de descarga desde la nube
   const fetchSignedDownloadUrl = async () => {
     if (!user?.id) return null;
     try {
       const res = await fetch('/api/media/sign-download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'audio' }), // 👈 ahora solo kind
+        body: JSON.stringify({ kind: 'audio' }),
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok || !j?.url) throw new Error(j?.error || 'No se pudo obtener URL de descarga');
@@ -102,34 +106,35 @@ export default function Page() {
       const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
         const u = session?.user ?? null;
         setUser(u);
-        await refreshMediaStatus(); // refrescar inmediatamente al cambiar sesión
+        await refreshMediaStatus(u?.id); // ✅ usar el uid del evento
       });
 
-      await rehydrate();
-      await refreshMediaStatus();
+      // ✅ encadenar refresh con el uid real retornado por rehydrate()
+      const u = await rehydrate();
+      await refreshMediaStatus(u?.id);
 
       try {
         if (sessionStorage.getItem('respirapp_just_signed_in') === '1') {
           sessionStorage.removeItem('respirapp_just_signed_in');
           setTimeout(async () => {
-            await rehydrate();
-            await refreshMediaStatus();
+            const u2 = await rehydrate();
+            await refreshMediaStatus(u2?.id); // ✅ pasar uid explícito
           }, 80);
         }
       } catch {}
 
-      const onVis = () => {
+      const onVis = async () => {
         if (!document.hidden) {
-          rehydrate();
-          refreshMediaStatus();
+          const u3 = await rehydrate();
+          await refreshMediaStatus(u3?.id);
         }
       };
       document.addEventListener('visibilitychange', onVis);
 
-      const onStorage = (e) => {
+      const onStorage = async (e) => {
         if (e.key && e.key.includes('sb-') && e.key.includes('-auth-token')) {
-          rehydrate();
-          refreshMediaStatus();
+          const u4 = await rehydrate();
+          await refreshMediaStatus(u4?.id);
         }
       };
       window.addEventListener('storage', onStorage);
@@ -187,15 +192,13 @@ export default function Page() {
     }
   };
 
-  // Al terminar de grabar: banner + cerrar grabadora inline + refrescar estado de media
   const handleAudioReady = async (_blob) => {
     setShowConfirmation(true);
     setTimeout(() => setShowConfirmation(false), 2000);
     setShowInlineRecorder(false);
-    refreshMediaStatus();
+    await refreshMediaStatus(user?.id);
   };
 
-  // Borrar en nube + DB (solo borra; no abre grabadora)
   const handleDeleteInSettings = async () => {
     if (!user?.id) {
       alert('Tenés que iniciar sesión para borrar tu mensaje.');
@@ -212,7 +215,7 @@ export default function Page() {
 
       setShowDeleteConfirmation(true);
       setTimeout(() => setShowDeleteConfirmation(false), 1500);
-      await refreshMediaStatus();
+      await refreshMediaStatus(user?.id);
       setRecorderKey((k) => k + 1);
     } catch (e) {
       alert(e.message || 'No se pudo eliminar el audio.');
