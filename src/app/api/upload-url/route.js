@@ -1,88 +1,96 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+// src/app/api/upload-url/route.js
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
-// Cliente admin con service role (solo servidor)
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Config de límites
-const LIMITS = {
-  free: { audio: 1, video: 1 },
-  premium: { audio: Infinity, video: Infinity },
-};
+// Admin client con Service Role (para insertar en tabla + storage)
+const admin = createClient(supabaseUrl, serviceKey);
 
+/**
+ * POST /api/upload-url
+ * Body: { kind: 'audio' | 'video', contentType: string, duration?: number, size?: number }
+ * Respuesta: { signedUrl }
+ */
 export async function POST(req) {
   try {
-    const { userId, kind, contentType, duration, size } = await req.json();
-    if (!userId || !kind || !contentType) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-    }
-    if (!["audio", "video"].includes(kind)) {
-      return NextResponse.json({ error: "Invalid kind" }, { status: 400 });
-    }
+    const body = await req.json();
+    const { kind, contentType, duration, size } = body || {};
 
-    // 1) Obtener plan (si no hay registro => 'free')
-    let plan = "free";
-    const { data: planRow, error: planErr } = await admin
-      .from("user_plans")
-      .select("plan")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (planErr) {
-      console.error("Plan fetch error:", planErr);
-    } else if (planRow?.plan) {
-      plan = planRow.plan;
+    if (!['audio', 'video'].includes(kind)) {
+      return NextResponse.json({ error: 'Invalid kind' }, { status: 400 });
     }
 
-    // 2) Validar cupo según plan
-    const limit = LIMITS[plan][kind];
-    if (Number.isFinite(limit)) {
-      const { count, error: countErr } = await admin
-        .from("media")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("kind", kind);
+    // 🔑 Obtenemos el usuario autenticado desde la cookie de Supabase
+    const supabase = createRouteHandlerClient({ cookies });
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-      if (countErr) throw countErr;
-
-      if ((count ?? 0) >= limit) {
-        return NextResponse.json(
-          {
-            error:
-              plan === "free"
-                ? `Plan Free: alcanzaste tu límite de ${limit} ${kind === "audio" ? "audio" : "video"}.`
-                : "Límite alcanzado.",
-          },
-          { status: 403 }
-        );
-      }
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 3) Generar path y signed upload URL
-    const ext = contentType.includes("video") ? "mp4" : "webm";
-    const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+    const userId = user.id;
 
-    const { data: signed, error: signedErr } = await admin.storage
-      .from("media")
-      .createSignedUploadUrl(path);
-    if (signedErr) throw signedErr;
+    // Plan check (opcional: free = máximo 1 audio/video)
+    const { count } = await admin
+      .from('media')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('kind', kind);
 
-    // 4) Guardar metadatos (reserva el slot)
-    const { error: insertErr } = await admin.from("media").insert({
+    if (kind === 'audio' && count > 0) {
+      return NextResponse.json(
+        { error: 'Plan Free: ya guardaste tu único audio.' },
+        { status: 403 }
+      );
+    }
+
+    // Generar path único
+    const fileExt = contentType.includes('mpeg') ? 'mp3' : 'webm';
+    const path = `${userId}/${kind}/${Date.now()}.${fileExt}`;
+
+    // Insertar metadata
+    const { error: insErr } = await admin.from('media').insert({
       user_id: userId,
       path,
       kind,
       duration_seconds: duration ?? null,
       size_bytes: size ?? null,
     });
-    if (insertErr) throw insertErr;
 
-    return NextResponse.json({ signedUrl: signed.signedUrl, path });
+    if (insErr) {
+      console.error('insert error', insErr);
+      return NextResponse.json(
+        { error: 'Error guardando metadatos' },
+        { status: 500 }
+      );
+    }
+
+    // Crear Signed Upload URL válido 60s
+    const { data: signed, error: sErr } = await admin.storage
+      .from('media')
+      .createSignedUploadUrl(path);
+
+    if (sErr || !signed?.signedUrl) {
+      console.error('signed url error', sErr);
+      return NextResponse.json(
+        { error: 'No se pudo generar URL firmada' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ signedUrl: signed.signedUrl });
   } catch (err) {
-    console.error("Upload URL error:", err);
-    return NextResponse.json({ error: String(err.message || err) }, { status: 500 });
+    console.error('upload-url fatal error:', err);
+    return NextResponse.json(
+      { error: String(err?.message || err) },
+      { status: 500 }
+    );
   }
 }

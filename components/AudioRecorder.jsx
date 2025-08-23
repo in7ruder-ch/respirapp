@@ -23,7 +23,7 @@ function pickSupportedMime() {
     return null;
   }
   for (const c of candidates) {
-    try { if (MediaRecorder.isTypeSupported(c)) return c; } catch {}
+    try { if (MediaRecorder.isTypeSupported(c)) return c; } catch { }
   }
   return null;
 }
@@ -46,7 +46,7 @@ export default function AudioRecorder({
   // Inicializa límite local; si viene locked=true desde el padre, manda ese estado.
   useEffect(() => {
     let local = false;
-    try { local = localStorage.getItem(FREE_AUDIO_FLAG) === '1'; } catch {}
+    try { local = localStorage.getItem(FREE_AUDIO_FLAG) === '1'; } catch { }
     setLimitReached(locked || local);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -64,7 +64,6 @@ export default function AudioRecorder({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        userId: HARD_USER_ID,
         kind: 'audio',
         contentType: blob.type || 'audio/webm',
         duration: null,
@@ -94,11 +93,12 @@ export default function AudioRecorder({
 
     if (!put.ok) throw new Error('Error subiendo a Supabase');
 
-    try { localStorage.setItem(FREE_AUDIO_FLAG, '1'); } catch {}
+    try { localStorage.setItem(FREE_AUDIO_FLAG, '1'); } catch { }
     setLimitReached(true);
     setStatus('✅ Subida exitosa');
     return true;
   }
+
 
   async function startRecording() {
     setError('');
@@ -144,7 +144,7 @@ export default function AudioRecorder({
           try {
             const ok = await uploadToSupabase(blob);
             if (ok) {
-              try { onAudioReady && onAudioReady(blob); } catch {}
+              try { onAudioReady && onAudioReady(blob); } catch { }
             }
           } catch (err) {
             setError(err.message || String(err));
@@ -152,7 +152,7 @@ export default function AudioRecorder({
           }
         }
 
-        try { stream.getTracks().forEach((t) => t.stop()); } catch {}
+        try { stream.getTracks().forEach((t) => t.stop()); } catch { }
       };
 
       mr.start();
