@@ -1,6 +1,6 @@
 {
-  "name": "RESPIRA",
-  "short_name": "RESPIRA",
+  "name": "Respirapp",
+  "short_name": "Respirapp",
   "description": "Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad",
   "start_url": "/",
   "scope": "/",
