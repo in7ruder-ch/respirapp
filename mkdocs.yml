@@ -22,20 +22,9 @@ theme:
     - search.highlight
     - search.suggest
   palette:
-    # Modo DARK por defecto
-    - scheme: slate
-      primary: blue
-      accent: blue
-      toggle:
-        icon: material/white-balance-sunny
-        name: Modo claro
-    # Modo LIGHT (por si el usuario toca el toggle)
     - scheme: default
       primary: blue
       accent: blue
-      toggle:
-        icon: material/weather-night
-        name: Modo oscuro
 
 repo_url: https://github.com/in7ruder-ch/respirapp
 repo_name: in7ruder/respirapp
