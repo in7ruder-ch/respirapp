@@ -2,16 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
 
 import '@/styles/App.css';
 import '@/styles/BottomNav.css';
 
 import BottomNav from '@/components/BottomNav';
 
-import { supabase } from '@lib/supabaseClient';
 import { loadContact } from '@lib/contactsStore';
 import { apiFetch } from '@lib/apiFetch';
 import { debounce } from '@lib/debounce';
+import { supabase } from '@lib/supabaseClient';
 
 function telHref(phone) {
   const clean = String(phone || '').replace(/[^\d+]/g, '');
@@ -21,138 +22,103 @@ function telHref(phone) {
 export default function Page() {
   const router = useRouter();
 
-  // Sesión/estado
-  const [user, setUser] = useState(null);
-  const [contact, setContact] = useState(null);
-
-  // Media (unificado)
-  const [hasMessage, setHasMessage] = useState(false);
-  const [mediaKind, setMediaKind] = useState(null);
-  const [isPlayLoading, setIsPlayLoading] = useState(false);
-
   // Reproductores
   const audioRef = useRef(null);
   const videoRef = useRef(null);
   const [videoUrl, setVideoUrl] = useState('');
   const [showVideoPanel, setShowVideoPanel] = useState(false);
+  const [isPlayLoading, setIsPlayLoading] = useState(false);
 
-  // Flag para evitar refrescos concurrentes
-  const refreshingRef = useRef(false);
+  // Fallback local para contacto
+  const localContactRef = useRef(loadContact() || null);
 
-  // --------- Helpers contacto ----------
-  const refreshContact = async () => {
-    try {
-      const res = await fetch('/api/contact', { cache: 'no-store' });
-      if (res.status === 401) {
-        setContact(null);
-        return;
-      }
-      const j = await res.json();
-      if (res.ok) setContact(j?.contact ?? null);
-      else setContact(loadContact() || null);
-    } catch {
-      setContact(loadContact() || null);
-    }
-  };
-
-  // --------- Session & status ----------
-  const rehydrate = async () => {
-    try {
-      const { data } = await supabase.auth.getSession();
-      const u = data.session?.user ?? null;
-      setUser(u);
-      return u;
-    } catch {
-      return null;
-    }
-  };
-
-  const refreshMediaStatus = async (uidExplicit) => {
-    const uid = uidExplicit ?? user?.id;
-    if (!uid) {
-      setHasMessage(false);
-      setMediaKind(null);
-      return;
-    }
-    try {
-      const j = await apiFetch('/api/media/status', {
+  // === SWR: MEDIA STATUS (audio o video) ===
+  const {
+    data: mediaData,
+    mutate: mutateMedia,
+  } = useSWR(
+    ['/api/media/status', 'any'],
+    async ([url, kind]) =>
+      apiFetch(url, {
         method: 'POST',
         headers: { 'Cache-Control': 'no-store' },
-        body: { kind: 'any' },
-      });
-      setHasMessage(Boolean(j?.has));
-      setMediaKind(j?.kind ?? null);
-    } catch {
-      setHasMessage(false);
-      setMediaKind(null);
+        body: { kind },
+      }),
+    {
+      revalidateOnFocus: true,
+      dedupingInterval: 1500,
     }
-  };
+  );
+  const hasMessage = Boolean(mediaData?.has);
+  const mediaKind = mediaData?.kind ?? null;
 
-  // 👉 Refresco coalesced (rehidrata y luego actualiza media+contact en paralelo)
-  const refreshAll = async () => {
-    if (refreshingRef.current) return;        // evita overlap
-    refreshingRef.current = true;
-    try {
-      const u = await rehydrate();
-      await Promise.all([refreshMediaStatus(u?.id), refreshContact()]);
-    } finally {
-      refreshingRef.current = false;
+  // === SWR: CONTACTO (cloud, con fallback local si falla) ===
+  const {
+    data: contactRes,
+    error: contactErr,
+    mutate: mutateContact,
+  } = useSWR(
+    '/api/contact',
+    async (url) => {
+      const r = await fetch(url, { cache: 'no-store' });
+      if (!r.ok) throw new Error('contact fetch failed');
+      return r.json();
+    },
+    {
+      revalidateOnFocus: true,
+      dedupingInterval: 1500,
     }
-  };
+  );
+  const contact = contactRes?.contact ?? localContactRef.current;
 
-  // Debounce para eventos ruidosos (focus/visibilidad/storage/auth)
-  const refreshAllDebounced = useMemo(() => debounce(refreshAll, 250), []);
+  // === Coalesce de revalidaciones (un solo pulso) ===
+  const refreshAllDebounced = useMemo(
+    () =>
+      debounce(() => {
+        mutateMedia();
+        mutateContact();
+      }, 250),
+    [mutateMedia, mutateContact]
+  );
 
   useEffect(() => {
-    (async () => {
-      // Primer render: refresh directo (sin debounce)
-      await refreshAll();
+    // Primer fetch inicial (deja SWR hacer lo suyo) + subs a eventos
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      refreshAllDebounced();
+    });
 
-      const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
-        // actualizamos user rápido y coalescemos el refresh
-        setUser(session?.user ?? null);
+    const onVis = () => {
+      if (!document.hidden) refreshAllDebounced();
+    };
+    document.addEventListener('visibilitychange', onVis);
+
+    const onStorage = (e) => {
+      if (e.key && e.key.includes('sb-') && e.key.includes('-auth-token')) {
         refreshAllDebounced();
-      });
+      }
+    };
+    window.addEventListener('storage', onStorage);
 
-      // Volver al app / pestaña
-      const onVis = () => {
-        if (!document.hidden) refreshAllDebounced();
-      };
-      document.addEventListener('visibilitychange', onVis);
-
-      // Cambios de sesión en otra pestaña
-      const onStorage = (e) => {
-        if (e.key && e.key.includes('sb-') && e.key.includes('-auth-token')) {
-          refreshAllDebounced();
-        }
-      };
-      window.addEventListener('storage', onStorage);
-
-      // Post-login flag
-      try {
-        if (sessionStorage.getItem('respirapp_just_signed_in') === '1') {
-          sessionStorage.removeItem('respirapp_just_signed_in');
-          refreshAllDebounced();
-        }
-      } catch {}
-
-      return () => {
-        sub?.subscription?.unsubscribe?.();
-        document.removeEventListener('visibilitychange', onVis);
-        window.removeEventListener('storage', onStorage);
-      };
-    })();
+    // post-login flag
+    try {
+      if (sessionStorage.getItem('respirapp_just_signed_in') === '1') {
+        sessionStorage.removeItem('respirapp_just_signed_in');
+        refreshAllDebounced();
+      }
+    } catch {}
 
     return () => {
-      // limpiar players
+      sub?.subscription?.unsubscribe?.();
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('storage', onStorage);
       try { audioRef.current?.pause?.(); } catch {}
       audioRef.current = null;
       try { if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ''; } } catch {}
       videoRef.current = null;
     };
-  }, [refreshAllDebounced]); // estable por useMemo
+  }, [refreshAllDebounced]);
 
-  // --------- Handlers ----------
+  // --------- Reproducir mensaje ----------
   const handlePlayMessage = async () => {
     if (isPlayLoading) return;
     setIsPlayLoading(true);
@@ -198,7 +164,7 @@ export default function Page() {
         <h1>RESPIRA</h1>
         <h2>Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad</h2>
 
-        {/* Panel de reproducción de video arriba de los tiles */}
+        {/* Panel de video arriba de los tiles */}
         {showVideoPanel && videoUrl && (
           <div className="panel" style={{ marginTop: 16 }}>
             <video
@@ -235,6 +201,7 @@ export default function Page() {
         )}
 
         <div className="launcher-grid">
+          {/* Mensaje */}
           {hasMessage ? (
             <button
               className="launcher-item blue"
@@ -260,6 +227,7 @@ export default function Page() {
             </button>
           )}
 
+          {/* Respirar */}
           <button
             className="launcher-item green"
             onClick={() => router.push('/breathing')}
@@ -269,6 +237,7 @@ export default function Page() {
             <div className="label">Respirar</div>
           </button>
 
+          {/* Contacto */}
           {!contact?.phone ? (
             <button
               className="launcher-item red"
@@ -290,6 +259,7 @@ export default function Page() {
             </button>
           )}
 
+          {/* Config */}
           <button
             className="launcher-item yellow"
             onClick={() => router.push('/settings')}
