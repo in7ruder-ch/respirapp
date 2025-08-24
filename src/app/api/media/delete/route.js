@@ -2,19 +2,14 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 
-/**
- * POST /api/media/delete
- * body?: { kind?: 'audio' | 'video' | 'any' }
- *
- * También disponible:
- * DELETE /api/media/delete  (mismo comportamiento; body opcional)
- *
- * Respuesta OK:
- *  { ok:true, deleted: { id, kind, path } | null }
- */
-
+const PUBLIC_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const FALLBACK_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_MEDIA_BUCKET || "media";
+
+const admin = createAdminClient(PUBLIC_URL, SERVICE_KEY);
 
 function parseStoragePath(path) {
   const s = String(path || "");
@@ -23,18 +18,17 @@ function parseStoragePath(path) {
   return { bucket: FALLBACK_BUCKET, key: s };
 }
 
-async function handleDelete(req) {
-  const supabase = createRouteHandlerClient({ cookies });
+async function handle(req) {
+  const userClient = createRouteHandlerClient({ cookies });
 
-  // 1) Auth
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await userClient.auth.getUser();
   if (!user) {
     return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
   }
 
-  // 2) Body opcional
+  // leer kind opcional
   let kind = "any";
   try {
     const json = await req.json().catch(() => ({}));
@@ -42,13 +36,11 @@ async function handleDelete(req) {
       const k = json.kind.toLowerCase();
       if (k === "audio" || k === "video" || k === "any") kind = k;
     }
-  } catch {
-    // sin body: usamos "any"
-  }
+  } catch {}
 
-  // 3) Buscar el registro a borrar (último por fecha). Si no hay del kind pedido, caemos a any.
+  // Buscar registro (DB con user client)
   async function findRow(k) {
-    let q = supabase
+    let q = userClient
       .from("media")
       .select("id, kind, path, created_at")
       .eq("user_id", user.id)
@@ -61,47 +53,34 @@ async function handleDelete(req) {
   }
 
   let row = await findRow(kind);
-  if (!row && kind !== "any") {
-    // fallback amistoso si pidieron 'audio' o 'video' pero no existe
-    row = await findRow("any");
-  }
+  if (!row && kind !== "any") row = await findRow("any");
+  if (!row) return NextResponse.json({ ok: true, deleted: null });
 
-  if (!row) {
-    // Nada para borrar
-    return NextResponse.json({ ok: true, deleted: null });
-  }
-
-  // 4) Borrar en Storage (ignoramos 404 del storage por robustez)
+  // Borrar del Storage con SERVICE ROLE
   const { bucket, key } = parseStoragePath(row.path);
   try {
-    await supabase.storage.from(bucket).remove([key]);
+    await admin.storage.from(bucket).remove([key]);
   } catch {
-    // seguimos aunque la key no exista físicamente; mantenemos consistencia en DB
+    // ignoramos errores de storage para no bloquear la eliminación lógica
   }
 
-  // 5) Borrar en DB
-  const { error: delErr } = await supabase.from("media").delete().eq("id", row.id);
-  if (delErr) {
-    return NextResponse.json({ ok: false, message: delErr.message }, { status: 500 });
-  }
+  // Borrar en DB (user client con RLS)
+  const { error: delErr } = await userClient.from("media").delete().eq("id", row.id);
+  if (delErr) return NextResponse.json({ ok: false, message: delErr.message }, { status: 500 });
 
-  return NextResponse.json({
-    ok: true,
-    deleted: { id: row.id, kind: row.kind, path: row.path },
-  });
+  return NextResponse.json({ ok: true, deleted: { id: row.id, kind: row.kind, path: row.path } });
 }
 
 export async function POST(req) {
   try {
-    return await handleDelete(req);
+    return await handle(req);
   } catch (e) {
     return NextResponse.json({ ok: false, message: e.message || "Error" }, { status: 500 });
   }
 }
-
 export async function DELETE(req) {
   try {
-    return await handleDelete(req);
+    return await handle(req);
   } catch (e) {
     return NextResponse.json({ ok: false, message: e.message || "Error" }, { status: 500 });
   }

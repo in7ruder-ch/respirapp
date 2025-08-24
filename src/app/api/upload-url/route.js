@@ -4,14 +4,27 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 
+const PUBLIC_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BUCKET = process.env.NEXT_PUBLIC_SUPABASE_MEDIA_BUCKET || "media";
 
-/** "audio/webm;codecs=opus" -> "audio/webm" */
+if (!PUBLIC_URL) {
+  throw new Error("SUPABASE URL no configurada");
+}
+if (!SERVICE_KEY) {
+  throw new Error("SUPABASE_SERVICE_ROLE_KEY no configurada");
+}
+
+// Admin client (service role) SOLO para Storage (bypassa RLS de storage)
+const admin = createAdminClient(PUBLIC_URL, SERVICE_KEY);
+
+// Helpers de content-type
 function baseContentType(ct) {
   return String(ct || "").toLowerCase().split(";")[0].trim();
 }
-
 function isAllowed(base, kind) {
   if (kind === "audio") {
     return (
@@ -26,7 +39,6 @@ function isAllowed(base, kind) {
   }
   return false;
 }
-
 function extFor(base, kind) {
   if (kind === "audio") {
     if (base === "audio/mpeg" || base === "audio/mp3") return ".mp3";
@@ -43,16 +55,16 @@ function extFor(base, kind) {
 /**
  * POST /api/upload-url
  * body: { kind: 'audio' | 'video', contentType?: string }
- *
- * Regla FREE (hoy): 1 mensaje TOTAL por usuario (audio O video).
+ * Regla FREE: 1 mensaje TOTAL (audio O video).
  */
 export async function POST(req) {
-  const supabase = createRouteHandlerClient({ cookies });
+  // Cliente atado al usuario (DB con RLS)
+  const userClient = createRouteHandlerClient({ cookies });
 
   // 1) Auth
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await userClient.auth.getUser();
   if (!user) {
     return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
   }
@@ -74,7 +86,6 @@ export async function POST(req) {
   const baseCT = baseContentType(
     requestedCT || (kind === "video" ? "video/webm" : "audio/webm")
   );
-
   if (!isAllowed(baseCT, kind)) {
     return NextResponse.json(
       { ok: false, message: `contentType no soportado (${baseCT}) para ${kind}` },
@@ -82,8 +93,8 @@ export async function POST(req) {
     );
   }
 
-  // 3) Límite FREE unificado: ¿ya tiene algún mensaje (audio o video)?
-  const { data: existing, error: selErr } = await supabase
+  // 3) Límite FREE unificado (DB con user client)
+  const { data: existing, error: selErr } = await userClient
     .from("media")
     .select("id")
     .eq("user_id", user.id)
@@ -105,12 +116,13 @@ export async function POST(req) {
     );
   }
 
-  // 4) Ruta destino y reserva en DB
+  // 4) Ruta destino
   const ext = extFor(baseCT, kind);
   const key = `${user.id}/${kind}/message${ext}`;
-  const path = `${BUCKET}/${key}`;
+  const path = `${BUCKET}/${key}`; // guardamos bucket+key en DB para ser explícitos
 
-  const { data: inserted, error: insErr } = await supabase
+  // 5) Reserva en DB (user client con RLS)
+  const { data: inserted, error: insErr } = await userClient
     .from("media")
     .insert({ user_id: user.id, kind, path })
     .select("id")
@@ -126,13 +138,14 @@ export async function POST(req) {
     return NextResponse.json({ ok: false, message: insErr.message }, { status: 500 });
   }
 
-  // 5) URL firmada de subida
-  const { data: signed, error: signErr } = await supabase.storage
+  // 6) Firmar URL de subida con SERVICE ROLE (bypassa RLS de Storage)
+  const { data: signed, error: signErr } = await admin.storage
     .from(BUCKET)
     .createSignedUploadUrl(key);
 
   if (signErr) {
-    await supabase.from("media").delete().eq("id", inserted.id); // rollback
+    // rollback si no pudimos firmar
+    await userClient.from("media").delete().eq("id", inserted.id);
     return NextResponse.json({ ok: false, message: signErr.message }, { status: 500 });
   }
 
@@ -151,7 +164,6 @@ export async function POST(req) {
 export async function GET() {
   return NextResponse.json({ ok: true, info: "POST con {kind, contentType}" });
 }
-
 export async function OPTIONS() {
   return new Response(null, { status: 204 });
 }
