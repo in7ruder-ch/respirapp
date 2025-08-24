@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
 
 import '@/styles/App.css';
 import '@/styles/BottomNav.css';
@@ -10,85 +11,73 @@ import BottomNav from '@/components/BottomNav';
 import AudioRecorder from '@/components/AudioRecorder';
 import { apiFetch } from '@lib/apiFetch';
 import { debounce } from '@lib/debounce';
+import { supabase } from '@lib/supabaseClient';
 
 export const dynamic = 'force-dynamic';
 
 export default function MessagePage() {
   const router = useRouter();
 
-  // Estado de existencia: null | 'audio' | 'video'
-  const [existingKind, setExistingKind] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // === SWR: estado de media (audio o video) ===
+  const {
+    data: mediaData,
+    isLoading,
+    mutate,
+  } = useSWR(
+    ['/api/media/status', 'any'],
+    async ([url, kind]) =>
+      apiFetch(url, {
+        method: 'POST',
+        headers: { 'Cache-Control': 'no-store' },
+        body: { kind },
+      }),
+    {
+      revalidateOnFocus: true,
+      dedupingInterval: 1500,
+    }
+  );
+
+  const existingKind = mediaData?.kind ?? null;
+  const loading = isLoading;
 
   // UI local
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [recorderKey, setRecorderKey] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  const audioRef = useRef(null);
-  const refreshingRef = useRef(false);
-
-  async function refreshStatus() {
-    setLoading(true);
-    try {
-      const j = await apiFetch('/api/media/status', {
-        method: 'POST',
-        headers: { 'Cache-Control': 'no-store' },
-        body: { kind: 'any' },
-      });
-      setExistingKind(j?.kind ?? null);
-    } catch {
-      setExistingKind(null);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Coalesce de refresh (evita overlaps)
-  const refreshAll = async () => {
-    if (refreshingRef.current) return;
-    refreshingRef.current = true;
-    try {
-      await refreshStatus();
-    } finally {
-      refreshingRef.current = false;
-    }
-  };
-  const refreshAllDebounced = useMemo(() => debounce(refreshAll, 250), []);
+  // Coalesce de revalidaciones
+  const mutateDebounced = useMemo(() => debounce(() => mutate(), 250), [mutate]);
 
   useEffect(() => {
-    (async () => {
-      await refreshAll();
+    // Cambios de auth → revalidar
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      mutateDebounced();
+    });
 
-      const onVis = () => { if (!document.hidden) refreshAllDebounced(); };
-      document.addEventListener('visibilitychange', onVis);
+    // Volver al foreground → revalidar
+    const onVis = () => { if (!document.hidden) mutateDebounced(); };
+    document.addEventListener('visibilitychange', onVis);
 
-      const onStorage = (e) => {
-        if (e.key && e.key.includes('sb-') && e.key.includes('-auth-token')) {
-          refreshAllDebounced();
-        }
-      };
-      window.addEventListener('storage', onStorage);
-
-      return () => {
-        document.removeEventListener('visibilitychange', onVis);
-        window.removeEventListener('storage', onStorage);
-      };
-    })();
-
-    return () => {
-      if (audioRef.current) {
-        try { audioRef.current.pause(); } catch {}
-        audioRef.current = null;
+    // Cambios de sesión en otra pestaña → revalidar
+    const onStorage = (e) => {
+      if (e.key && e.key.includes('sb-') && e.key.includes('-auth-token')) {
+        mutateDebounced();
       }
     };
-  }, [refreshAllDebounced]);
+    window.addEventListener('storage', onStorage);
+
+    return () => {
+      sub?.subscription?.unsubscribe?.();
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [mutateDebounced]);
 
   const onAudioReady = async () => {
     setShowConfirmation(true);
     setTimeout(() => setShowConfirmation(false), 2000);
     setShowAudioRecorder(false);
-    await refreshAll();
+    await mutate(); // refresca estado (ya hay mensaje)
   };
 
   const activeNav = 'home';
@@ -114,6 +103,7 @@ export default function MessagePage() {
           <>
             {!showAudioRecorder ? (
               <div className="launcher-grid" style={{ marginTop: 12 }}>
+                {/* Grabar AUDIO */}
                 <button
                   className="launcher-item blue"
                   onClick={() => { setShowAudioRecorder(true); setRecorderKey(k => k + 1); }}
@@ -124,6 +114,7 @@ export default function MessagePage() {
                   <div className="label">Grabar audio</div>
                 </button>
 
+                {/* Grabar VIDEO — subruta */}
                 <button
                   className="launcher-item red"
                   onClick={() => router.push('/message/video')}
@@ -135,6 +126,7 @@ export default function MessagePage() {
                 </button>
               </div>
             ) : (
+              // Modo AUDIO elegido: solo el recorder + info Free
               <div className="panel" style={{ marginTop: 12 }}>
                 <AudioRecorder
                   key={recorderKey}

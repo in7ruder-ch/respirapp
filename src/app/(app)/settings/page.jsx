@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
 
 import '@/styles/App.css';
 import '@/styles/BottomNav.css';
@@ -14,92 +15,85 @@ import { supabase } from '@lib/supabaseClient';
 
 export default function SettingsPage() {
   const router = useRouter();
-
-  const [contact, setContact] = useState(null);
-  const [hasMessage, setHasMessage] = useState(false);
-  const [mediaKind, setMediaKind] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [msg, setMsg] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const refreshingRef = useRef(false);
-
-  async function refreshMediaStatus() {
-    try {
-      const j = await apiFetch('/api/media/status', {
+  // === SWR: estado de media (audio o video) ===
+  const {
+    data: mediaData,
+    mutate: mutateMedia,
+    isLoading: mediaLoading,
+  } = useSWR(
+    ['/api/media/status', 'any'],
+    async ([url, kind]) =>
+      apiFetch(url, {
         method: 'POST',
         headers: { 'Cache-Control': 'no-store' },
-        body: { kind: 'any' },
-      });
-      setHasMessage(Boolean(j?.has));
-      setMediaKind(j?.kind ?? null);
-    } catch {
-      setHasMessage(false);
-      setMediaKind(null);
-    }
-  }
+        body: { kind },
+      }),
+    { revalidateOnFocus: true, dedupingInterval: 1500 }
+  );
+  const hasMessage = Boolean(mediaData?.has);
+  const mediaKind = mediaData?.kind ?? null;
 
-  async function refreshContact() {
-    try {
-      const res = await fetch('/api/contact', { cache: 'no-store' });
-      const json = await res.json();
-      if (res.ok) setContact(json.contact || null);
-      else setContact(null);
-    } catch {
-      setContact(null);
-    }
-  }
+  // === SWR: contacto en cloud (sin cache persistente) ===
+  const {
+    data: contactRes,
+    mutate: mutateContact,
+  } = useSWR(
+    '/api/contact',
+    async (url) => {
+      const r = await fetch(url, { cache: 'no-store' });
+      if (!r.ok) throw new Error('contact fetch failed');
+      return r.json();
+    },
+    { revalidateOnFocus: true, dedupingInterval: 1500 }
+  );
+  const contact = contactRes?.contact ?? null;
 
-  // Coalesce de refresh (contact + media en paralelo)
-  const refreshAll = async () => {
-    if (refreshingRef.current) return;
-    refreshingRef.current = true;
-    try {
-      await Promise.all([refreshContact(), refreshMediaStatus()]);
-    } finally {
-      refreshingRef.current = false;
-    }
-  };
-  const refreshAllDebounced = useMemo(() => debounce(refreshAll, 250), []);
+  // Coalesce de revalidaciones (un solo pulso)
+  const refreshAllDebounced = useMemo(
+    () =>
+      debounce(() => {
+        mutateMedia();
+        mutateContact();
+      }, 250),
+    [mutateMedia, mutateContact]
+  );
 
   useEffect(() => {
-    (async () => {
-      await refreshAll();
+    // Cambios de auth → revalidar
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      refreshAllDebounced();
+    });
 
-      // Cambios de auth → refrescar coalesced
-      const { data: sub } = supabase.auth.onAuthStateChange(() => {
+    // Volver al foreground → revalidar
+    const onVis = () => { if (!document.hidden) refreshAllDebounced(); };
+    document.addEventListener('visibilitychange', onVis);
+
+    // Cambios de sesión en otra pestaña → revalidar
+    const onStorage = (e) => {
+      if (e.key && e.key.includes('sb-') && e.key.includes('-auth-token')) {
         refreshAllDebounced();
-      });
+      }
+    };
+    window.addEventListener('storage', onStorage);
 
-      // Vuelve al foreground
-      const onVis = () => { if (!document.hidden) refreshAllDebounced(); };
-      document.addEventListener('visibilitychange', onVis);
-
-      // Cambios de sesión en otra pestaña
-      const onStorage = (e) => {
-        if (e.key && e.key.includes('sb-') && e.key.includes('-auth-token')) {
-          refreshAllDebounced();
-        }
-      };
-      window.addEventListener('storage', onStorage);
-
-      return () => {
-        sub?.subscription?.unsubscribe?.();
-        document.removeEventListener('visibilitychange', onVis);
-        window.removeEventListener('storage', onStorage);
-      };
-    })();
+    return () => {
+      sub?.subscription?.unsubscribe?.();
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('storage', onStorage);
+    };
   }, [refreshAllDebounced]);
 
+  // Borrar mensaje (audio o video)
   async function handleDelete() {
     setMsg('');
     setIsDeleting(true);
     try {
-      await apiFetch('/api/media/delete', {
-        method: 'POST',
-        body: { kind: 'any' },
-      });
+      await apiFetch('/api/media/delete', { method: 'POST', body: { kind: 'any' } });
       setMsg('Mensaje eliminado.');
-      await refreshAll();
+      await mutateMedia(); // refresca estado de media
     } catch (e) {
       setMsg(e.message || 'No se pudo borrar el mensaje.');
     } finally {
@@ -124,7 +118,6 @@ export default function SettingsPage() {
                 <p className="muted" style={{ marginTop: 8 }}>
                   Guardado: <strong>{mediaKind}</strong>.
                 </p>
-
                 <button
                   className="delete-button"
                   onClick={handleDelete}
@@ -135,7 +128,7 @@ export default function SettingsPage() {
                 </button>
               </>
             ) : (
-              <p className="muted">No tenés un mensaje guardado.</p>
+              <p className="muted">{mediaLoading ? 'Cargando…' : 'No tenés un mensaje guardado.'}</p>
             )}
 
             {msg && <p style={{ marginTop: 8 }}>{msg}</p>}
@@ -151,7 +144,7 @@ export default function SettingsPage() {
             <h3>Contacto de emergencia</h3>
             {contact?.phone ? (
               <ContactCard
-                onSaved={(c) => setContact(c)}
+                onSaved={() => mutateContact()}   // refresca SWR al guardar/borrar
                 showQuickActions={false}
                 showSMS={false}
               />
