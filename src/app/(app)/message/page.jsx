@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 import '@/styles/App.css';
 import '@/styles/BottomNav.css';
@@ -12,6 +13,8 @@ import { apiFetch } from '@lib/apiFetch';
 export const dynamic = 'force-dynamic';
 
 export default function MessagePage() {
+  const router = useRouter();
+
   // Estado de existencia: null | 'audio' | 'video'
   const [existingKind, setExistingKind] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,7 +66,7 @@ export default function MessagePage() {
     <div className="App has-bottom-nav">
       <header className="App-header">
         <h1>MENSAJE</h1>
-        {/* 👇 Ocultamos el subtítulo cuando ya eligieron AUDIO */}
+        {/* Ocultamos el subtítulo cuando ya eligieron AUDIO */}
         {!showAudioRecorder && <h2>Elegí cómo querés guardar tu mensaje</h2>}
 
         {showConfirmation && <div className="confirmation-banner">✅ Mensaje guardado</div>}
@@ -77,6 +80,26 @@ export default function MessagePage() {
             <p className="muted" style={{ marginTop: 6 }}>
               En plan Free podés tener 1 (audio <em>o</em> video). Para grabar uno nuevo, primero borrá el actual en Configuración.
             </p>
+            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+              <button
+                className="launcher-item yellow"
+                onClick={() => router.push('/settings')}
+                aria-label="Ir a configuración"
+                title="Ir a configuración"
+              >
+                <div className="icon-bg bg-config" aria-hidden="true" />
+                <div className="label">Config.</div>
+              </button>
+              <button
+                className="launcher-item blue"
+                onClick={() => router.push('/')}
+                aria-label="Volver al inicio"
+                title="Volver al inicio"
+              >
+                <div className="icon-bg bg-breath" aria-hidden="true" />
+                <div className="label">Inicio</div>
+              </button>
+            </div>
           </div>
         ) : (
           // Si NO hay mensaje, mostramos selector o el recorder inline (AUDIO)
@@ -97,22 +120,28 @@ export default function MessagePage() {
                 {/* Grabar VIDEO — subruta */}
                 <button
                   className="launcher-item red"
-                  onClick={() => (window.location.href = '/message/video')}
+                  onClick={() => router.push('/message/video')}
                   aria-label="Grabar video"
                   title="Grabar video"
                 >
                   <div className="icon-bg bg-message" aria-hidden="true" />
                   <div className="label">Grabar video</div>
                 </button>
+
+                
               </div>
             ) : (
-              // 👇 Modo AUDIO elegido: solo el recorder + info Free
+              // Modo AUDIO elegido: solo el recorder + info Free
               <div className="panel" style={{ marginTop: 12 }}>
                 <AudioRecorder
                   key={recorderKey}
                   onAudioReady={onAudioReady}
                   hideTitle
                 />
+                <p className="muted" style={{ marginTop: 8 }}>
+                  Plan Free: <strong>1 mensaje total</strong> (audio <em>o</em> video).
+                  Para grabar otro, primero borrá el actual en Configuración.
+                </p>
               </div>
             )}
           </>
@@ -121,10 +150,10 @@ export default function MessagePage() {
 
       <BottomNav
         active={activeNav}
-        onHome={() => (window.location.href = '/')}
-        onLibrary={() => (window.location.href = '/library')}
-        onPlaceholder1={() => (window.location.href = '/explore')}
-        onPlaceholder2={() => (window.location.href = '/profile')}
+        onHome={() => router.push('/')}
+        onLibrary={() => router.push('/library')}
+        onPlaceholder1={() => router.push('/explore')}
+        onPlaceholder2={() => router.push('/profile')}
       />
     </div>
   );

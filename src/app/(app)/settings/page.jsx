@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 import '@/styles/App.css';
 import '@/styles/BottomNav.css';
@@ -10,6 +11,8 @@ import ContactCard from '@/components/contactCard'; // archivo: contactCard.jsx 
 import { apiFetch } from '@lib/apiFetch';
 
 export default function SettingsPage() {
+  const router = useRouter();
+
   const [contact, setContact] = useState(null);
   const [hasMessage, setHasMessage] = useState(false);  // audio o video
   const [mediaKind, setMediaKind] = useState(null);     // 'audio' | 'video' | null
@@ -21,7 +24,7 @@ export default function SettingsPage() {
       const j = await apiFetch('/api/media/status', {
         method: 'POST',
         headers: { 'Cache-Control': 'no-store' },
-        body: { kind: 'any' }, // ✅ unificado
+        body: { kind: 'any' },
       });
       setHasMessage(Boolean(j?.has));
       setMediaKind(j?.kind ?? null);
@@ -35,11 +38,8 @@ export default function SettingsPage() {
     try {
       const res = await fetch('/api/contact', { cache: 'no-store' });
       const json = await res.json();
-      if (res.ok) {
-        setContact(json.contact || null);
-      } else {
-        setContact(null);
-      }
+      if (res.ok) setContact(json.contact || null);
+      else setContact(null);
     } catch {
       setContact(null);
     }
@@ -56,7 +56,7 @@ export default function SettingsPage() {
     try {
       await apiFetch('/api/media/delete', {
         method: 'POST',
-        body: { kind: 'any' }, // ✅ borra audio o video (el que exista)
+        body: { kind: 'any' },
       });
       setMsg('Mensaje eliminado.');
       await refreshMediaStatus();
@@ -67,8 +67,6 @@ export default function SettingsPage() {
     }
   }
 
-  // En BottomNav no existe la pestaña "settings",
-  // usamos 'home' como activo para mantener el look coherente.
   const activeNav = 'home';
 
   return (
@@ -126,10 +124,10 @@ export default function SettingsPage() {
 
       <BottomNav
         active={activeNav}
-        onHome={() => (window.location.href = '/')}
-        onLibrary={() => (window.location.href = '/library')}
-        onPlaceholder1={() => (window.location.href = '/explore')}
-        onPlaceholder2={() => (window.location.href = '/profile')}
+        onHome={() => router.push('/')}
+        onLibrary={() => router.push('/library')}
+        onPlaceholder1={() => router.push('/explore')}
+        onPlaceholder2={() => router.push('/profile')}
       />
     </div>
   );

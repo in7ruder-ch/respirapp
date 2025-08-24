@@ -28,8 +28,7 @@ export default function MessageVideoPage() {
           <VideoRecorder
             onVideoReady={() => {
               setSaved(true);
-              // Redirigimos a Inicio para cerrar cámara y dar feedback claro.
-              // Al desmontar, VideoRecorder apaga los tracks.
+              // Cerrar cámara y volver a Inicio (client-side)
               setTimeout(() => router.replace('/'), 200);
             }}
             hideTitle
@@ -39,10 +38,10 @@ export default function MessageVideoPage() {
 
       <BottomNav
         active={activeNav}
-        onHome={() => (window.location.href = '/')}
-        onLibrary={() => (window.location.href = '/library')}
-        onPlaceholder1={() => (window.location.href = '/explore')}
-        onPlaceholder2={() => (window.location.href = '/profile')}
+        onHome={() => router.push('/')}
+        onLibrary={() => router.push('/library')}
+        onPlaceholder1={() => router.push('/explore')}
+        onPlaceholder2={() => router.push('/profile')}
       />
     </div>
   );

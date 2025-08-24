@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 import '@/styles/App.css';
 import '@/styles/BottomNav.css';
@@ -17,6 +18,8 @@ function telHref(phone) {
 }
 
 export default function Page() {
+  const router = useRouter();
+
   // Sesión/estado
   const [user, setUser] = useState(null);
   const [contact, setContact] = useState(null);
@@ -200,7 +203,7 @@ export default function Page() {
         <h1>RESPIRA</h1>
         <h2>Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad</h2>
 
-        {/* ⬆️ Panel de reproducción de video AHORA ARRIBA de los tiles */}
+        {/* Panel de reproducción de video arriba de los tiles */}
         {showVideoPanel && videoUrl && (
           <div className="panel" style={{ marginTop: 16 }}>
             <video
@@ -226,7 +229,7 @@ export default function Page() {
               </button>
               <button
                 className="launcher-item blue"
-                onClick={() => (window.location.href = '/settings')}
+                onClick={() => router.push('/settings')}
                 title="Ir a configuración"
               >
                 <div className="icon-bg bg-breath" aria-hidden="true" />
@@ -254,7 +257,7 @@ export default function Page() {
           ) : (
             <button
               className="launcher-item blue"
-              onClick={() => (window.location.href = '/message')}
+              onClick={() => router.push('/message')}
               aria-label="Grabar mensaje"
               title="Grabar mensaje (audio o video)"
             >
@@ -266,7 +269,7 @@ export default function Page() {
           {/* Respirar → ruta propia */}
           <button
             className="launcher-item green"
-            onClick={() => (window.location.href = '/breathing')}
+            onClick={() => router.push('/breathing')}
             aria-label="Respirar juntos"
           >
             <div className="icon-bg bg-breath" aria-hidden="true" />
@@ -277,7 +280,7 @@ export default function Page() {
           {!contact?.phone ? (
             <button
               className="launcher-item red"
-              onClick={() => (window.location.href = '/contact')}
+              onClick={() => router.push('/contact')}
               aria-label="Registrar contacto"
             >
               <div className="icon-bg bg-contact" aria-hidden="true" />
@@ -298,7 +301,7 @@ export default function Page() {
           {/* Config → ruta propia */}
           <button
             className="launcher-item yellow"
-            onClick={() => (window.location.href = '/settings')}
+            onClick={() => router.push('/settings')}
             aria-label="Configuración"
           >
             <div className="icon-bg bg-config" aria-hidden="true" />
@@ -309,10 +312,10 @@ export default function Page() {
 
       <BottomNav
         active={activeNav}
-        onHome={() => (window.location.href = '/')}
-        onLibrary={() => (window.location.href = '/library')}
-        onPlaceholder1={() => (window.location.href = '/explore')}
-        onPlaceholder2={() => (window.location.href = '/profile')}
+        onHome={() => router.push('/')}
+        onLibrary={() => router.push('/library')}
+        onPlaceholder1={() => router.push('/explore')}
+        onPlaceholder2={() => router.push('/profile')}
       />
     </div>
   );
