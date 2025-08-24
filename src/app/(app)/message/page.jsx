@@ -80,26 +80,6 @@ export default function MessagePage() {
             <p className="muted" style={{ marginTop: 6 }}>
               En plan Free podés tener 1 (audio <em>o</em> video). Para grabar uno nuevo, primero borrá el actual en Configuración.
             </p>
-            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-              <button
-                className="launcher-item yellow"
-                onClick={() => router.push('/settings')}
-                aria-label="Ir a configuración"
-                title="Ir a configuración"
-              >
-                <div className="icon-bg bg-config" aria-hidden="true" />
-                <div className="label">Config.</div>
-              </button>
-              <button
-                className="launcher-item blue"
-                onClick={() => router.push('/')}
-                aria-label="Volver al inicio"
-                title="Volver al inicio"
-              >
-                <div className="icon-bg bg-breath" aria-hidden="true" />
-                <div className="label">Inicio</div>
-              </button>
-            </div>
           </div>
         ) : (
           // Si NO hay mensaje, mostramos selector o el recorder inline (AUDIO)
