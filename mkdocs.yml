@@ -1,28 +1,45 @@
 site_name: Respirapp
 site_description: RESPIRA — Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad
 site_author: Respirapp
-site_url: https://intruder-ch.github.io/respirapp
+site_url: https://in7ruder-ch.github.io/respirapp/
 copyright: © {{ date }} Respirapp
 
 theme:
   name: material
   language: es
+  logo: assets/logo.png         # opcional (colocá un logo en docs/assets/)
+  favicon: assets/favicon.png   # opcional
+  font:
+    text: Inter
+    code: JetBrains Mono
   features:
     - navigation.sections
     - navigation.top
+    - navigation.instant
+    - navigation.tracking
+    - toc.integrate
     - content.code.copy
     - search.highlight
     - search.suggest
   palette:
+    # Modo DARK por defecto
+    - scheme: slate
+      primary: orange
+      accent: amber
+      toggle:
+        icon: material/white-balance-sunny
+        name: Modo claro
+    # Modo LIGHT (por si el usuario toca el toggle)
     - scheme: default
-      primary: indigo
-      accent: indigo
-  logo: assets/logo.png
-  favicon: assets/favicon.png
+      primary: orange
+      accent: amber
+      toggle:
+        icon: material/weather-night
+        name: Modo oscuro
 
 repo_url: https://github.com/in7ruder-ch/respirapp
-repo_name: in7ruder-ch/respirapp
-edit_uri: edit/main/docs/
+repo_name: in7ruder/respirapp
+edit_uri: edit/master/docs/
 
 nav:
   - Inicio: index.md
@@ -43,3 +60,6 @@ markdown_extensions:
   - attr_list
   - toc:
       permalink: true
+
+extra_css:
+  - styles/extra.css

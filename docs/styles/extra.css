@@ -1,0 +1,72 @@
+/* Tipografías (opcional): si querés cargar desde Google Fonts) */
+/* Puedes comentar esto si ya usas Inter localmente. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+/* ---- Ajustes LIGHT ---- */
+:root {
+  --rs-radius: 12px;
+}
+
+/* ---- Ajustes DARK (scheme: slate) ---- */
+[data-md-color-scheme="slate"] {
+  /* Colores base ligeramente más contrastados que el default */
+  --md-default-bg-color: #0e1116;          /* fondo general */
+  --md-default-fg-color: #e7eaf0;          /* texto base */
+  --md-default-fg-color--light: #cfd6e3;   /* texto secundario */
+  --md-code-bg-color: #0b0f14;             /* bloques de código */
+  --md-shadow-z1: 0 6px 18px rgba(0,0,0,0.35);
+
+  /* Primary ya viene de palette: orange; afinamos un poco */
+  --md-primary-fg-color: #f97316;          /* naranja (Tailwind orange-500) */
+  --md-accent-fg-color: #f59e0b;           /* amber-500 */
+}
+
+/* Sidebar y header más “compactos” y definidos */
+.md-header, .md-tabs {
+  box-shadow: var(--md-shadow-z1);
+}
+.md-nav--primary .md-nav__title[for=__drawer] {
+  font-weight: 700;
+}
+
+/* Tarjetas y tablas redondeadas */
+.md-typeset .admonition,
+.md-typeset details,
+.md-typeset table:not([class]) {
+  border-radius: var(--rs-radius);
+  overflow: hidden;
+}
+
+/* Código y bloques */
+.md-typeset code,
+.md-typeset pre {
+  border-radius: var(--rs-radius);
+}
+
+/* Links: un poco más visibles */
+.md-typeset a {
+  text-decoration: none;
+  border-bottom: 1px dashed transparent;
+}
+.md-typeset a:hover {
+  border-bottom-color: currentColor;
+}
+
+/* Listas de navegación (sidebar) más legibles en dark */
+[data-md-color-scheme="slate"] .md-nav__link {
+  color: var(--md-default-fg-color);
+  opacity: .92;
+}
+[data-md-color-scheme="slate"] .md-nav__link:hover {
+  opacity: 1;
+}
+
+/* Tablas con zebra ligera */
+.md-typeset table:not([class]) tbody tr:nth-child(odd) {
+  background: rgba(255,255,255,0.02);
+}
+
+/* Chips de idioma/código (si usas snippets) más redondeados */
+.md-clipboard, .md-tag {
+  border-radius: 999px;
+}
