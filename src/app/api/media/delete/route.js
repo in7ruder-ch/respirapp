@@ -1,82 +1,108 @@
 // src/app/api/media/delete/route.js
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-// Admin client (Service Role) para DB + Storage
-const admin = createClient(supabaseUrl, serviceKey);
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 
 /**
  * POST /api/media/delete
- * Body: { kind: 'audio' | 'video' }
- * Borra el último (o único) registro del usuario para ese tipo y su archivo en Storage.
- * Respuesta: { ok: boolean, deleted: 0|1 }
+ * body?: { kind?: 'audio' | 'video' | 'any' }
+ *
+ * También disponible:
+ * DELETE /api/media/delete  (mismo comportamiento; body opcional)
+ *
+ * Respuesta OK:
+ *  { ok:true, deleted: { id, kind, path } | null }
  */
+
+const FALLBACK_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_MEDIA_BUCKET || "media";
+
+function parseStoragePath(path) {
+  const s = String(path || "");
+  const m = s.match(/^([^/]+)\/(.+)$/);
+  if (m) return { bucket: m[1], key: m[2] };
+  return { bucket: FALLBACK_BUCKET, key: s };
+}
+
+async function handleDelete(req) {
+  const supabase = createRouteHandlerClient({ cookies });
+
+  // 1) Auth
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
+  }
+
+  // 2) Body opcional
+  let kind = "any";
+  try {
+    const json = await req.json().catch(() => ({}));
+    if (json && typeof json.kind === "string") {
+      const k = json.kind.toLowerCase();
+      if (k === "audio" || k === "video" || k === "any") kind = k;
+    }
+  } catch {
+    // sin body: usamos "any"
+  }
+
+  // 3) Buscar el registro a borrar (último por fecha). Si no hay del kind pedido, caemos a any.
+  async function findRow(k) {
+    let q = supabase
+      .from("media")
+      .select("id, kind, path, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (k === "audio" || k === "video") q = q.eq("kind", k);
+    const { data, error } = await q.maybeSingle();
+    if (error && error.code !== "PGRST116") throw new Error(error.message);
+    return data || null;
+  }
+
+  let row = await findRow(kind);
+  if (!row && kind !== "any") {
+    // fallback amistoso si pidieron 'audio' o 'video' pero no existe
+    row = await findRow("any");
+  }
+
+  if (!row) {
+    // Nada para borrar
+    return NextResponse.json({ ok: true, deleted: null });
+  }
+
+  // 4) Borrar en Storage (ignoramos 404 del storage por robustez)
+  const { bucket, key } = parseStoragePath(row.path);
+  try {
+    await supabase.storage.from(bucket).remove([key]);
+  } catch {
+    // seguimos aunque la key no exista físicamente; mantenemos consistencia en DB
+  }
+
+  // 5) Borrar en DB
+  const { error: delErr } = await supabase.from("media").delete().eq("id", row.id);
+  if (delErr) {
+    return NextResponse.json({ ok: false, message: delErr.message }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    ok: true,
+    deleted: { id: row.id, kind: row.kind, path: row.path },
+  });
+}
+
 export async function POST(req) {
   try {
-    const { kind } = await req.json();
-    if (!['audio', 'video'].includes(kind)) {
-      return NextResponse.json({ error: 'Invalid kind' }, { status: 400 });
-    }
+    return await handleDelete(req);
+  } catch (e) {
+    return NextResponse.json({ ok: false, message: e.message || "Error" }, { status: 500 });
+  }
+}
 
-    // Usuario autenticado desde cookies
-    const supabase = createRouteHandlerClient({ cookies });
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Buscar el último media del usuario para ese tipo
-    const { data: rows, error: qErr } = await admin
-      .from('media')
-      .select('id, path, created_at')
-      .eq('user_id', user.id)
-      .eq('kind', kind)
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (qErr) {
-      console.error('media/delete query error:', qErr);
-      return NextResponse.json({ error: 'DB error' }, { status: 500 });
-    }
-
-    if (!rows || rows.length === 0) {
-      // Idempotente: no hay nada que borrar
-      return NextResponse.json({ ok: true, deleted: 0 });
-    }
-
-    const { id, path } = rows[0];
-
-    // Borrar archivo en Storage (bucket 'media')
-    if (path) {
-      const { error: remErr } = await admin.storage.from('media').remove([path]);
-      if (remErr) {
-        console.error('media/delete storage remove error:', remErr);
-        // Continuamos para no dejar fila huérfana (opcional: podrías abortar aquí)
-      }
-    }
-
-    // Borrar fila en DB
-    const { error: delErr } = await admin.from('media').delete().eq('id', id);
-    if (delErr) {
-      console.error('media/delete db delete error:', delErr);
-      return NextResponse.json({ error: 'DB delete error' }, { status: 500 });
-    }
-
-    return NextResponse.json({ ok: true, deleted: 1 });
-  } catch (err) {
-    console.error('media/delete fatal error:', err);
-    return NextResponse.json(
-      { error: String(err?.message || err) },
-      { status: 500 }
-    );
+export async function DELETE(req) {
+  try {
+    return await handleDelete(req);
+  } catch (e) {
+    return NextResponse.json({ ok: false, message: e.message || "Error" }, { status: 500 });
   }
 }
