@@ -1,8 +1,8 @@
-site_name: Respirapp
+site_name: RespirApp
 site_description: RESPIRA — Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad
-site_author: Respirapp
+site_author: RespirApp
 site_url: https://in7ruder-ch.github.io/respirapp/
-copyright: © {{ date }} Respirapp
+copyright: © 2025 RespirApp
 
 theme:
   name: material
@@ -24,14 +24,14 @@ theme:
   palette:
     # Modo DARK por defecto
     - scheme: slate
-      primary: orange
+      primary: blue
       accent: amber
       toggle:
         icon: material/white-balance-sunny
         name: Modo claro
     # Modo LIGHT (por si el usuario toca el toggle)
     - scheme: default
-      primary: orange
+      primary: blue
       accent: amber
       toggle:
         icon: material/weather-night
