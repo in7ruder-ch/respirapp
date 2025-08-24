@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import '@/styles/App.css';
@@ -9,8 +9,9 @@ import '@/styles/BottomNav.css';
 import BottomNav from '@/components/BottomNav';
 
 import { supabase } from '@lib/supabaseClient';
-import { loadContact } from '@lib/contactsStore'; // fallback legacy
+import { loadContact } from '@lib/contactsStore';
 import { apiFetch } from '@lib/apiFetch';
+import { debounce } from '@lib/debounce';
 
 function telHref(phone) {
   const clean = String(phone || '').replace(/[^\d+]/g, '');
@@ -25,8 +26,8 @@ export default function Page() {
   const [contact, setContact] = useState(null);
 
   // Media (unificado)
-  const [hasMessage, setHasMessage] = useState(false); // audio o video
-  const [mediaKind, setMediaKind] = useState(null);    // 'audio' | 'video' | null
+  const [hasMessage, setHasMessage] = useState(false);
+  const [mediaKind, setMediaKind] = useState(null);
   const [isPlayLoading, setIsPlayLoading] = useState(false);
 
   // Reproductores
@@ -35,7 +36,10 @@ export default function Page() {
   const [videoUrl, setVideoUrl] = useState('');
   const [showVideoPanel, setShowVideoPanel] = useState(false);
 
-  // --------- Helpers contacto (cloud) ----------
+  // Flag para evitar refrescos concurrentes
+  const refreshingRef = useRef(false);
+
+  // --------- Helpers contacto ----------
   const refreshContact = async () => {
     try {
       const res = await fetch('/api/contact', { cache: 'no-store' });
@@ -44,13 +48,10 @@ export default function Page() {
         return;
       }
       const j = await res.json();
-      if (res.ok) {
-        setContact(j?.contact ?? null);
-        return;
-      }
-      try { setContact(loadContact() || null); } catch { setContact(null); }
+      if (res.ok) setContact(j?.contact ?? null);
+      else setContact(loadContact() || null);
     } catch {
-      try { setContact(loadContact() || null); } catch { setContact(null); }
+      setContact(loadContact() || null);
     }
   };
 
@@ -77,7 +78,7 @@ export default function Page() {
       const j = await apiFetch('/api/media/status', {
         method: 'POST',
         headers: { 'Cache-Control': 'no-store' },
-        body: { kind: 'any' }, // 👈 unificado
+        body: { kind: 'any' },
       });
       setHasMessage(Boolean(j?.has));
       setMediaKind(j?.kind ?? null);
@@ -87,62 +88,53 @@ export default function Page() {
     }
   };
 
-  const fetchSignedDownload = async () => {
-    if (!user?.id) return { url: null, kind: null };
+  // 👉 Refresco coalesced (rehidrata y luego actualiza media+contact en paralelo)
+  const refreshAll = async () => {
+    if (refreshingRef.current) return;        // evita overlap
+    refreshingRef.current = true;
     try {
-      const j = await apiFetch('/api/media/sign-download', {
-        method: 'POST',
-        body: { kind: 'any' }, // devuelve {url, kind}
-      });
-      return { url: j?.url || null, kind: j?.kind || null };
-    } catch (e) {
-      console.warn('sign-download error', e);
-      return { url: null, kind: null };
+      const u = await rehydrate();
+      await Promise.all([refreshMediaStatus(u?.id), refreshContact()]);
+    } finally {
+      refreshingRef.current = false;
     }
   };
 
+  // Debounce para eventos ruidosos (focus/visibilidad/storage/auth)
+  const refreshAllDebounced = useMemo(() => debounce(refreshAll, 250), []);
+
   useEffect(() => {
     (async () => {
-      await refreshContact();
+      // Primer render: refresh directo (sin debounce)
+      await refreshAll();
 
       const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
-        const u = session?.user ?? null;
-        setUser(u);
-        await refreshMediaStatus(u?.id);
-        await refreshContact();
+        // actualizamos user rápido y coalescemos el refresh
+        setUser(session?.user ?? null);
+        refreshAllDebounced();
       });
 
-      const u = await rehydrate();
-      await refreshMediaStatus(u?.id);
-
-      try {
-        if (sessionStorage.getItem('respirapp_just_signed_in') === '1') {
-          sessionStorage.removeItem('respirapp_just_signed_in');
-          setTimeout(async () => {
-            const u2 = await rehydrate();
-            await refreshMediaStatus(u2?.id);
-            await refreshContact();
-          }, 80);
-        }
-      } catch {}
-
-      const onVis = async () => {
-        if (!document.hidden) {
-          const u3 = await rehydrate();
-          await refreshMediaStatus(u3?.id);
-          await refreshContact();
-        }
+      // Volver al app / pestaña
+      const onVis = () => {
+        if (!document.hidden) refreshAllDebounced();
       };
       document.addEventListener('visibilitychange', onVis);
 
-      const onStorage = async (e) => {
+      // Cambios de sesión en otra pestaña
+      const onStorage = (e) => {
         if (e.key && e.key.includes('sb-') && e.key.includes('-auth-token')) {
-          const u4 = await rehydrate();
-          await refreshMediaStatus(u4?.id);
-          await refreshContact();
+          refreshAllDebounced();
         }
       };
       window.addEventListener('storage', onStorage);
+
+      // Post-login flag
+      try {
+        if (sessionStorage.getItem('respirapp_just_signed_in') === '1') {
+          sessionStorage.removeItem('respirapp_just_signed_in');
+          refreshAllDebounced();
+        }
+      } catch {}
 
       return () => {
         sub?.subscription?.unsubscribe?.();
@@ -158,20 +150,24 @@ export default function Page() {
       try { if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ''; } } catch {}
       videoRef.current = null;
     };
-  }, []);
+  }, [refreshAllDebounced]); // estable por useMemo
 
   // --------- Handlers ----------
   const handlePlayMessage = async () => {
     if (isPlayLoading) return;
     setIsPlayLoading(true);
     try {
-      // Parar lo que esté sonando
       try { audioRef.current?.pause?.(); } catch {}
       try { if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ''; } } catch {}
       setShowVideoPanel(false);
       setVideoUrl('');
 
-      const { url, kind } = await fetchSignedDownload();
+      const j = await apiFetch('/api/media/sign-download', {
+        method: 'POST',
+        body: { kind: 'any' },
+      });
+      const url = j?.url || null;
+      const kind = j?.kind || null;
       if (!url || !kind) {
         alert('No se pudo obtener tu mensaje para reproducirlo. Probá nuevamente más tarde.');
         setIsPlayLoading(false);
@@ -186,7 +182,6 @@ export default function Page() {
       } else {
         setVideoUrl(url);
         setShowVideoPanel(true);
-        // reproducción se hace en el <video> con autoplay
       }
     } catch {
       alert('No se pudo reproducir el mensaje. Verificá permisos del navegador.');
@@ -240,7 +235,6 @@ export default function Page() {
         )}
 
         <div className="launcher-grid">
-          {/* Mensaje: reproducir (si existe) o ir a selector /message */}
           {hasMessage ? (
             <button
               className="launcher-item blue"
@@ -266,7 +260,6 @@ export default function Page() {
             </button>
           )}
 
-          {/* Respirar → ruta propia */}
           <button
             className="launcher-item green"
             onClick={() => router.push('/breathing')}
@@ -276,7 +269,6 @@ export default function Page() {
             <div className="label">Respirar</div>
           </button>
 
-          {/* Contacto: si hay número (cloud), llama; si no, va a /contact */}
           {!contact?.phone ? (
             <button
               className="launcher-item red"
@@ -298,7 +290,6 @@ export default function Page() {
             </button>
           )}
 
-          {/* Config → ruta propia */}
           <button
             className="launcher-item yellow"
             onClick={() => router.push('/settings')}

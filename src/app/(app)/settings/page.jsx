@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import '@/styles/App.css';
@@ -9,15 +9,19 @@ import '@/styles/BottomNav.css';
 import BottomNav from '@/components/BottomNav';
 import ContactCard from '@/components/contactCard'; // archivo: contactCard.jsx (función: ContactCard)
 import { apiFetch } from '@lib/apiFetch';
+import { debounce } from '@lib/debounce';
+import { supabase } from '@lib/supabaseClient';
 
 export default function SettingsPage() {
   const router = useRouter();
 
   const [contact, setContact] = useState(null);
-  const [hasMessage, setHasMessage] = useState(false);  // audio o video
-  const [mediaKind, setMediaKind] = useState(null);     // 'audio' | 'video' | null
+  const [hasMessage, setHasMessage] = useState(false);
+  const [mediaKind, setMediaKind] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [msg, setMsg] = useState('');
+
+  const refreshingRef = useRef(false);
 
   async function refreshMediaStatus() {
     try {
@@ -45,10 +49,46 @@ export default function SettingsPage() {
     }
   }
 
+  // Coalesce de refresh (contact + media en paralelo)
+  const refreshAll = async () => {
+    if (refreshingRef.current) return;
+    refreshingRef.current = true;
+    try {
+      await Promise.all([refreshContact(), refreshMediaStatus()]);
+    } finally {
+      refreshingRef.current = false;
+    }
+  };
+  const refreshAllDebounced = useMemo(() => debounce(refreshAll, 250), []);
+
   useEffect(() => {
-    refreshContact();
-    refreshMediaStatus();
-  }, []);
+    (async () => {
+      await refreshAll();
+
+      // Cambios de auth → refrescar coalesced
+      const { data: sub } = supabase.auth.onAuthStateChange(() => {
+        refreshAllDebounced();
+      });
+
+      // Vuelve al foreground
+      const onVis = () => { if (!document.hidden) refreshAllDebounced(); };
+      document.addEventListener('visibilitychange', onVis);
+
+      // Cambios de sesión en otra pestaña
+      const onStorage = (e) => {
+        if (e.key && e.key.includes('sb-') && e.key.includes('-auth-token')) {
+          refreshAllDebounced();
+        }
+      };
+      window.addEventListener('storage', onStorage);
+
+      return () => {
+        sub?.subscription?.unsubscribe?.();
+        document.removeEventListener('visibilitychange', onVis);
+        window.removeEventListener('storage', onStorage);
+      };
+    })();
+  }, [refreshAllDebounced]);
 
   async function handleDelete() {
     setMsg('');
@@ -59,7 +99,7 @@ export default function SettingsPage() {
         body: { kind: 'any' },
       });
       setMsg('Mensaje eliminado.');
-      await refreshMediaStatus();
+      await refreshAll();
     } catch (e) {
       setMsg(e.message || 'No se pudo borrar el mensaje.');
     } finally {
