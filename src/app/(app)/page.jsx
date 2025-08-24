@@ -6,10 +6,9 @@ import '@/styles/App.css';
 import '@/styles/BottomNav.css';
 
 import BottomNav from '@/components/BottomNav';
-import AudioRecorder from '@/components/AudioRecorder';
 
 import { supabase } from '@lib/supabaseClient';
-import { loadContact } from '@lib/contactsStore'; // fallback legacy (podemos remover luego)
+import { loadContact } from '@lib/contactsStore'; // fallback legacy
 import { apiFetch } from '@lib/apiFetch';
 
 function telHref(phone) {
@@ -22,19 +21,20 @@ export default function Page() {
   const [user, setUser] = useState(null);
   const [contact, setContact] = useState(null);
 
-  // Media
-  const [hasAudio, setHasAudio] = useState(false);
+  // Media (unificado)
+  const [hasMessage, setHasMessage] = useState(false); // audio o video
+  const [mediaKind, setMediaKind] = useState(null);    // 'audio' | 'video' | null
   const [isPlayLoading, setIsPlayLoading] = useState(false);
-  const [recorderKey, setRecorderKey] = useState(0);
-  const [showInlineRecorder, setShowInlineRecorder] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
 
+  // Reproductores
   const audioRef = useRef(null);
+  const videoRef = useRef(null);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [showVideoPanel, setShowVideoPanel] = useState(false);
 
   // --------- Helpers contacto (cloud) ----------
   const refreshContact = async () => {
     try {
-      // Intento 1: nube
       const res = await fetch('/api/contact', { cache: 'no-store' });
       if (res.status === 401) {
         setContact(null);
@@ -45,19 +45,9 @@ export default function Page() {
         setContact(j?.contact ?? null);
         return;
       }
-      // si la API no ok, caigo a legacy
-      try {
-        setContact(loadContact() || null);
-      } catch {
-        setContact(null);
-      }
+      try { setContact(loadContact() || null); } catch { setContact(null); }
     } catch {
-      // Intento 2: legacy local (por compatibilidad)
-      try {
-        setContact(loadContact() || null);
-      } catch {
-        setContact(null);
-      }
+      try { setContact(loadContact() || null); } catch { setContact(null); }
     }
   };
 
@@ -76,45 +66,47 @@ export default function Page() {
   const refreshMediaStatus = async (uidExplicit) => {
     const uid = uidExplicit ?? user?.id;
     if (!uid) {
-      setHasAudio(false);
+      setHasMessage(false);
+      setMediaKind(null);
       return;
     }
     try {
       const j = await apiFetch('/api/media/status', {
         method: 'POST',
         headers: { 'Cache-Control': 'no-store' },
-        body: { kind: 'audio' },
+        body: { kind: 'any' }, // 👈 unificado
       });
-      setHasAudio(Boolean(j?.has));
+      setHasMessage(Boolean(j?.has));
+      setMediaKind(j?.kind ?? null);
     } catch {
-      setHasAudio(false);
+      setHasMessage(false);
+      setMediaKind(null);
     }
   };
 
-  const fetchSignedDownloadUrl = async () => {
-    if (!user?.id) return null;
+  const fetchSignedDownload = async () => {
+    if (!user?.id) return { url: null, kind: null };
     try {
-      const { url } = await apiFetch('/api/media/sign-download', {
+      const j = await apiFetch('/api/media/sign-download', {
         method: 'POST',
-        body: { kind: 'audio' },
+        body: { kind: 'any' }, // devuelve {url, kind}
       });
-      return url || null;
+      return { url: j?.url || null, kind: j?.kind || null };
     } catch (e) {
       console.warn('sign-download error', e);
-      return null;
+      return { url: null, kind: null };
     }
   };
 
   useEffect(() => {
     (async () => {
-      // Cargar contacto desde la nube (con fallback legacy)
       await refreshContact();
 
       const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
         const u = session?.user ?? null;
         setUser(u);
         await refreshMediaStatus(u?.id);
-        await refreshContact(); // <— también refrescamos contacto al cambiar auth
+        await refreshContact();
       });
 
       const u = await rehydrate();
@@ -126,7 +118,7 @@ export default function Page() {
           setTimeout(async () => {
             const u2 = await rehydrate();
             await refreshMediaStatus(u2?.id);
-            await refreshContact(); // <— refresco contacto post-login
+            await refreshContact();
           }, 80);
         }
       } catch {}
@@ -135,13 +127,12 @@ export default function Page() {
         if (!document.hidden) {
           const u3 = await rehydrate();
           await refreshMediaStatus(u3?.id);
-          await refreshContact(); // <— refresco al volver a la pestaña
+          await refreshContact();
         }
       };
       document.addEventListener('visibilitychange', onVis);
 
       const onStorage = async (e) => {
-        // Cambios de token de auth (multi-tab) y/o migración legacy
         if (e.key && e.key.includes('sb-') && e.key.includes('-auth-token')) {
           const u4 = await rehydrate();
           await refreshMediaStatus(u4?.id);
@@ -158,48 +149,49 @@ export default function Page() {
     })();
 
     return () => {
-      if (audioRef.current) {
-        try { audioRef.current.pause(); } catch {}
-        audioRef.current = null;
-      }
+      // limpiar players
+      try { audioRef.current?.pause?.(); } catch {}
+      audioRef.current = null;
+      try { if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ''; } } catch {}
+      videoRef.current = null;
     };
   }, []);
 
   // --------- Handlers ----------
-  const handlePlayAudio = async () => {
+  const handlePlayMessage = async () => {
     if (isPlayLoading) return;
     setIsPlayLoading(true);
     try {
-      const signedUrl = await fetchSignedDownloadUrl();
-      if (!signedUrl) {
+      // Parar lo que esté sonando
+      try { audioRef.current?.pause?.(); } catch {}
+      try { if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ''; } } catch {}
+      setShowVideoPanel(false);
+      setVideoUrl('');
+
+      const { url, kind } = await fetchSignedDownload();
+      if (!url || !kind) {
         alert('No se pudo obtener tu mensaje para reproducirlo. Probá nuevamente más tarde.');
         setIsPlayLoading(false);
         return;
       }
-      if (audioRef.current) {
-        try { audioRef.current.pause(); } catch {}
-        audioRef.current.src = '';
-        audioRef.current = null;
+
+      if (kind === 'audio') {
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.load();
+        await audio.play();
+      } else {
+        setVideoUrl(url);
+        setShowVideoPanel(true);
+        // reproducción se hace en el <video> con autoplay
       }
-      const audio = new Audio(signedUrl);
-      audioRef.current = audio;
-      audio.load();
-      await audio.play();
     } catch {
-      alert('No se pudo reproducir el audio. Verificá permisos del navegador.');
+      alert('No se pudo reproducir el mensaje. Verificá permisos del navegador.');
     } finally {
       setIsPlayLoading(false);
     }
   };
 
-  const handleAudioReady = async () => {
-    setShowConfirmation(true);
-    setTimeout(() => setShowConfirmation(false), 2000);
-    setShowInlineRecorder(false);
-    await refreshMediaStatus(user?.id);
-  };
-
-  // --------- Render ----------
   const activeNav = 'home';
 
   return (
@@ -208,43 +200,31 @@ export default function Page() {
         <h1>RESPIRA</h1>
         <h2>Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad</h2>
 
-        {showConfirmation && <div className="confirmation-banner">✅ Mensaje guardado</div>}
-
         <div className="launcher-grid">
-          {/* Mensaje: grabar o escuchar desde la nube */}
-          {hasAudio ? (
+          {/* Mensaje: reproducir (si existe) o ir a selector /message */}
+          {hasMessage ? (
             <button
               className="launcher-item blue"
-              onClick={handlePlayAudio}
-              aria-label="Escuchar mensaje"
-              title="Escuchar tu mensaje guardado"
+              onClick={handlePlayMessage}
+              aria-label="Reproducir mensaje"
+              title={mediaKind ? `Reproducir ${mediaKind}` : 'Reproducir mensaje'}
               disabled={isPlayLoading}
             >
               <div className="icon-bg bg-message" aria-hidden="true" />
               <div className="label">
-                {isPlayLoading ? 'Cargando…' : 'Escuchar mensaje'}
+                {isPlayLoading ? 'Cargando…' : 'Reproducir mensaje'}
               </div>
             </button>
           ) : (
-            !showInlineRecorder ? (
-              <button
-                className="launcher-item blue"
-                onClick={() => { setShowInlineRecorder(true); setRecorderKey(k => k + 1); }}
-                aria-label="Grabar mensaje"
-              >
-                <div className="icon-bg bg-message" aria-hidden="true" />
-                <div className="label">Grabar mensaje</div>
-              </button>
-            ) : (
-              <div className="tile-span-2">
-                <AudioRecorder
-                  key={recorderKey}
-                  onAudioReady={handleAudioReady}
-                  hideTitle
-                  locked={hasAudio}
-                />
-              </div>
-            )
+            <button
+              className="launcher-item blue"
+              onClick={() => (window.location.href = '/message')}
+              aria-label="Grabar mensaje"
+              title="Grabar mensaje (audio o video)"
+            >
+              <div className="icon-bg bg-message" aria-hidden="true" />
+              <div className="label">Grabar mensaje</div>
+            </button>
           )}
 
           {/* Respirar → ruta propia */}
@@ -289,6 +269,42 @@ export default function Page() {
             <div className="label">Config.</div>
           </button>
         </div>
+
+        {/* Panel de reproducción de video (cuando corresponda) */}
+        {showVideoPanel && videoUrl && (
+          <div className="panel" style={{ marginTop: 16 }}>
+            <video
+              ref={videoRef}
+              src={videoUrl}
+              controls
+              autoPlay
+              playsInline
+              style={{ width: '100%', borderRadius: 12, background: '#000' }}
+            />
+            <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+              <button
+                className="launcher-item yellow"
+                onClick={() => {
+                  try { videoRef.current?.pause?.(); } catch {}
+                  setShowVideoPanel(false);
+                  setVideoUrl('');
+                }}
+                title="Cerrar video"
+              >
+                <div className="icon-bg bg-config" aria-hidden="true" />
+                <div className="label">Cerrar</div>
+              </button>
+              <button
+                className="launcher-item blue"
+                onClick={() => (window.location.href = '/settings')}
+                title="Ir a configuración"
+              >
+                <div className="icon-bg bg-breath" aria-hidden="true" />
+                <div className="label">Config.</div>
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       <BottomNav

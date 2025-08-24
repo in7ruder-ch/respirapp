@@ -6,12 +6,13 @@ import '@/styles/App.css';
 import '@/styles/BottomNav.css';
 
 import BottomNav from '@/components/BottomNav';
-import ContactCard from '@/components/contactCard'; // 👈 usamos el componente cloud
+import ContactCard from '@/components/ContactCard'; // versión cloud
 import { apiFetch } from '@lib/apiFetch';
 
 export default function SettingsPage() {
   const [contact, setContact] = useState(null);
-  const [hasAudio, setHasAudio] = useState(false);
+  const [hasMessage, setHasMessage] = useState(false);  // audio o video
+  const [mediaKind, setMediaKind] = useState(null);     // 'audio' | 'video' | null
   const [isDeleting, setIsDeleting] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -19,11 +20,14 @@ export default function SettingsPage() {
     try {
       const j = await apiFetch('/api/media/status', {
         method: 'POST',
-        body: { kind: 'audio' },
+        headers: { 'Cache-Control': 'no-store' },
+        body: { kind: 'any' }, // ✅ unificado
       });
-      setHasAudio(Boolean(j?.has));
+      setHasMessage(Boolean(j?.has));
+      setMediaKind(j?.kind ?? null);
     } catch {
-      setHasAudio(false);
+      setHasMessage(false);
+      setMediaKind(null);
     }
   }
 
@@ -50,7 +54,10 @@ export default function SettingsPage() {
     setMsg('');
     setIsDeleting(true);
     try {
-      await apiFetch('/api/media/delete', { method: 'POST', body: { kind: 'audio' } });
+      await apiFetch('/api/media/delete', {
+        method: 'POST',
+        body: { kind: 'any' }, // ✅ borra audio o video (el que exista)
+      });
       setMsg('Mensaje eliminado.');
       await refreshMediaStatus();
     } catch (e) {
@@ -74,10 +81,15 @@ export default function SettingsPage() {
           <section className="settings-section" style={{ marginTop: 12 }}>
             <h3>Mensaje personal</h3>
 
-            {hasAudio ? (
-              <button className="delete-button" onClick={handleDelete} disabled={isDeleting}>
-                {isDeleting ? 'Borrando…' : '🗑️ Borrar mensaje'}
-              </button>
+            {hasMessage ? (
+              <>
+                <button className="delete-button" onClick={handleDelete} disabled={isDeleting}>
+                  {isDeleting ? 'Borrando…' : '🗑️ Borrar mensaje'}
+                </button>
+                <p className="muted" style={{ marginTop: 8 }}>
+                  Guardado: <strong>{mediaKind}</strong>.
+                </p>
+              </>
             ) : (
               <p className="muted">No tenés un mensaje guardado.</p>
             )}
@@ -85,7 +97,7 @@ export default function SettingsPage() {
             {msg && <p style={{ marginTop: 8 }}>{msg}</p>}
 
             <p className="muted" style={{ marginTop: 8 }}>
-              Plan Free: 1 audio permitido. Para ilimitados, pasá a Premium.
+              Plan Free: <strong>1 mensaje</strong> permitido (audio <em>o</em> video). Para ilimitados, pasá a Premium.
             </p>
           </section>
 
@@ -94,7 +106,7 @@ export default function SettingsPage() {
             <h3>Contacto de emergencia</h3>
             {contact?.phone ? (
               <ContactCard
-                onSaved={(c) => setContact(c)}   // permite que el estado se actualice tras borrar/editar
+                onSaved={(c) => setContact(c)}
                 showQuickActions={false}
                 showSMS={false}
               />
