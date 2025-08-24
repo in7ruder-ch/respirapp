@@ -7,4 +7,4 @@
 - Contacto de confianza a un toque.
 - Sincronizado en la nube con Supabase. Login-first.
 
-→ **Usá la app:** https://respirapp.vercel.app
+→ **Usá la app:** [respirapp.vercel.app](https://respirapp.vercel.app){target="_blank" rel="noopener"}
