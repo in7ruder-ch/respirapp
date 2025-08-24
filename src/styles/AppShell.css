@@ -1,0 +1,12 @@
+/* src/styles/AppShell.css */
+.app-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page {
+  flex: 1 1 auto;
+  /* Si tu BottomNav es fixed al fondo, este padding evita que tape contenido */
+  padding-bottom: 72px; /* ajusta si tu BottomNav tiene otra altura */
+}

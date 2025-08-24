@@ -49,6 +49,7 @@ export default function ProfilePage() {
       <header className="App-header">
         <div className="panel" style={{ paddingBottom: 24 }}>
           <h2>👤 Perfil</h2>
+          
 
           {loading ? (
             <p className="muted">Cargando…</p>
