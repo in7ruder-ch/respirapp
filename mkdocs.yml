@@ -1,0 +1,45 @@
+site_name: Respirapp
+site_description: RESPIRA — Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad
+site_author: Respirapp
+site_url: https://intruder-ch.github.io/respirapp
+copyright: © {{ date }} Respirapp
+
+theme:
+  name: material
+  language: es
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+    - search.suggest
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+  logo: assets/logo.png
+  favicon: assets/favicon.png
+
+repo_url: https://github.com/in7ruder-ch/respirapp
+repo_name: in7ruder-ch/respirapp
+edit_uri: edit/main/docs/
+
+nav:
+  - Inicio: index.md
+  - Producto: producto.md
+  - Guía: guia.md
+  - Premium: premium.md
+  - Seguridad: seguridad.md
+  - Contacto: contacto.md
+  - Legal:
+      - Privacidad: legal/privacidad.md
+      - Términos: legal/terminos.md
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - toc:
+      permalink: true
