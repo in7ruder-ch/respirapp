@@ -6,7 +6,7 @@ import '@/styles/App.css';
 import '@/styles/BottomNav.css';
 
 import BottomNav from '@/components/BottomNav';
-import ContactCard from '@/components/ContactCard'; // versión cloud
+import ContactCard from '@/components/contactCard'; // versión cloud
 import { apiFetch } from '@lib/apiFetch';
 
 export default function SettingsPage() {
