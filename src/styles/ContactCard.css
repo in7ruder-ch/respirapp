@@ -78,6 +78,22 @@
   font-size: 14px;
 }
 
+/* nuevo: errores y loading */
+.alert-error {
+  margin: 0 0 8px 0;
+  color: #7f1d1d;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.cc-loading {
+  color: #6b7280;
+  font-size: 14px;
+}
+
 .quick-actions {
   display: flex;
   gap: 8px;

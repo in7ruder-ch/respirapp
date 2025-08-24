@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { loadContact, saveContact, deleteContact } from '@/lib/contactsStore';
 import '@/styles/ContactCard.css';
 
 function telHref(phone) {
@@ -18,37 +17,94 @@ export default function ContactCard({
   showDelete = true,
   showSMS = true,
   hideTitle = false,
-  showQuickActions = true, // 👈 nuevo
+  showQuickActions = true,
 }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
 
   const hasContact = name.trim() && phone.trim();
 
-  useEffect(() => {
-    const c = loadContact();
-    if (c) {
-      setName(c.name || '');
-      setPhone(c.phone || '');
-    }
-  }, []);
-
-  function handleSave(e) {
-    e?.preventDefault?.();
-    if (!hasContact) return;
-    const contact = { name: name.trim(), phone: phone.trim() };
-    saveContact(contact);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1200);
-    if (typeof onSaved === 'function') onSaved(contact);
+  // --- API helpers ---
+  async function apiGet() {
+    const res = await fetch('/api/contact', { cache: 'no-store' });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Error al cargar contacto');
+    return json; // { ok, contact }
+  }
+  async function apiPost(payload) {
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Error al guardar contacto');
+    return json; // { ok, contact }
+  }
+  async function apiDelete() {
+    const res = await fetch('/api/contact', { method: 'DELETE' });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Error al borrar contacto');
+    return json; // { ok:true }
   }
 
-  function handleDelete() {
-    deleteContact();
-    setName('');
-    setPhone('');
-    if (typeof onSaved === 'function') onSaved(null);
+  // --- cargar al montar ---
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const { contact } = await apiGet(); // contact | null
+        setName(contact?.name || '');
+        setPhone(contact?.phone || '');
+      } catch (e) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  async function handleSave(e) {
+    e?.preventDefault?.();
+    if (!hasContact) return;
+    try {
+      setSaving(true);
+      setError('');
+      const payload = { name: name.trim(), phone: phone.trim() };
+      const { contact } = await apiPost(payload);
+      setName(contact.name || '');
+      setPhone(contact.phone || '');
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1200);
+      if (typeof onSaved === 'function') onSaved(contact);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!hasContact) return;
+    if (!confirm('¿Eliminar contacto de emergencia?')) return;
+    try {
+      setSaving(true);
+      setError('');
+      await apiDelete();
+      setName('');
+      setPhone('');
+      if (typeof onSaved === 'function') onSaved(null);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   const callDisabled = !hasContact;
@@ -57,54 +113,63 @@ export default function ContactCard({
     <div className="contact-card">
       {!hideTitle && <h3 className="contact-title">Contacto de confianza</h3>}
 
-      <form className="contact-form" onSubmit={handleSave}>
-        <label className="field">
-          <span className="label">Nombre</span>
-          <input
-            className="input"
-            type="text"
-            placeholder="Ej: Mamá"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={80}
-            required
-          />
-        </label>
+      {error && <div className="alert-error">⚠️ {error}</div>}
+      {loading ? (
+        <div className="cc-loading">Cargando…</div>
+      ) : (
+        <form className="contact-form" onSubmit={handleSave}>
+          <label className="field">
+            <span className="label">Nombre</span>
+            <input
+              className="input"
+              type="text"
+              placeholder="Ej: Mamá"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={80}
+              required
+            />
+          </label>
 
-        <label className="field">
-          <span className="label">Teléfono</span>
-          <input
-            className="input"
-            type="tel"
-            placeholder="+54 9 11 ..."
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            maxLength={40}
-            required
-          />
-        </label>
+          <label className="field">
+            <span className="label">Teléfono</span>
+            <input
+              className="input"
+              type="tel"
+              placeholder="+54 9 11 ..."
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              maxLength={40}
+              required
+            />
+          </label>
 
-        <div className="actions">
-          <button type="submit" className="btn btn-primary" disabled={!hasContact}>
-            Guardar
-          </button>
-
-          {showDelete && (
+          <div className="actions">
             <button
-              type="button"
-              className="btn btn-danger"
-              onClick={handleDelete}
-              disabled={!hasContact}
+              type="submit"
+              className="btn btn-primary"
+              disabled={!hasContact || saving}
             >
-              Borrar
+              {saving ? 'Guardando…' : 'Guardar'}
             </button>
-          )}
-        </div>
-      </form>
+
+            {showDelete && (
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={handleDelete}
+                disabled={!hasContact || saving}
+              >
+                Borrar
+              </button>
+            )}
+          </div>
+        </form>
+      )}
 
       {saved && <div className="alert-success">✅ Contacto guardado</div>}
 
-      {showQuickActions && (
+      {showQuickActions && !loading && (
         <>
           <div className="quick-actions">
             <a
