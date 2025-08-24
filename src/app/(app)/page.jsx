@@ -9,7 +9,7 @@ import BottomNav from '@/components/BottomNav';
 import AudioRecorder from '@/components/AudioRecorder';
 
 import { supabase } from '@lib/supabaseClient';
-import { loadContact } from '@lib/contactsStore';
+import { loadContact } from '@lib/contactsStore'; // fallback legacy (podemos remover luego)
 import { apiFetch } from '@lib/apiFetch';
 
 function telHref(phone) {
@@ -30,6 +30,36 @@ export default function Page() {
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   const audioRef = useRef(null);
+
+  // --------- Helpers contacto (cloud) ----------
+  const refreshContact = async () => {
+    try {
+      // Intento 1: nube
+      const res = await fetch('/api/contact', { cache: 'no-store' });
+      if (res.status === 401) {
+        setContact(null);
+        return;
+      }
+      const j = await res.json();
+      if (res.ok) {
+        setContact(j?.contact ?? null);
+        return;
+      }
+      // si la API no ok, caigo a legacy
+      try {
+        setContact(loadContact() || null);
+      } catch {
+        setContact(null);
+      }
+    } catch {
+      // Intento 2: legacy local (por compatibilidad)
+      try {
+        setContact(loadContact() || null);
+      } catch {
+        setContact(null);
+      }
+    }
+  };
 
   // --------- Session & status ----------
   const rehydrate = async () => {
@@ -77,12 +107,14 @@ export default function Page() {
 
   useEffect(() => {
     (async () => {
-      setContact(loadContact());
+      // Cargar contacto desde la nube (con fallback legacy)
+      await refreshContact();
 
       const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
         const u = session?.user ?? null;
         setUser(u);
         await refreshMediaStatus(u?.id);
+        await refreshContact(); // <— también refrescamos contacto al cambiar auth
       });
 
       const u = await rehydrate();
@@ -94,22 +126,26 @@ export default function Page() {
           setTimeout(async () => {
             const u2 = await rehydrate();
             await refreshMediaStatus(u2?.id);
+            await refreshContact(); // <— refresco contacto post-login
           }, 80);
         }
-      } catch { }
+      } catch {}
 
       const onVis = async () => {
         if (!document.hidden) {
           const u3 = await rehydrate();
           await refreshMediaStatus(u3?.id);
+          await refreshContact(); // <— refresco al volver a la pestaña
         }
       };
       document.addEventListener('visibilitychange', onVis);
 
       const onStorage = async (e) => {
+        // Cambios de token de auth (multi-tab) y/o migración legacy
         if (e.key && e.key.includes('sb-') && e.key.includes('-auth-token')) {
           const u4 = await rehydrate();
           await refreshMediaStatus(u4?.id);
+          await refreshContact();
         }
       };
       window.addEventListener('storage', onStorage);
@@ -123,7 +159,7 @@ export default function Page() {
 
     return () => {
       if (audioRef.current) {
-        try { audioRef.current.pause(); } catch { }
+        try { audioRef.current.pause(); } catch {}
         audioRef.current = null;
       }
     };
@@ -141,7 +177,7 @@ export default function Page() {
         return;
       }
       if (audioRef.current) {
-        try { audioRef.current.pause(); } catch { }
+        try { audioRef.current.pause(); } catch {}
         audioRef.current.src = '';
         audioRef.current = null;
       }
@@ -221,7 +257,7 @@ export default function Page() {
             <div className="label">Respirar</div>
           </button>
 
-          {/* Contacto: si hay número, llama; si no, va a /contact */}
+          {/* Contacto: si hay número (cloud), llama; si no, va a /contact */}
           {!contact?.phone ? (
             <button
               className="launcher-item red"
