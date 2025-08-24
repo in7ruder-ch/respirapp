@@ -111,7 +111,7 @@ export default function ContactCard({
 
   return (
     <div className="contact-card">
-      {!hideTitle && <h3 className="contact-title">Contacto de confianza</h3>}
+      {!hideTitle && <h3 className="contact-title">Tu contacto</h3>}
 
       {error && <div className="alert-error">⚠️ {error}</div>}
       {loading ? (

@@ -6,7 +6,7 @@ import '@/styles/App.css';
 import '@/styles/BottomNav.css';
 
 import BottomNav from '@/components/BottomNav';
-import ContactCard from '@/components/contactCard'; // versión cloud
+import ContactCard from '@/components/contactCard'; // archivo: contactCard.jsx (función: ContactCard)
 import { apiFetch } from '@lib/apiFetch';
 
 export default function SettingsPage() {
@@ -83,12 +83,18 @@ export default function SettingsPage() {
 
             {hasMessage ? (
               <>
-                <button className="delete-button" onClick={handleDelete} disabled={isDeleting}>
-                  {isDeleting ? 'Borrando…' : '🗑️ Borrar mensaje'}
-                </button>
                 <p className="muted" style={{ marginTop: 8 }}>
                   Guardado: <strong>{mediaKind}</strong>.
                 </p>
+
+                <button
+                  className="delete-button"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  style={{ marginTop: 8 }}
+                >
+                  {isDeleting ? 'Borrando…' : '🗑️ Borrar mensaje'}
+                </button>
               </>
             ) : (
               <p className="muted">No tenés un mensaje guardado.</p>
@@ -97,7 +103,8 @@ export default function SettingsPage() {
             {msg && <p style={{ marginTop: 8 }}>{msg}</p>}
 
             <p className="muted" style={{ marginTop: 8 }}>
-              Plan Free: <strong>1 mensaje</strong> permitido (audio <em>o</em> video). Para ilimitados, pasá a Premium.
+              Plan Free: <strong>1 mensaje</strong> permitido (audio <em>o</em> video).
+              Para ilimitados, pasá a Premium.
             </p>
           </section>
 
