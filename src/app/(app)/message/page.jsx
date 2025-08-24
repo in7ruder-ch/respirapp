@@ -29,7 +29,7 @@ export default function MessagePage() {
       const j = await apiFetch('/api/media/status', {
         method: 'POST',
         headers: { 'Cache-Control': 'no-store' },
-        body: { kind: 'any' }, // 👈 unificado: audio o video
+        body: { kind: 'any' }, // unificado: audio o video
       });
       setExistingKind(j?.kind ?? null);
     } catch {
@@ -63,7 +63,8 @@ export default function MessagePage() {
     <div className="App has-bottom-nav">
       <header className="App-header">
         <h1>MENSAJE</h1>
-        <h2>Elegí cómo querés guardar tu mensaje</h2>
+        {/* 👇 Ocultamos el subtítulo cuando ya eligieron AUDIO */}
+        {!showAudioRecorder && <h2>Elegí cómo querés guardar tu mensaje</h2>}
 
         {showConfirmation && <div className="confirmation-banner">✅ Mensaje guardado</div>}
 
@@ -76,12 +77,32 @@ export default function MessagePage() {
             <p className="muted" style={{ marginTop: 6 }}>
               En plan Free podés tener 1 (audio <em>o</em> video). Para grabar uno nuevo, primero borrá el actual en Configuración.
             </p>
+            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+              <button
+                className="launcher-item yellow"
+                onClick={() => (window.location.href = '/settings')}
+                aria-label="Ir a configuración"
+                title="Ir a configuración"
+              >
+                <div className="icon-bg bg-config" aria-hidden="true" />
+                <div className="label">Config.</div>
+              </button>
+              <button
+                className="launcher-item blue"
+                onClick={() => (window.location.href = '/')}
+                aria-label="Volver al inicio"
+                title="Volver al inicio"
+              >
+                <div className="icon-bg bg-breath" aria-hidden="true" />
+                <div className="label">Inicio</div>
+              </button>
+            </div>
           </div>
         ) : (
-          // Si NO hay mensaje, mostramos launcher con dos opciones
-          <div className="launcher-grid" style={{ marginTop: 12 }}>
+          // Si NO hay mensaje, mostramos selector o el recorder inline (AUDIO)
+          <>
             {!showAudioRecorder ? (
-              <>
+              <div className="launcher-grid" style={{ marginTop: 12 }}>
                 {/* Grabar AUDIO */}
                 <button
                   className="launcher-item blue"
@@ -93,7 +114,7 @@ export default function MessagePage() {
                   <div className="label">Grabar audio</div>
                 </button>
 
-                {/* Grabar VIDEO — navegamos a subruta (la creamos en el paso C) */}
+                {/* Grabar VIDEO — subruta */}
                 <button
                   className="launcher-item red"
                   onClick={() => (window.location.href = '/message/video')}
@@ -103,18 +124,22 @@ export default function MessagePage() {
                   <div className="icon-bg bg-message" aria-hidden="true" />
                   <div className="label">Grabar video</div>
                 </button>
-              </>
+              </div>
             ) : (
-              // Inline recorder (misma estética que ya usabas en Home)
-              <div className="tile-span-2">
+              // 👇 Modo AUDIO elegido: solo el recorder + info Free
+              <div className="panel" style={{ marginTop: 12 }}>
                 <AudioRecorder
                   key={recorderKey}
                   onAudioReady={onAudioReady}
                   hideTitle
                 />
+                <p className="muted" style={{ marginTop: 8 }}>
+                  Plan Free: <strong>1 mensaje total</strong> (audio <em>o</em> video).
+                  Para grabar otro, primero borrá el actual en Configuración.
+                </p>
               </div>
             )}
-          </div>
+          </>
         )}
       </header>
 

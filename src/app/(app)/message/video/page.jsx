@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 import '@/styles/App.css';
 import '@/styles/BottomNav.css';
@@ -13,6 +14,7 @@ export const dynamic = 'force-dynamic';
 export default function MessageVideoPage() {
   const [saved, setSaved] = useState(false);
   const activeNav = 'home';
+  const router = useRouter();
 
   return (
     <div className="App has-bottom-nav">
@@ -26,7 +28,9 @@ export default function MessageVideoPage() {
           <VideoRecorder
             onVideoReady={() => {
               setSaved(true);
-              setTimeout(() => setSaved(false), 1800);
+              // Redirigimos a Inicio para cerrar cámara y dar feedback claro.
+              // Al desmontar, VideoRecorder apaga los tracks.
+              setTimeout(() => router.replace('/'), 200);
             }}
             hideTitle
           />
