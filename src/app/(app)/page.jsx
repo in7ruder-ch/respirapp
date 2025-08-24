@@ -200,6 +200,42 @@ export default function Page() {
         <h1>RESPIRA</h1>
         <h2>Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad</h2>
 
+        {/* ⬆️ Panel de reproducción de video AHORA ARRIBA de los tiles */}
+        {showVideoPanel && videoUrl && (
+          <div className="panel" style={{ marginTop: 16 }}>
+            <video
+              ref={videoRef}
+              src={videoUrl}
+              controls
+              autoPlay
+              playsInline
+              style={{ width: '100%', borderRadius: 12, background: '#000' }}
+            />
+            <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+              <button
+                className="launcher-item yellow"
+                onClick={() => {
+                  try { videoRef.current?.pause?.(); } catch {}
+                  setShowVideoPanel(false);
+                  setVideoUrl('');
+                }}
+                title="Cerrar video"
+              >
+                <div className="icon-bg bg-config" aria-hidden="true" />
+                <div className="label">Cerrar</div>
+              </button>
+              <button
+                className="launcher-item blue"
+                onClick={() => (window.location.href = '/settings')}
+                title="Ir a configuración"
+              >
+                <div className="icon-bg bg-breath" aria-hidden="true" />
+                <div className="label">Config.</div>
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="launcher-grid">
           {/* Mensaje: reproducir (si existe) o ir a selector /message */}
           {hasMessage ? (
@@ -269,42 +305,6 @@ export default function Page() {
             <div className="label">Config.</div>
           </button>
         </div>
-
-        {/* Panel de reproducción de video (cuando corresponda) */}
-        {showVideoPanel && videoUrl && (
-          <div className="panel" style={{ marginTop: 16 }}>
-            <video
-              ref={videoRef}
-              src={videoUrl}
-              controls
-              autoPlay
-              playsInline
-              style={{ width: '100%', borderRadius: 12, background: '#000' }}
-            />
-            <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-              <button
-                className="launcher-item yellow"
-                onClick={() => {
-                  try { videoRef.current?.pause?.(); } catch {}
-                  setShowVideoPanel(false);
-                  setVideoUrl('');
-                }}
-                title="Cerrar video"
-              >
-                <div className="icon-bg bg-config" aria-hidden="true" />
-                <div className="label">Cerrar</div>
-              </button>
-              <button
-                className="launcher-item blue"
-                onClick={() => (window.location.href = '/settings')}
-                title="Ir a configuración"
-              >
-                <div className="icon-bg bg-breath" aria-hidden="true" />
-                <div className="label">Config.</div>
-              </button>
-            </div>
-          </div>
-        )}
       </header>
 
       <BottomNav
