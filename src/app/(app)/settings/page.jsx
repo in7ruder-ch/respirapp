@@ -6,10 +6,8 @@ import '@/styles/App.css';
 import '@/styles/BottomNav.css';
 
 import BottomNav from '@/components/BottomNav';
-import ContactCard from '@/components/contactCard';
-
+import ContactCard from '@/components/ContactCard'; // 👈 usamos el componente cloud
 import { apiFetch } from '@lib/apiFetch';
-import { loadContact } from '@lib/contactsStore';
 
 export default function SettingsPage() {
   const [contact, setContact] = useState(null);
@@ -29,8 +27,22 @@ export default function SettingsPage() {
     }
   }
 
+  async function refreshContact() {
+    try {
+      const res = await fetch('/api/contact', { cache: 'no-store' });
+      const json = await res.json();
+      if (res.ok) {
+        setContact(json.contact || null);
+      } else {
+        setContact(null);
+      }
+    } catch {
+      setContact(null);
+    }
+  }
+
   useEffect(() => {
-    setContact(loadContact());
+    refreshContact();
     refreshMediaStatus();
   }, []);
 
@@ -82,7 +94,7 @@ export default function SettingsPage() {
             <h3>Contacto de emergencia</h3>
             {contact?.phone ? (
               <ContactCard
-                onSaved={(c) => setContact(c)}
+                onSaved={(c) => setContact(c)}   // permite que el estado se actualice tras borrar/editar
                 showQuickActions={false}
                 showSMS={false}
               />
