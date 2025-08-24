@@ -1,4 +1,4 @@
-# Respirapp
+# RespirApp
 
 **RESPIRA** — Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad.
 
