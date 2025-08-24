@@ -7,7 +7,7 @@ import '@/styles/VideoRecorder.css';
 
 export default function VideoRecorder({
   hideTitle = false,
-  onVideoReady,        // callback({ ok:true }) al terminar y subir
+  onVideoReady,
 }) {
   const videoRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -17,11 +17,10 @@ export default function VideoRecorder({
   const [permissionError, setPermissionError] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [elapsed, setElapsed] = useState(0); // segundos
+  const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef(null);
   const [banner, setBanner] = useState('');
 
-  // pedir permisos y mostrar preview
   useEffect(() => {
     (async () => {
       try {
@@ -47,12 +46,8 @@ export default function VideoRecorder({
 
   function stopAll() {
     try { clearInterval(timerRef.current); } catch {}
-    try {
-      mediaRecorderRef.current?.stop?.();
-    } catch {}
-    try {
-      streamRef.current?.getTracks?.().forEach(t => t.stop());
-    } catch {}
+    try { mediaRecorderRef.current?.stop?.(); } catch {}
+    try { streamRef.current?.getTracks?.().forEach(t => t.stop()); } catch {}
     mediaRecorderRef.current = null;
     streamRef.current = null;
   }
@@ -74,7 +69,7 @@ export default function VideoRecorder({
       setIsRecording(true);
       setElapsed(0);
       timerRef.current = setInterval(() => setElapsed((s) => s + 1), 1000);
-    } catch (e) {
+    } catch {
       setPermissionError('No se pudo iniciar la grabación en este navegador.');
     }
   }
@@ -84,19 +79,12 @@ export default function VideoRecorder({
   }
 
   function pickMediaRecorderOptions() {
-    // tratamos de usar video/webm; si el browser no lo soporta, cae al default
     if (typeof MediaRecorder !== 'undefined') {
-      if (MediaRecorder.isTypeSupported?.('video/webm;codecs=vp9')) {
-        return { mimeType: 'video/webm;codecs=vp9' };
-      }
-      if (MediaRecorder.isTypeSupported?.('video/webm;codecs=vp8')) {
-        return { mimeType: 'video/webm;codecs=vp8' };
-      }
-      if (MediaRecorder.isTypeSupported?.('video/webm')) {
-        return { mimeType: 'video/webm' };
-      }
+      if (MediaRecorder.isTypeSupported?.('video/webm;codecs=vp9')) return { mimeType: 'video/webm;codecs=vp9' };
+      if (MediaRecorder.isTypeSupported?.('video/webm;codecs=vp8')) return { mimeType: 'video/webm;codecs=vp8' };
+      if (MediaRecorder.isTypeSupported?.('video/webm')) return { mimeType: 'video/webm' };
     }
-    return {}; // que el browser decida
+    return {};
   }
 
   async function handleStop() {
@@ -106,26 +94,22 @@ export default function VideoRecorder({
     const blob = new Blob(chunksRef.current, { type: inferBlobType(chunksRef.current) });
     chunksRef.current = [];
 
-    // Subir al backend
     setIsUploading(true);
     setBanner('');
     try {
       const contentType = blob.type || 'video/webm';
-      // 1) Pedir upload-url
-      const { signedUrl } = await apiFetch('/api/media/upload-url', {
+      // 👇 unificado: /api/upload-url
+      const { signedUrl } = await apiFetch('/api/upload-url', {
         method: 'POST',
         body: { kind: 'video', contentType },
       });
 
-      // 2) PUT del blob a la URL firmada
       const putRes = await fetch(signedUrl, {
         method: 'PUT',
         headers: { 'content-type': contentType },
         body: blob,
       });
-      if (!putRes.ok) {
-        throw new Error('No se pudo subir el video.');
-      }
+      if (!putRes.ok) throw new Error('No se pudo subir el video.');
 
       setBanner('✅ Video guardado');
       setTimeout(() => setBanner(''), 1800);
@@ -143,10 +127,9 @@ export default function VideoRecorder({
   }
 
   function inferBlobType(chunks) {
-    // buscamos el primer chunk con type válido
     const withType = chunks?.find?.((c) => c?.type && c.type !== 'application/octet-stream');
     return withType?.type || 'video/webm';
-  }
+    }
 
   const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
   const ss = String(elapsed % 60).padStart(2, '0');

@@ -123,26 +123,6 @@ export default function MessagePage() {
                   <div className="icon-bg bg-message" aria-hidden="true" />
                   <div className="label">Grabar video</div>
                 </button>
-
-                {/* Accesos útiles */}
-                <button
-                  className="launcher-item yellow"
-                  onClick={() => (window.location.href = '/')}
-                  aria-label="Volver al inicio"
-                  title="Volver al inicio"
-                >
-                  <div className="icon-bg bg-config" aria-hidden="true" />
-                  <div className="label">Inicio</div>
-                </button>
-                <button
-                  className="launcher-item green"
-                  onClick={() => (window.location.href = '/settings')}
-                  aria-label="Configuración"
-                  title="Configuración"
-                >
-                  <div className="icon-bg bg-breath" aria-hidden="true" />
-                  <div className="label">Config.</div>
-                </button>
               </>
             ) : (
               // Inline recorder (misma estética que ya usabas en Home)
