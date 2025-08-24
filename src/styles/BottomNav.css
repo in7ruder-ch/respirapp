@@ -1,4 +1,4 @@
-/* Barra inferior fija, fuera del wrapper, siempre visible */
+/* Barra inferior fija, siempre visible */
 .bottom-nav {
   position: fixed;
   left: 0;
@@ -34,21 +34,38 @@
 
   gap: 2px;
   cursor: pointer;
+  touch-action: manipulation;
 
   color: #6b7280; /* gris 500 */
   transition: color 140ms ease, transform 140ms ease, background 140ms ease;
 }
 
-.bn-item:hover { transform: translateY(-1px); }
-.bn-item.is-active {
-  color: #2563eb;
-  background: rgba(37, 99, 235, 0.10);
+.bn-item:hover {
+  transform: translateY(-1px);
 }
 
-.bn-icon { font-size: 1.25rem; line-height: 1; display: block; }
-.bn-label { font-size: 1rem; line-height: 1.1; font-weight: 700; display: block; text-align: center; }
+.bn-item.is-active {
+  color: #2563eb; /* azul fuerte */
+  background: rgba(37, 99, 235, 0.12); /* un poco más visible */
+}
+
+.bn-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  display: block;
+}
+
+.bn-label {
+  font-size: 0.9rem;
+  line-height: 1.1;
+  font-weight: 600;
+  display: block;
+  text-align: center;
+}
 
 /* Solo en mobile reservamos espacio en el contenedor */
 @media (max-width: 768px) {
-  .has-bottom-nav { padding-bottom: calc(64px + max(env(safe-area-inset-bottom), 0px)); }
+  .has-bottom-nav {
+    padding-bottom: calc(64px + max(env(safe-area-inset-bottom), 0px));
+  }
 }
