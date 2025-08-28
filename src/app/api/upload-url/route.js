@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { getUserPlan } from "@/lib/plan.js";
 
 const PUBLIC_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -51,6 +52,13 @@ function extFor(base, kind) {
   }
   return ".bin";
 }
+function genId() {
+  try {
+    // Node 18+ / Web Crypto
+    if (globalThis.crypto?.randomUUID) return crypto.randomUUID();
+  } catch {}
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
 /**
  * POST /api/upload-url
@@ -93,35 +101,48 @@ export async function POST(req) {
     );
   }
 
-  // 3) Límite FREE unificado (DB con user client)
-  const { data: existing, error: selErr } = await userClient
-    .from("media")
-    .select("id")
-    .eq("user_id", user.id)
-    .limit(1)
-    .maybeSingle();
-
-  if (selErr && selErr.code !== "PGRST116") {
-    return NextResponse.json({ ok: false, message: selErr.message }, { status: 500 });
+  // 3) Plan del usuario → define límite
+  let tier = "free";
+  try {
+    tier = await getUserPlan(user.id);
+  } catch (e) {
+    // fallback conservador: si falla, tratamos como free
+    tier = "free";
   }
-  if (existing) {
-    return NextResponse.json(
-      {
-        ok: false,
-        code: "LIMIT_REACHED",
-        message:
-          "Plan Free: ya tenés un mensaje guardado (audio o video). Borrá el actual para grabar otro.",
-      },
-      { status: 403 }
-    );
+  const isFree = tier === "free";
+
+  // 4) Límite FREE unificado (1 mensaje total)
+  if (isFree) {
+    const { data: existing, error: selErr } = await userClient
+      .from("media")
+      .select("id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+
+    // PGRST116 = no rows
+    if (selErr && selErr.code !== "PGRST116") {
+      return NextResponse.json({ ok: false, message: selErr.message }, { status: 500 });
+    }
+    if (existing) {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "LIMIT_REACHED",
+          message:
+            "Plan Free: ya tenés un mensaje guardado (audio o video). Borrá el actual para grabar otro.",
+        },
+        { status: 403 }
+      );
+    }
   }
 
-  // 4) Ruta destino
+  // 5) Ruta destino (siempre generamos clave única para no pisar archivos)
   const ext = extFor(baseCT, kind);
-  const key = `${user.id}/${kind}/message${ext}`;
+  const key = `${user.id}/${kind}/${genId()}${ext}`;
   const path = `${BUCKET}/${key}`; // guardamos bucket+key en DB para ser explícitos
 
-  // 5) Reserva en DB (user client con RLS)
+  // 6) Reserva en DB (user client con RLS)
   const { data: inserted, error: insErr } = await userClient
     .from("media")
     .insert({ user_id: user.id, kind, path })
@@ -129,16 +150,10 @@ export async function POST(req) {
     .single();
 
   if (insErr) {
-    if (insErr.code === "23505") {
-      return NextResponse.json(
-        { ok: false, code: "LIMIT_REACHED", message: "Ya existe un mensaje reservado." },
-        { status: 403 }
-      );
-    }
     return NextResponse.json({ ok: false, message: insErr.message }, { status: 500 });
   }
 
-  // 6) Firmar URL de subida con SERVICE ROLE (bypassa RLS de Storage)
+  // 7) Firmar URL de subida con SERVICE ROLE (bypassa RLS de Storage)
   const { data: signed, error: signErr } = await admin.storage
     .from(BUCKET)
     .createSignedUploadUrl(key);
@@ -152,6 +167,7 @@ export async function POST(req) {
   return NextResponse.json({
     ok: true,
     kind,
+    plan: tier,
     path,
     bucket: BUCKET,
     key,
