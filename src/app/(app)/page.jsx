@@ -47,8 +47,8 @@ export default function Page() {
         body: { kind },
       }),
     {
-        revalidateOnFocus: true,
-        dedupingInterval: 1500,
+      revalidateOnFocus: true,
+      dedupingInterval: 1500,
     }
   );
   const hasMessage = Boolean(mediaData?.has);
@@ -116,15 +116,15 @@ export default function Page() {
         sessionStorage.removeItem('respirapp_just_signed_in');
         refreshAllDebounced();
       }
-    } catch {}
+    } catch { }
 
     return () => {
       sub?.subscription?.unsubscribe?.();
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('storage', onStorage);
-      try { audioRef.current?.pause?.(); } catch {}
+      try { audioRef.current?.pause?.(); } catch { }
       audioRef.current = null;
-      try { if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ''; } } catch {}
+      try { if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ''; } } catch { }
       videoRef.current = null;
     };
   }, [refreshAllDebounced]);
@@ -134,8 +134,8 @@ export default function Page() {
     if (isPlayLoading) return;
     setIsPlayLoading(true);
     try {
-      try { audioRef.current?.pause?.(); } catch {}
-      try { if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ''; } } catch {}
+      try { audioRef.current?.pause?.(); } catch { }
+      try { if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ''; } } catch { }
       setShowVideoPanel(false);
       setVideoUrl('');
 
@@ -170,13 +170,10 @@ export default function Page() {
   const activeNav = 'home';
 
   // ---------- UI helpers según plan ----------
-  const showRecord =
-    (!isPremium && !hasMessage)  // Free sin mensaje => Grabar
-    || (isPremium && count === 0); // Premium sin mensajes => Grabar
+  // ---------- UI helpers: Home solo reproduce ----------
+  const hasAny = count > 0;
+  const showPlay = hasAny; // siempre: si hay 1+ reproduce
 
-  const showPlay =
-    (!isPremium && hasMessage)   // Free con mensaje => Reproducir
-    || (isPremium && count >= 1); // Premium con >=1 => Reproducir
 
   const playLabel = isPremium
     ? (count > 1 ? 'Reproducir favorito/último' : 'Reproducir mensaje')
@@ -203,7 +200,7 @@ export default function Page() {
               <button
                 className="launcher-item yellow"
                 onClick={() => {
-                  try { videoRef.current?.pause?.(); } catch {}
+                  try { videoRef.current?.pause?.(); } catch { }
                   setShowVideoPanel(false);
                   setVideoUrl('');
                 }}
@@ -225,8 +222,8 @@ export default function Page() {
         )}
 
         <div className="launcher-grid">
-          {/* Mensaje (según plan y cantidad) */}
-          {showPlay && (
+          {/* Mensaje: Home SOLO reproduce. Si no hay, CTA a Biblioteca */}
+          {showPlay ? (
             <button
               className="launcher-item blue"
               onClick={handlePlayMessage}
@@ -236,51 +233,18 @@ export default function Page() {
             >
               <div className="icon-bg bg-message" aria-hidden="true" />
               <div className="label">
-                {isPlayLoading ? 'Cargando…' : playLabel}
+                {isPlayLoading ? 'Cargando…' : (count > 1 ? 'Reproducir favorito/último' : 'Reproducir mensaje')}
               </div>
-            </button>
-          )}
-          {showRecord && (
-            <button
-              className="launcher-item blue"
-              onClick={() => router.push('/message')}
-              aria-label="Grabar mensaje"
-              title="Grabar mensaje (audio o video)"
-            >
-              <div className="icon-bg bg-message" aria-hidden="true" />
-              <div className="label">Grabar mensaje</div>
-            </button>
-          )}
-
-          {/* Respirar */}
-          <button
-            className="launcher-item green"
-            onClick={() => router.push('/breathing')}
-            aria-label="Respirar juntos"
-          >
-            <div className="icon-bg bg-breath" aria-hidden="true" />
-            <div className="label">Respirar</div>
-          </button>
-
-          {/* Contacto */}
-          {!contact?.phone ? (
-            <button
-              className="launcher-item red"
-              onClick={() => router.push('/contact')}
-              aria-label="Registrar contacto"
-            >
-              <div className="icon-bg bg-contact" aria-hidden="true" />
-              <div className="label">Contacto</div>
             </button>
           ) : (
             <button
-              className="launcher-item red"
-              onClick={() => (window.location.href = telHref(contact.phone))}
-              title={`Llamar a ${contact?.name || 'contacto'}`}
-              aria-label="Llamar contacto"
+              className="launcher-item blue"
+              onClick={() => router.push('/library')}
+              aria-label="Ir a Biblioteca"
+              title="Ir a Biblioteca para grabar tu primer mensaje"
             >
-              <div className="icon-bg bg-contact" aria-hidden="true" />
-              <div className="label">Llamar</div>
+              <div className="icon-bg bg-message" aria-hidden="true" />
+              <div className="label">Ir a Biblioteca</div>
             </button>
           )}
 
