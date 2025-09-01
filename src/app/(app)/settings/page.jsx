@@ -138,19 +138,6 @@ export default function SettingsPage() {
             )}
           </section>
 
-          {/* === Mensajes (derivado a Biblioteca) === */}
-          <section className="settings-section" style={{ marginTop: 12 }}>
-            <h3>Mensajes</h3>
-            <p className="muted" style={{ marginTop: 6 }}>
-              {hasMessage ? 'Tenés mensajes guardados.' : 'Aún no tenés mensajes.'}
-            </p>
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <a className="underline" href="/library">Ir a Biblioteca</a>
-            </div>
-
-
-          </section>
-
           {/* === Contacto de emergencia === */}
           <section className="settings-section" style={{ marginTop: 16 }}>
             <h3>Contacto de emergencia</h3>
