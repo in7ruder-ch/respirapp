@@ -19,6 +19,8 @@ function telHref(phone) {
   return clean ? `tel:${clean}` : '#';
 }
 
+const fetcher = (u) => fetch(u, { cache: 'no-store' }).then(r => r.json());
+
 export default function Page() {
   const router = useRouter();
 
@@ -45,8 +47,8 @@ export default function Page() {
         body: { kind },
       }),
     {
-      revalidateOnFocus: true,
-      dedupingInterval: 1500,
+        revalidateOnFocus: true,
+        dedupingInterval: 1500,
     }
   );
   const hasMessage = Boolean(mediaData?.has);
@@ -70,6 +72,15 @@ export default function Page() {
     }
   );
   const contact = contactRes?.contact ?? localContactRef.current;
+
+  // === SWR: PLAN + LISTA (para lógica de Home) ===
+  const { data: planData } = useSWR('/api/me/plan', fetcher, { revalidateOnFocus: true, dedupingInterval: 1500 });
+  const tier = planData?.tier || 'free';
+  const isPremium = tier === 'premium';
+
+  const { data: listData } = useSWR('/api/media/list', fetcher, { revalidateOnFocus: true, dedupingInterval: 1500 });
+  const items = listData?.items || [];
+  const count = items.length;
 
   // === Coalesce de revalidaciones (un solo pulso) ===
   const refreshAllDebounced = useMemo(
@@ -158,6 +169,19 @@ export default function Page() {
 
   const activeNav = 'home';
 
+  // ---------- UI helpers según plan ----------
+  const showRecord =
+    (!isPremium && !hasMessage)  // Free sin mensaje => Grabar
+    || (isPremium && count === 0); // Premium sin mensajes => Grabar
+
+  const showPlay =
+    (!isPremium && hasMessage)   // Free con mensaje => Reproducir
+    || (isPremium && count >= 1); // Premium con >=1 => Reproducir
+
+  const playLabel = isPremium
+    ? (count > 1 ? 'Reproducir favorito/último' : 'Reproducir mensaje')
+    : 'Reproducir mensaje';
+
   return (
     <div className="App has-bottom-nav">
       <header className="App-header">
@@ -201,8 +225,8 @@ export default function Page() {
         )}
 
         <div className="launcher-grid">
-          {/* Mensaje */}
-          {hasMessage ? (
+          {/* Mensaje (según plan y cantidad) */}
+          {showPlay && (
             <button
               className="launcher-item blue"
               onClick={handlePlayMessage}
@@ -212,10 +236,11 @@ export default function Page() {
             >
               <div className="icon-bg bg-message" aria-hidden="true" />
               <div className="label">
-                {isPlayLoading ? 'Cargando…' : 'Reproducir mensaje'}
+                {isPlayLoading ? 'Cargando…' : playLabel}
               </div>
             </button>
-          ) : (
+          )}
+          {showRecord && (
             <button
               className="launcher-item blue"
               onClick={() => router.push('/message')}

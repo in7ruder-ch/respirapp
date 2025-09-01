@@ -13,6 +13,8 @@ import { apiFetch } from '@lib/apiFetch';
 import { debounce } from '@lib/debounce';
 import { supabase } from '@lib/supabaseClient';
 
+const fetcher = (u) => fetch(u, { cache: 'no-store' }).then(r => r.json());
+
 export default function SettingsPage() {
   const router = useRouter();
   const [msg, setMsg] = useState('');
@@ -36,7 +38,7 @@ export default function SettingsPage() {
   const hasMessage = Boolean(mediaData?.has);
   const mediaKind = mediaData?.kind ?? null;
 
-  // === SWR: contacto en cloud (sin cache persistente) ===
+  // === SWR: contacto en cloud ===
   const {
     data: contactRes,
     mutate: mutateContact,
@@ -50,6 +52,14 @@ export default function SettingsPage() {
     { revalidateOnFocus: true, dedupingInterval: 1500 }
   );
   const contact = contactRes?.contact ?? null;
+
+  // === SWR: plan actual (free/premium) ===
+  const { data: planData } = useSWR('/api/me/plan', fetcher, {
+    revalidateOnFocus: true,
+    dedupingInterval: 1500,
+  });
+  const tier = planData?.tier || 'free';
+  const isPremium = tier === 'premium';
 
   // Coalesce de revalidaciones (un solo pulso)
   const refreshAllDebounced = useMemo(
@@ -101,13 +111,32 @@ export default function SettingsPage() {
     }
   }
 
-  const activeNav = 'home';
+  const activeNav = 'settings';
 
   return (
     <div className="App has-bottom-nav">
       <header className="App-header">
         <div className="panel" style={{ paddingBottom: 24 }}>
           <h2>⚙️ Configuración</h2>
+
+          {/* === Plan actual === */}
+          <section className="settings-section" style={{ marginTop: 12 }}>
+            <h3>Tu plan</h3>
+            <p>
+              Plan actual: <strong>{tier.toUpperCase()}</strong>
+            </p>
+            {isPremium ? (
+              <p className="muted" style={{ marginTop: 6 }}>
+                Sos Premium: almacenamiento de mensajes <strong>ilimitado</strong>. Gestioná tus mensajes en{' '}
+                <a className="underline" href="/library">Biblioteca</a>.
+              </p>
+            ) : (
+              <p className="muted" style={{ marginTop: 6 }}>
+                Plan Free: <strong>1 mensaje</strong> permitido (audio <em>o</em> video). Para ilimitados, canjeá tu código en{' '}
+                <a className="underline" href="/premium">Premium</a>.
+              </p>
+            )}
+          </section>
 
           {/* === Mensaje personal === */}
           <section className="settings-section" style={{ marginTop: 12 }}>
@@ -132,11 +161,6 @@ export default function SettingsPage() {
             )}
 
             {msg && <p style={{ marginTop: 8 }}>{msg}</p>}
-
-            <p className="muted" style={{ marginTop: 8 }}>
-              Plan Free: <strong>1 mensaje</strong> permitido (audio <em>o</em> video).
-              Para ilimitados, pasá a Premium.
-            </p>
           </section>
 
           {/* === Contacto de emergencia === */}
