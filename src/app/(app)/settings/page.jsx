@@ -146,8 +146,6 @@ export default function SettingsPage() {
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <a className="underline" href="/library">Ir a Biblioteca</a>
-              <span className="muted">·</span>
-              <a className="underline" href="/premium">Canjear código Premium</a>
             </div>
 
 
