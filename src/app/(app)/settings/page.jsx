@@ -138,29 +138,19 @@ export default function SettingsPage() {
             )}
           </section>
 
-          {/* === Mensaje personal === */}
+          {/* === Mensajes (derivado a Biblioteca) === */}
           <section className="settings-section" style={{ marginTop: 12 }}>
-            <h3>Mensaje personal</h3>
+            <h3>Mensajes</h3>
+            <p className="muted" style={{ marginTop: 6 }}>
+              {hasMessage ? 'Tenés mensajes guardados.' : 'Aún no tenés mensajes.'}
+            </p>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <a className="underline" href="/library">Ir a Biblioteca</a>
+              <span className="muted">·</span>
+              <a className="underline" href="/premium">Canjear código Premium</a>
+            </div>
 
-            {hasMessage ? (
-              <>
-                <p className="muted" style={{ marginTop: 8 }}>
-                  Guardado: <strong>{mediaKind}</strong>.
-                </p>
-                <button
-                  className="delete-button"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  style={{ marginTop: 8 }}
-                >
-                  {isDeleting ? 'Borrando…' : '🗑️ Borrar mensaje'}
-                </button>
-              </>
-            ) : (
-              <p className="muted">{mediaLoading ? 'Cargando…' : 'No tenés un mensaje guardado.'}</p>
-            )}
 
-            {msg && <p style={{ marginTop: 8 }}>{msg}</p>}
           </section>
 
           {/* === Contacto de emergencia === */}
