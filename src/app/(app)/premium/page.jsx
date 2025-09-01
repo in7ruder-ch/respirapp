@@ -1,10 +1,15 @@
 'use client';
 import { useState } from 'react';
 import useSWR from 'swr';
+import { useRouter } from 'next/navigation';
+
+import '@/styles/App.css';
+import '@/styles/BottomNav.css';
 
 const fetcher = (u)=>fetch(u,{cache:'no-store'}).then(r=>r.json());
 
 export default function PremiumPage() {
+  const router = useRouter();
   const { data, error, isLoading, mutate } = useSWR('/api/me/plan', fetcher);
   const tier = data?.tier || 'free';
 
@@ -22,9 +27,11 @@ export default function PremiumPage() {
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j?.error || 'ERROR');
-      setStatus({ t:'ok', m:'¡Listo! Ya sos Premium.' });
-      setCode('');
-      mutate();
+
+      // éxito → refrescar SWR y redirigir
+      await mutate();
+      setStatus({ t:'ok', m:'¡Listo! Redirigiendo…' });
+      setTimeout(()=>router.push('/'), 1500);
     } catch (err) {
       const msg = String(err?.message||'ERROR');
       const map = {
@@ -38,47 +45,48 @@ export default function PremiumPage() {
   }
 
   return (
-    <main className="p-4 max-w-md mx-auto">
-      <h1 className="text-2xl font-semibold mb-3">Premium</h1>
+    <div className="App has-bottom-nav">
+      <header className="App-header">
+        <div className="panel" style={{ padding: 24 }}>
+          <h2>Premium</h2>
 
-      {isLoading ? <p>Cargando plan…</p> : error ? (
-        <p className="text-red-600">Error al cargar el plan.</p>
-      ) : (
-        <div className="mb-4 p-3 rounded border">
-          <p>Tu plan actual: <strong>{tier.toUpperCase()}</strong></p>
-          {tier === 'free'
-            ? <p className="text-sm text-gray-600 mt-1">Con Free podés guardar 1 mensaje. Con Premium, ilimitados.</p>
-            : <p className="text-sm text-green-700 mt-1">Sos Premium: almacenamiento ilimitado.</p>}
+          {isLoading ? <p>Cargando plan…</p> : error ? (
+            <p className="text-red-600">Error al cargar el plan.</p>
+          ) : (
+            <div className="mb-4">
+              <p>Tu plan actual: <strong>{tier.toUpperCase()}</strong></p>
+              {tier === 'free'
+                ? <p className="muted">Con Free podés guardar 1 mensaje. Con Premium, ilimitados.</p>
+                : <p className="muted">Sos Premium: almacenamiento ilimitado.</p>}
+            </div>
+          )}
+
+          <form onSubmit={onRedeem} style={{ marginTop: 16 }}>
+            <label className="block text-sm">¿Tenés un código?</label>
+            <input
+              className="w-full border rounded px-3 py-2 mt-1"
+              value={code}
+              onChange={(e)=>setCode(e.target.value)}
+              placeholder="Ej: VIP-2025-XX"
+            />
+            <button
+              type="submit"
+              className="w-full primary mt-3"
+              disabled={!code || status?.t === 'loading'}
+            >
+              {status?.t === 'loading' ? 'Canjeando…' : 'Canjear'}
+            </button>
+          </form>
+
+          {status && (
+            <p className={`mt-3 text-sm ${
+              status.t==='err' ? 'text-red-600' : status.t==='ok' ? 'text-green-700' : ''
+            }`}>
+              {status.m}
+            </p>
+          )}
         </div>
-      )}
-
-      <form onSubmit={onRedeem} className="space-y-3">
-        <label className="block text-sm">¿Tenés un código?</label>
-        <input
-          className="w-full border rounded px-3 py-2"
-          value={code}
-          onChange={(e)=>setCode(e.target.value)}
-          placeholder="Ej: VIP-2025-XX"
-        />
-        <button
-          type="submit"
-          className="w-full rounded px-4 py-2 bg-black text-white disabled:opacity-50"
-          disabled={!code || status?.t === 'loading'}
-        >
-          Canjear
-        </button>
-      </form>
-
-      {status && (
-        <p className={`mt-3 text-sm ${
-          status.t==='err' ? 'text-red-600' : status.t==='ok' ? 'text-green-700' : ''}`}>
-          {status.m}
-        </p>
-      )}
-
-      <div className="mt-6">
-        <a href="/" className="underline">Volver al inicio</a>
-      </div>
-    </main>
+      </header>
+    </div>
   );
 }
