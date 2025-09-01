@@ -1,79 +1,63 @@
 // src/app/api/media/sign-download/route.js
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
 
-const PUBLIC_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const PUBLIC_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const FALLBACK_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_MEDIA_BUCKET || "media";
-
+const BUCKET = process.env.NEXT_PUBLIC_SUPABASE_MEDIA_BUCKET || "media";
 const admin = createAdminClient(PUBLIC_URL, SERVICE_KEY);
 
-function parseStoragePath(path) {
-  const s = String(path || "");
-  const m = s.match(/^([^/]+)\/(.+)$/);
-  if (m) return { bucket: m[1], key: m[2] };
-  return { bucket: FALLBACK_BUCKET, key: s };
-}
+export const dynamic = "force-dynamic";
 
-/**
- * POST /api/media/sign-download
- * body?: { kind?: 'audio' | 'video' | 'any' }
- * Respuesta: { ok:true, url, kind }
- */
 export async function POST(req) {
-  const userClient = createRouteHandlerClient({ cookies });
+  const supa = createRouteHandlerClient({ cookies });
+  const { data: { user } } = await supa.auth.getUser();
+  if (!user) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
 
-  const {
-    data: { user },
-  } = await userClient.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
+  let body = {};
+  try { body = await req.json(); } catch {}
+  const id = body?.id || null;
+
+  let row = null;
+
+  if (id) {
+    const { data, error } = await supa
+      .from("media")
+      .select("id, path, kind")
+      .eq("user_id", user.id)
+      .eq("id", id)
+      .maybeSingle();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    row = data;
+  } else {
+    // Si no hay id: favorito o último
+    const { data, error } = await supa
+      .from("media")
+      .select("id, path, kind, is_favorite, created_at")
+      .eq("user_id", user.id)
+      .order("is_favorite", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    row = data;
   }
 
-  let kind = "audio"; // compat por defecto
-  try {
-    const json = await req.json().catch(() => ({}));
-    if (json && typeof json.kind === "string") {
-      const k = json.kind.toLowerCase();
-      if (k === "audio" || k === "video" || k === "any") kind = k;
-    }
-  } catch {}
+  if (!row) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
 
-  // Buscar último media (DB con user client)
-  let q = userClient
-    .from("media")
-    .select("id, kind, path, created_at")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(1);
+  const key = row.path.replace(`${BUCKET}/`, "");
+  const { data: signed, error: signErr } = await admin.storage
+    .from(BUCKET)
+    .createSignedUrl(key, 60 * 60); // 1h
 
-  if (kind === "audio" || kind === "video") q = q.eq("kind", kind);
+  if (signErr) return NextResponse.json({ error: signErr.message }, { status: 500 });
 
-  const { data: row, error } = await q.maybeSingle();
-  if (error && error.code !== "PGRST116") {
-    return NextResponse.json({ ok: false, message: error.message }, { status: 500 });
-  }
-  if (!row) {
-    return NextResponse.json(
-      { ok: false, message: "No tenés un mensaje guardado." },
-      { status: 404 }
-    );
-  }
-
-  // Firmar descarga con SERVICE ROLE (bypassa RLS de Storage)
-  const { bucket, key } = parseStoragePath(row.path);
-  const expiresIn = 60;
-  const { data: signed, error: signErr } = await admin
-    .storage
-    .from(bucket)
-    .createSignedUrl(key, expiresIn);
-
-  if (signErr) {
-    return NextResponse.json({ ok: false, message: signErr.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true, url: signed.signedUrl, kind: row.kind });
+  return NextResponse.json({
+    ok: true,
+    id: row.id,
+    kind: row.kind,
+    url: signed.signedUrl,
+  });
 }
