@@ -223,7 +223,7 @@ export default function Page() {
 
         <div className="launcher-grid">
           {/* Mensaje: Home SOLO reproduce. Si no hay, CTA a Biblioteca */}
-          {showPlay ? (
+          {hasMessage ? (
             <button
               className="launcher-item blue"
               onClick={handlePlayMessage}
@@ -233,7 +233,7 @@ export default function Page() {
             >
               <div className="icon-bg bg-message" aria-hidden="true" />
               <div className="label">
-                {isPlayLoading ? 'Cargando…' : (count > 1 ? 'Reproducir favorito/último' : 'Reproducir mensaje')}
+                {isPlayLoading ? 'Cargando…' : 'Reproducir mensaje'}
               </div>
             </button>
           ) : (
@@ -245,6 +245,38 @@ export default function Page() {
             >
               <div className="icon-bg bg-message" aria-hidden="true" />
               <div className="label">Ir a Biblioteca</div>
+            </button>
+          )}
+
+          {/* Respirar */}
+          <button
+            className="launcher-item green"
+            onClick={() => router.push('/breathing')}
+            aria-label="Respirar juntos"
+          >
+            <div className="icon-bg bg-breath" aria-hidden="true" />
+            <div className="label">Respirar</div>
+          </button>
+
+          {/* Contacto */}
+          {!contact?.phone ? (
+            <button
+              className="launcher-item red"
+              onClick={() => router.push('/contact')}
+              aria-label="Registrar contacto"
+            >
+              <div className="icon-bg bg-contact" aria-hidden="true" />
+              <div className="label">Contacto</div>
+            </button>
+          ) : (
+            <button
+              className="launcher-item red"
+              onClick={() => (window.location.href = telHref(contact.phone))}
+              title={`Llamar a ${contact?.name || 'contacto'}`}
+              aria-label="Llamar contacto"
+            >
+              <div className="icon-bg bg-contact" aria-hidden="true" />
+              <div className="label">Llamar</div>
             </button>
           )}
 
