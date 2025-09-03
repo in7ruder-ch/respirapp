@@ -29,25 +29,33 @@ export function PlayerProvider({ children }) {
       }
       const url = data?.url;
       if (!url) throw new Error('URL_FIRMADA_VACIA');
-      // seteamos track actual
+
       setCurrent({ id, kind, url, title });
-      setStatus('playing');
-      setVideoOpen(false); // para video, se abre explícitamente desde la barra
+
+      if (kind === 'video') {
+        // 🔴 video: abrir modal directamente, sin reproducir audio en barra
+        setVideoOpen(true);
+        setStatus('idle'); // la reproducción la maneja el <video> del modal
+      } else {
+        // 🔊 audio: reproducimos desde la barra
+        setStatus('playing');
+        setVideoOpen(false);
+      }
     } catch (e) {
       setErrorMsg(e?.message || 'PLAYER_ERROR');
       setStatus('error');
     }
   }, []);
 
-  const pause = useCallback(() => setStatus((s) => (s === 'playing' ? 'paused' : s)), []);
-  const resume = useCallback(() => setStatus((s) => (s === 'paused' ? 'playing' : s)), []);
-  const stop = useCallback(() => {
+  const pause  = useCallback(() => setStatus((s) => (s === 'playing' ? 'paused' : s)), []);
+  const resume = useCallback(() => setStatus((s) => (s === 'paused'  ? 'playing' : s)), []);
+  const stop   = useCallback(() => {
     setStatus('idle');
     setCurrent(null);
     setVideoOpen(false);
     setErrorMsg(null);
   }, []);
-  const openVideo = useCallback(() => setVideoOpen(true), []);
+  const openVideo  = useCallback(() => setVideoOpen(true), []);
   const closeVideo = useCallback(() => setVideoOpen(false), []);
 
   const value = useMemo(

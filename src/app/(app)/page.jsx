@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 
@@ -13,6 +13,7 @@ import { loadContact } from '@lib/contactsStore';
 import { apiFetch } from '@lib/apiFetch';
 import { debounce } from '@lib/debounce';
 import { supabase } from '@lib/supabaseClient';
+import { usePlayer } from '@/components/player/PlayerProvider';
 
 function telHref(phone) {
   const clean = String(phone || '').replace(/[^\d+]/g, '');
@@ -23,22 +24,13 @@ const fetcher = (u) => fetch(u, { cache: 'no-store' }).then(r => r.json());
 
 export default function Page() {
   const router = useRouter();
-
-  // Reproductores
-  const audioRef = useRef(null);
-  const videoRef = useRef(null);
-  const [videoUrl, setVideoUrl] = useState('');
-  const [showVideoPanel, setShowVideoPanel] = useState(false);
-  const [isPlayLoading, setIsPlayLoading] = useState(false);
+  const { playByItem } = usePlayer();
 
   // Fallback local para contacto
   const localContactRef = useRef(loadContact() || null);
 
-  // === SWR: MEDIA STATUS (audio o video) ===
-  const {
-    data: mediaData,
-    mutate: mutateMedia,
-  } = useSWR(
+  // === SWR: MEDIA STATUS (conservamos para tu copy/UI, aunque no lo usamos para reproducir) ===
+  const { data: mediaData, mutate: mutateMedia } = useSWR(
     ['/api/media/status', 'any'],
     async ([url, kind]) =>
       apiFetch(url, {
@@ -73,14 +65,19 @@ export default function Page() {
   );
   const contact = contactRes?.contact ?? localContactRef.current;
 
-  // === SWR: PLAN + LISTA (para lógica de Home) ===
+  // === SWR: PLAN + LISTA (para decidir qué reproducir) ===
   const { data: planData } = useSWR('/api/me/plan', fetcher, { revalidateOnFocus: true, dedupingInterval: 1500 });
   const tier = planData?.tier || 'free';
   const isPremium = tier === 'premium';
 
   const { data: listData } = useSWR('/api/media/list', fetcher, { revalidateOnFocus: true, dedupingInterval: 1500 });
-  const items = listData?.items || [];
+  const items = useMemo(() => (listData?.items || []).slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at)), [listData]);
   const count = items.length;
+
+  // favorito > último
+  const favorite = items.find(i => i.is_favorite);
+  const latest   = items[0];
+  const playable = favorite || latest;
 
   // === Coalesce de revalidaciones (un solo pulso) ===
   const refreshAllDebounced = useMemo(
@@ -93,7 +90,6 @@ export default function Page() {
   );
 
   useEffect(() => {
-    // Primer fetch inicial (deja SWR hacer lo suyo) + subs a eventos
     const { data: sub } = supabase.auth.onAuthStateChange(() => {
       refreshAllDebounced();
     });
@@ -110,70 +106,35 @@ export default function Page() {
     };
     window.addEventListener('storage', onStorage);
 
-    // post-login flag
     try {
       if (sessionStorage.getItem('respirapp_just_signed_in') === '1') {
         sessionStorage.removeItem('respirapp_just_signed_in');
         refreshAllDebounced();
       }
-    } catch { }
+    } catch {}
 
     return () => {
       sub?.subscription?.unsubscribe?.();
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('storage', onStorage);
-      try { audioRef.current?.pause?.(); } catch { }
-      audioRef.current = null;
-      try { if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ''; } } catch { }
-      videoRef.current = null;
     };
   }, [refreshAllDebounced]);
 
-  // --------- Reproducir mensaje ----------
+  // --------- Reproducir mensaje (usa Global Player) ----------
   const handlePlayMessage = async () => {
-    if (isPlayLoading) return;
-    setIsPlayLoading(true);
-    try {
-      try { audioRef.current?.pause?.(); } catch { }
-      try { if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ''; } } catch { }
-      setShowVideoPanel(false);
-      setVideoUrl('');
-
-      const j = await apiFetch('/api/media/sign-download', {
-        method: 'POST',
-        body: { kind: 'any' },
-      });
-      const url = j?.url || null;
-      const kind = j?.kind || null;
-      if (!url || !kind) {
-        alert('No se pudo obtener tu mensaje para reproducirlo. Probá nuevamente más tarde.');
-        setIsPlayLoading(false);
-        return;
-      }
-
-      if (kind === 'audio') {
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.load();
-        await audio.play();
-      } else {
-        setVideoUrl(url);
-        setShowVideoPanel(true);
-      }
-    } catch {
-      alert('No se pudo reproducir el mensaje. Verificá permisos del navegador.');
-    } finally {
-      setIsPlayLoading(false);
+    if (!playable) {
+      router.push('/library');
+      return;
     }
+    // 🔊/🎞️ Usa el Player global: firma por id y reproduce.
+    await playByItem({ id: playable.id, kind: playable.kind });
   };
 
   const activeNav = 'home';
 
-  // ---------- UI helpers según plan ----------
-  // ---------- UI helpers: Home solo reproduce ----------
+  // ---------- UI helpers ----------
   const hasAny = count > 0;
-  const showPlay = hasAny; // siempre: si hay 1+ reproduce
-
+  const showPlay = hasAny;
 
   const playLabel = isPremium
     ? (count > 1 ? 'Reproducir favorito/último' : 'Reproducir mensaje')
@@ -185,42 +146,6 @@ export default function Page() {
         <h1>RESPIRA</h1>
         <h2>Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad</h2>
 
-        {/* Panel de video arriba de los tiles */}
-        {showVideoPanel && videoUrl && (
-          <div className="panel" style={{ marginTop: 16 }}>
-            <video
-              ref={videoRef}
-              src={videoUrl}
-              controls
-              autoPlay
-              playsInline
-              style={{ width: '100%', borderRadius: 12, background: '#000' }}
-            />
-            <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-              <button
-                className="launcher-item yellow"
-                onClick={() => {
-                  try { videoRef.current?.pause?.(); } catch { }
-                  setShowVideoPanel(false);
-                  setVideoUrl('');
-                }}
-                title="Cerrar video"
-              >
-                <div className="icon-bg bg-config" aria-hidden="true" />
-                <div className="label">Cerrar</div>
-              </button>
-              <button
-                className="launcher-item blue"
-                onClick={() => router.push('/settings')}
-                title="Ir a configuración"
-              >
-                <div className="icon-bg bg-breath" aria-hidden="true" />
-                <div className="label">Config.</div>
-              </button>
-            </div>
-          </div>
-        )}
-
         <div className="launcher-grid">
           {/* Mensaje: Home SOLO reproduce. Si no hay, CTA a Biblioteca */}
           {hasMessage ? (
@@ -229,12 +154,9 @@ export default function Page() {
               onClick={handlePlayMessage}
               aria-label="Reproducir mensaje"
               title={mediaKind ? `Reproducir ${mediaKind}` : 'Reproducir mensaje'}
-              disabled={isPlayLoading}
             >
               <div className="icon-bg bg-message" aria-hidden="true" />
-              <div className="label">
-                {isPlayLoading ? 'Cargando…' : 'Reproducir mensaje'}
-              </div>
+              <div className="label">{playLabel}</div>
             </button>
           ) : (
             <button

@@ -54,7 +54,6 @@ function extFor(base, kind) {
 }
 function genId() {
   try {
-    // Node 18+ / Web Crypto
     if (globalThis.crypto?.randomUUID) return crypto.randomUUID();
   } catch {}
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -66,7 +65,6 @@ function genId() {
  * Regla FREE: 1 mensaje TOTAL (audio O video).
  */
 export async function POST(req) {
-  // Cliente atado al usuario (DB con RLS)
   const userClient = createRouteHandlerClient({ cookies });
 
   // 1) Auth
@@ -104,10 +102,10 @@ export async function POST(req) {
   // 3) Plan del usuario → define límite
   let tier = "free";
   try {
-    tier = await getUserPlan(user.id);
-  } catch (e) {
-    // fallback conservador: si falla, tratamos como free
-    tier = "free";
+    const plan = await getUserPlan(user.id); // puede ser 'free' | 'premium' o { tier: '...' }
+    tier = typeof plan === 'string' ? plan : (plan?.tier || 'free');
+  } catch {
+    tier = "free"; // fallback conservador
   }
   const isFree = tier === "free";
 
@@ -120,7 +118,6 @@ export async function POST(req) {
       .limit(1)
       .maybeSingle();
 
-    // PGRST116 = no rows
     if (selErr && selErr.code !== "PGRST116") {
       return NextResponse.json({ ok: false, message: selErr.message }, { status: 500 });
     }
@@ -137,12 +134,12 @@ export async function POST(req) {
     }
   }
 
-  // 5) Ruta destino (siempre generamos clave única para no pisar archivos)
+  // 5) Ruta destino
   const ext = extFor(baseCT, kind);
   const key = `${user.id}/${kind}/${genId()}${ext}`;
-  const path = `${BUCKET}/${key}`; // guardamos bucket+key en DB para ser explícitos
+  const path = `${BUCKET}/${key}`;
 
-  // 6) Reserva en DB (user client con RLS)
+  // 6) Reserva en DB (RLS)
   const { data: inserted, error: insErr } = await userClient
     .from("media")
     .insert({ user_id: user.id, kind, path })
@@ -153,14 +150,13 @@ export async function POST(req) {
     return NextResponse.json({ ok: false, message: insErr.message }, { status: 500 });
   }
 
-  // 7) Firmar URL de subida con SERVICE ROLE (bypassa RLS de Storage)
+  // 7) Firmar URL de subida (service role en Storage)
   const { data: signed, error: signErr } = await admin.storage
     .from(BUCKET)
     .createSignedUploadUrl(key);
 
   if (signErr) {
-    // rollback si no pudimos firmar
-    await userClient.from("media").delete().eq("id", inserted.id);
+    await userClient.from("media").delete().eq("id", inserted.id); // rollback
     return NextResponse.json({ ok: false, message: signErr.message }, { status: 500 });
   }
 
