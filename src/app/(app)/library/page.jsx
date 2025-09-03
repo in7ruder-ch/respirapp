@@ -7,9 +7,9 @@ import '@/styles/App.css';
 import '@/styles/BottomNav.css';
 
 import BottomNav from '@/components/BottomNav';
+import { usePlayer } from '@/components/player/PlayerProvider';
 
 async function safeParseResponse(res) {
-  // Lee como texto primero para soportar 204 / texto plano
   const txt = await res.text();
   const isJson = res.headers.get('content-type')?.includes('application/json');
   const data = isJson && txt ? JSON.parse(txt) : (txt || null);
@@ -29,6 +29,7 @@ const fetcher = async (u) => {
 export default function LibraryPage() {
   const router = useRouter();
   const [busyId, setBusyId] = useState(null);
+  const { playByItem } = usePlayer();
 
   // Plan (para habilitar ⭐ solo en premium)
   const {
@@ -56,26 +57,11 @@ export default function LibraryPage() {
     return arr.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }, [listData]);
 
-  async function play(id) {
+  async function play(id, kind) {
     setBusyId(id);
     try {
-      const res = await fetch('/api/media/sign-download', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ id }),
-      });
-      const { data, txt, isJson } = await safeParseResponse(res);
-      if (!res.ok) {
-        const msg = isJson ? (data?.error || JSON.stringify(data)) : (txt || 'PLAY_ERROR');
-        throw new Error(msg);
-      }
-      const url = (isJson ? data?.url : null) || '';
-      if (!url) throw new Error('URL_FIRMADA_VACIA');
-      // Reproducción simple: abrir en la misma pestaña (descarga/stream según tipo)
-      window.location.href = url;
-      // Alternativa si querés mantener /library: window.open(url, '_blank');
-    } catch (e) {
+      await playByItem({ id, kind });
+    } catch {
       alert('No se pudo reproducir el mensaje.');
     } finally {
       setBusyId(null);
@@ -85,30 +71,29 @@ export default function LibraryPage() {
   async function del(id) {
     if (!confirm('¿Borrar este mensaje? Esta acción es permanente.')) return;
     setBusyId(id);
-    // Optimistic: remove de la lista al instante
-    const previous = listData;
     try {
-      await mutate(async (current) => {
-        const res = await fetch('/api/media/delete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ id }),
-        });
-        const { data, txt, isJson } = await safeParseResponse(res);
-        if (!res.ok) {
-          const msg = isJson ? (data?.error || JSON.stringify(data)) : (txt || 'DELETE_ERROR');
-          throw new Error(msg);
-        }
-        const curItems = (current?.items || []).filter((x) => x.id !== id);
-        return { items: curItems };
-      }, { revalidate: false });
-    } catch (e) {
+      await mutate(
+        async (current) => {
+          const res = await fetch('/api/media/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ id }),
+          });
+          const { data, txt, isJson } = await safeParseResponse(res);
+          if (!res.ok) {
+            const msg = isJson ? (data?.error || JSON.stringify(data)) : (txt || 'DELETE_ERROR');
+            throw new Error(msg);
+          }
+          const curItems = (current?.items || []).filter((x) => x.id !== id);
+          return { items: curItems };
+        },
+        { revalidate: false }
+      );
+    } catch {
       alert('No se pudo borrar el mensaje.');
-      // rollback: refrescamos desde el server
       await mutate();
     } finally {
-      // Revalida para quedar en sync con el server
       await mutate();
       setBusyId(null);
     }
@@ -117,46 +102,41 @@ export default function LibraryPage() {
   async function fav(id) {
     if (!isPremium) return alert('Favoritos es una función Premium.');
     setBusyId(id);
-    const previous = listData;
     try {
-      // Optimistic: marcar este como fav y desmarcar el resto
-      await mutate(async (current) => {
-        const res = await fetch('/api/media/favorite', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ id }),
-        });
-        const { data, txt, isJson } = await safeParseResponse(res);
-        if (res.status === 403) {
-          throw new Error('ONLY_PREMIUM');
-        }
-        if (!res.ok) {
-          const msg = isJson ? (data?.error || JSON.stringify(data)) : (txt || 'FAV_ERROR');
-          throw new Error(msg);
-        }
-        const curItems = (current?.items || []).map((x) => ({ ...x, is_favorite: x.id === id }));
-        return { items: curItems };
-      }, { revalidate: false });
+      await mutate(
+        async (current) => {
+          const res = await fetch('/api/media/favorite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ id }),
+          });
+          const { data, txt, isJson } = await safeParseResponse(res);
+          if (res.status === 403) throw new Error('ONLY_PREMIUM');
+          if (!res.ok) {
+            const msg = isJson ? (data?.error || JSON.stringify(data)) : (txt || 'FAV_ERROR');
+            throw new Error(msg);
+          }
+          const curItems = (current?.items || []).map((x) => ({ ...x, is_favorite: x.id === id }));
+          return { items: curItems };
+        },
+        { revalidate: false }
+      );
     } catch (e) {
       if (e?.message === 'ONLY_PREMIUM') {
         alert('Solo usuarios Premium pueden marcar favorito.');
       } else {
         alert('No se pudo marcar favorito.');
       }
-      // rollback completo
       await mutate();
     } finally {
-      // Revalida para asegurar unicidad del favorito desde el backend
       await mutate();
       setBusyId(null);
     }
   }
 
   const activeNav = 'library';
-
-  const showPlanGate =
-    !planLoading && !planError && !isPremium; // Solo mostramos CTA si no es premium (sin link de plan)
+  const showPlanGate = !planLoading && !planError && !isPremium;
 
   return (
     <div className="App has-bottom-nav">
@@ -206,7 +186,7 @@ export default function LibraryPage() {
                       <button
                         className="secondary"
                         disabled={busyId === it.id}
-                        onClick={() => play(it.id)}
+                        onClick={() => play(it.id, it.kind)}
                         aria-label="Reproducir"
                         title="Reproducir"
                       >

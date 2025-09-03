@@ -1,5 +1,7 @@
 import './globals.css';
 import RegisterSW from '@/components/RegisterSW';
+import { PlayerProvider } from '@/components/player/PlayerProvider';
+import GlobalPlayer from '@/components/player/GlobalPlayer';
 
 export const metadata = {
   title: 'RESPIRApp',
@@ -17,8 +19,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang="es">
       <body>
-        <RegisterSW />
-        {children}
+        <PlayerProvider>
+          {children}
+          <RegisterSW />
+          {/* Barra global tipo Spotify */}
+          <GlobalPlayer />
+        </PlayerProvider>
       </body>
     </html>
   );
