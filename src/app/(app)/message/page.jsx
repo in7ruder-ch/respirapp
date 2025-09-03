@@ -15,8 +15,22 @@ import { supabase } from '@lib/supabaseClient';
 
 export const dynamic = 'force-dynamic';
 
+const fetcher = (u) => fetch(u, { cache: 'no-store' }).then(r => r.json());
+
 export default function MessagePage() {
   const router = useRouter();
+
+  // === PLAN (para gating Free vs Premium) ===
+  // Forzamos frescura con ?ts=... para evitar caché tras canjear código.
+  const {
+    data: planData,
+    isLoading: planLoading,
+  } = useSWR(`/api/me/plan?ts=${Date.now()}`, fetcher, {
+    revalidateOnFocus: true,
+    dedupingInterval: 1000,
+  });
+  const tier = planData?.tier || 'free';
+  const isPremium = tier === 'premium';
 
   // === SWR: estado de media (audio o video) ===
   const {
@@ -82,6 +96,9 @@ export default function MessagePage() {
 
   const activeNav = 'home';
 
+  // 🔒 Gating: SOLO FREE con mensaje existente está bloqueado.
+  const isBlockedByFreeLimit = !isPremium && !!existingKind && !loading;
+
   return (
     <div className="App has-bottom-nav">
       <header className="App-header">
@@ -90,7 +107,7 @@ export default function MessagePage() {
 
         {showConfirmation && <div className="confirmation-banner">✅ Mensaje guardado</div>}
 
-        {!loading && existingKind && !showAudioRecorder ? (
+        {isBlockedByFreeLimit && !showAudioRecorder ? (
           <div className="panel" style={{ marginTop: 12 }}>
             <p style={{ margin: 0 }}>
               Ya tenés un mensaje guardado (<strong>{existingKind}</strong>).
@@ -109,6 +126,7 @@ export default function MessagePage() {
                   onClick={() => { setShowAudioRecorder(true); setRecorderKey(k => k + 1); }}
                   aria-label="Grabar audio"
                   title="Grabar audio"
+                  disabled={loading} // deshabilitamos solo si aún carga el status
                 >
                   <div className="icon-bg bg-message" aria-hidden="true" />
                   <div className="label">Grabar audio</div>
@@ -120,23 +138,27 @@ export default function MessagePage() {
                   onClick={() => router.push('/message/video')}
                   aria-label="Grabar video"
                   title="Grabar video"
+                  disabled={loading}
                 >
                   <div className="icon-bg bg-message" aria-hidden="true" />
                   <div className="label">Grabar video</div>
                 </button>
               </div>
             ) : (
-              // Modo AUDIO elegido: solo el recorder + info Free
+              // Modo AUDIO elegido
               <div className="panel" style={{ marginTop: 12 }}>
                 <AudioRecorder
                   key={recorderKey}
                   onAudioReady={onAudioReady}
                   hideTitle
                 />
-                <p className="muted" style={{ marginTop: 8 }}>
-                  Plan Free: <strong>1 mensaje total</strong> (audio <em>o</em> video).
-                  Para grabar otro, primero borrá el actual en Configuración.
-                </p>
+                {/* Texto de límite solo para Free */}
+                {!isPremium && (
+                  <p className="muted" style={{ marginTop: 8 }}>
+                    Plan Free: <strong>1 mensaje total</strong> (audio <em>o</em> video).
+                    Para grabar otro, primero borrá el actual en Configuración.
+                  </p>
+                )}
               </div>
             )}
           </>
