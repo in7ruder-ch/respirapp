@@ -17,6 +17,16 @@ export const dynamic = 'force-dynamic';
 
 const fetcher = (u) => fetch(u, { cache: 'no-store' }).then(r => r.json());
 
+// Soporta: "premium" | {tier:'premium'} | {ok:true, tier:'premium'} | {plan:'premium'}
+function resolveTier(planData) {
+  if (typeof planData === 'string') return planData;
+  if (planData && typeof planData === 'object') {
+    if (typeof planData.tier === 'string') return planData.tier;
+    if (typeof planData.plan === 'string') return planData.plan;
+  }
+  return 'free';
+}
+
 export default function MessagePage() {
   const router = useRouter();
 
@@ -29,7 +39,7 @@ export default function MessagePage() {
     revalidateOnFocus: true,
     dedupingInterval: 1000,
   });
-  const tier = planData?.tier || 'free';
+  const tier = resolveTier(planData);
   const isPremium = tier === 'premium';
 
   // === SWR: estado de media (audio o video) ===
