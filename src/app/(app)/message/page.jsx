@@ -15,7 +15,18 @@ import { supabase } from '@lib/supabaseClient';
 
 export const dynamic = 'force-dynamic';
 
-const fetcher = (u) => fetch(u, { cache: 'no-store' }).then(r => r.json());
+// --- fetcher SOLO para el plan: con credenciales y manejo de !ok ---
+const fetcherPlan = async (u) => {
+  const r = await fetch(u, { cache: 'no-store', credentials: 'include' });
+  const txt = await r.text();
+  const isJson = r.headers.get('content-type')?.includes('application/json');
+  const data = isJson && txt ? JSON.parse(txt) : (txt || null);
+  if (!r.ok) {
+    // si el plan falla, tratamos como free (pero evitamos petes raros)
+    return 'free';
+  }
+  return data;
+};
 
 // Soporta: "premium" | {tier:'premium'} | {ok:true, tier:'premium'} | {plan:'premium'}
 function resolveTier(planData) {
@@ -31,11 +42,9 @@ export default function MessagePage() {
   const router = useRouter();
 
   // === PLAN (para gating Free vs Premium) ===
-  // Forzamos frescura con ?ts=... para evitar caché tras canjear código.
   const {
     data: planData,
-    isLoading: planLoading,
-  } = useSWR(`/api/me/plan?ts=${Date.now()}`, fetcher, {
+  } = useSWR(`/api/me/plan?ts=${Date.now()}`, fetcherPlan, {
     revalidateOnFocus: true,
     dedupingInterval: 1000,
   });
@@ -56,8 +65,8 @@ export default function MessagePage() {
         body: { kind },
       }),
     {
-      revalidateOnFocus: true,
-      dedupingInterval: 1500,
+        revalidateOnFocus: true,
+        dedupingInterval: 1500,
     }
   );
 
