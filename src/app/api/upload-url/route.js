@@ -5,7 +5,6 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
-import { getUserPlan } from "@/lib/plan.js";
 
 const PUBLIC_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -19,7 +18,7 @@ if (!SERVICE_KEY) {
   throw new Error("SUPABASE_SERVICE_ROLE_KEY no configurada");
 }
 
-// Admin client (service role) SOLO para Storage (bypassa RLS de storage)
+// Admin client (service role) — DB + Storage con bypass de RLS
 const admin = createAdminClient(PUBLIC_URL, SERVICE_KEY);
 
 // Helpers de content-type
@@ -59,6 +58,23 @@ function genId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+// 🔎 Tier directo desde subscriptions con service role (sin depender de lib/plan.js)
+async function resolveTierAdmin(userId) {
+  const { data, error } = await admin
+    .from("subscriptions")
+    .select("tier, valid_until, created_at")
+    .eq("user_id", userId)
+    .eq("tier", "premium")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return "free";
+  if (!data) return "free";
+  if (!data.valid_until) return "premium";
+  return new Date(data.valid_until) > new Date() ? "premium" : "free";
+}
+
 /**
  * POST /api/upload-url
  * body: { kind: 'audio' | 'video', contentType?: string }
@@ -70,8 +86,10 @@ export async function POST(req) {
   // 1) Auth
   const {
     data: { user },
+    error: authErr,
   } = await userClient.auth.getUser();
-  if (!user) {
+
+  if (authErr || !user) {
     return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
   }
 
@@ -99,35 +117,28 @@ export async function POST(req) {
     );
   }
 
-  // 3) Plan del usuario → define límite
-  let tier = "free";
-  try {
-    const plan = await getUserPlan(user.id); // puede ser 'free' | 'premium' o { tier: '...' }
-    tier = typeof plan === 'string' ? plan : (plan?.tier || 'free');
-  } catch {
-    tier = "free"; // fallback conservador
-  }
+  // 3) Plan del usuario (admin, sin RLS) → define límite
+  const tier = await resolveTierAdmin(user.id);
   const isFree = tier === "free";
 
-  // 4) Límite FREE unificado (1 mensaje total)
+  // 4) Límite FREE unificado (1 mensaje total) — conteo robusto
   if (isFree) {
-    const { data: existing, error: selErr } = await userClient
+    const { count, error: countErr } = await userClient
       .from("media")
-      .select("id")
-      .eq("user_id", user.id)
-      .limit(1)
-      .maybeSingle();
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id);
 
-    if (selErr && selErr.code !== "PGRST116") {
-      return NextResponse.json({ ok: false, message: selErr.message }, { status: 500 });
+    if (countErr) {
+      return NextResponse.json({ ok: false, message: countErr.message }, { status: 500 });
     }
-    if (existing) {
+    if ((count ?? 0) >= 1) {
       return NextResponse.json(
         {
           ok: false,
           code: "LIMIT_REACHED",
           message:
             "Plan Free: ya tenés un mensaje guardado (audio o video). Borrá el actual para grabar otro.",
+          tierDetectado: tier, // 👈 útil para debug en Network tab
         },
         { status: 403 }
       );
