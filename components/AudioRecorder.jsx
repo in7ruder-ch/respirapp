@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import '@/styles/AudioRecorder.css';
-import { apiFetch } from '@lib/apiFetch'; // ⬅️ nuevo helper para /api/*
+import { apiFetch } from '@lib/apiFetch';
 
 function pickSupportedMime() {
   const candidates = [
@@ -27,8 +27,9 @@ function pickSupportedMime() {
 
 export default function AudioRecorder({
   hideTitle = false,
-  onAudioReady,      // callback opcional: se llama tras subida exitosa
-  locked = false,    // si true, bloquear grabación (servidor dice que ya hay audio)
+  onAudioReady,      // callback: se llama tras subida exitosa
+  locked = false,    // si true, bloquear grabación (servidor dice que ya hay audio) — aplica a Free
+  isPremium = false, // 👈 nuevo: para UX de límite
 }) {
   const [isRecording, setIsRecording] = useState(false);
   const [status, setStatus] = useState('');
@@ -49,7 +50,6 @@ export default function AudioRecorder({
 
     let signedUrl;
     try {
-      // ✅ ahora con apiFetch (maneja JSON, errores y no-store)
       const res = await apiFetch('/api/upload-url', {
         method: 'POST',
         body: {
@@ -68,8 +68,9 @@ export default function AudioRecorder({
         return false;
       }
       if (e.status === 403) {
+        // Límite (solo debería ocurrir en Free). Si llegara a pasar en Premium, mostramos el mensaje del backend.
         setError(e.message || 'Alcanzaste tu límite de plan.');
-        setDisabled(true);
+        if (!isPremium) setDisabled(true);
         setStatus('');
         return false;
       }
@@ -80,7 +81,6 @@ export default function AudioRecorder({
 
     setStatus('Subiendo audio…');
 
-    // El PUT al signed URL no es JSON; mantenemos fetch directo
     const put = await fetch(signedUrl, {
       method: 'PUT',
       headers: {
@@ -92,7 +92,8 @@ export default function AudioRecorder({
 
     if (!put.ok) throw new Error('Error subiendo a Supabase');
 
-    setDisabled(true);       // ya no permitir regrabar (plan free)
+    // ✅ Bloqueamos solo a Free; Premium puede seguir grabando otras veces
+    setDisabled(!isPremium);
     setStatus('✅ Subida exitosa');
     return true;
   }
@@ -100,7 +101,12 @@ export default function AudioRecorder({
   async function startRecording() {
     setError('');
     if (disabled) {
-      setError('Plan Free: ya guardaste tu único audio.');
+      if (!isPremium) {
+        setError('Plan Free: ya guardaste tu único audio.');
+      } else {
+        // Para Premium, no deberíamos estar disabled; pero por las dudas lo ignoramos
+        setDisabled(false);
+      }
       return;
     }
 
@@ -185,9 +191,12 @@ export default function AudioRecorder({
         </button>
       )}
 
-      <small style={{ display: 'block', marginTop: 8, opacity: 0.8 }}>
-        Plan Free: 1 audio permitido. Para ilimitados, pasá a Premium.
-      </small>
+      {/* Nota de límite SOLO para Free */}
+      {!isPremium && (
+        <small style={{ display: 'block', marginTop: 8, opacity: 0.8 }}>
+          Plan Free: 1 audio permitido. Para ilimitados, pasá a Premium.
+        </small>
+      )}
     </div>
   );
 }

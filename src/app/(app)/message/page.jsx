@@ -22,7 +22,6 @@ const fetcherPlan = async (u) => {
   const isJson = r.headers.get('content-type')?.includes('application/json');
   const data = isJson && txt ? JSON.parse(txt) : (txt || null);
   if (!r.ok) {
-    // si el plan falla, tratamos como free (pero evitamos petes raros)
     return 'free';
   }
   return data;
@@ -42,9 +41,7 @@ export default function MessagePage() {
   const router = useRouter();
 
   // === PLAN (para gating Free vs Premium) ===
-  const {
-    data: planData,
-  } = useSWR(`/api/me/plan?ts=${Date.now()}`, fetcherPlan, {
+  const { data: planData } = useSWR(`/api/me/plan?ts=${Date.now()}`, fetcherPlan, {
     revalidateOnFocus: true,
     dedupingInterval: 1000,
   });
@@ -65,8 +62,8 @@ export default function MessagePage() {
         body: { kind },
       }),
     {
-        revalidateOnFocus: true,
-        dedupingInterval: 1500,
+      revalidateOnFocus: true,
+      dedupingInterval: 1500,
     }
   );
 
@@ -145,7 +142,7 @@ export default function MessagePage() {
                   onClick={() => { setShowAudioRecorder(true); setRecorderKey(k => k + 1); }}
                   aria-label="Grabar audio"
                   title="Grabar audio"
-                  disabled={loading} // deshabilitamos solo si aún carga el status
+                  disabled={loading}
                 >
                   <div className="icon-bg bg-message" aria-hidden="true" />
                   <div className="label">Grabar audio</div>
@@ -170,14 +167,9 @@ export default function MessagePage() {
                   key={recorderKey}
                   onAudioReady={onAudioReady}
                   hideTitle
+                  isPremium={isPremium}
+                  locked={!isPremium && !!existingKind} // Free con mensaje → lock
                 />
-                {/* Texto de límite solo para Free */}
-                {!isPremium && (
-                  <p className="muted" style={{ marginTop: 8 }}>
-                    Plan Free: <strong>1 mensaje total</strong> (audio <em>o</em> video).
-                    Para grabar otro, primero borrá el actual en Configuración.
-                  </p>
-                )}
               </div>
             )}
           </>

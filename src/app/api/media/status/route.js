@@ -8,13 +8,12 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
  * body?: { kind?: 'audio' | 'video' | 'any' }
  *
  * Respuesta:
- *  { ok:true, has:boolean, kind: 'audio'|'video'|null }
+ *  { ok:true, has:boolean, kind: 'audio'|'video'|null, count:number }
  *
  * Compatibilidad:
- *  - Si envías {kind:'audio'} funciona como antes (revisa solo audio).
- *  - Si envías {kind:'video'} revisa solo video.
- *  - Si envías {kind:'any'} o nada, revisa si hay *cualquier* mensaje
- *    y devuelve `kind` con el último guardado.
+ *  - {kind:'audio'} => revisa solo audio.
+ *  - {kind:'video'} => revisa solo video.
+ *  - {kind:'any'} o vacío => revisa cualquier mensaje y usa el último (o favorito si tu lógica lo requiere en el futuro).
  */
 export async function POST(req) {
   const supabase = createRouteHandlerClient({ cookies });
@@ -22,8 +21,9 @@ export async function POST(req) {
   // Usuario
   const {
     data: { user },
+    error: authErr,
   } = await supabase.auth.getUser();
-  if (!user) {
+  if (authErr || !user) {
     return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
   }
 
@@ -40,7 +40,27 @@ export async function POST(req) {
   }
 
   try {
-    // Construimos query
+    // Conteo exacto del usuario (debug y lógica futura)
+    const { count, error: countErr } = await supabase
+      .from("media")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id);
+
+    if (countErr) {
+      return NextResponse.json({ ok: false, message: countErr.message }, { status: 500 });
+    }
+
+    // Si no hay nada, devolvemos estado vacío
+    if (!count || count === 0) {
+      return NextResponse.json({
+        ok: true,
+        has: false,
+        kind: null,
+        count: 0,
+      });
+    }
+
+    // Query del último registro por usuario (opcionalmente filtrado por kind)
     let q = supabase
       .from("media")
       .select("id, kind, path, created_at")
@@ -53,9 +73,7 @@ export async function POST(req) {
     }
 
     const { data, error } = await q.maybeSingle();
-
     if (error && error.code !== "PGRST116") {
-      // error real de PostgREST (no "no rows")
       return NextResponse.json({ ok: false, message: error.message }, { status: 500 });
     }
 
@@ -64,9 +82,10 @@ export async function POST(req) {
       ok: true,
       has: !!row,
       kind: row ? row.kind : null,
+      count: count ?? 0,
     });
   } catch (e) {
-    // Si la tabla no existe o hay otro problema, no rompemos el flujo
-    return NextResponse.json({ ok: true, has: false, kind: null });
+    // fallback ultra conservador
+    return NextResponse.json({ ok: true, has: false, kind: null, count: 0 });
   }
 }
