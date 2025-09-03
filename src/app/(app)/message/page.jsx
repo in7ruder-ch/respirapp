@@ -1,41 +1,29 @@
 'use client';
 
-import useSWR from 'swr';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
 
 import '@/styles/App.css';
 import '@/styles/BottomNav.css';
 
 import BottomNav from '@/components/BottomNav';
+import AudioRecorder from '@/components/AudioRecorder';
 import { apiFetch } from '@lib/apiFetch';
+import { debounce } from '@lib/debounce';
+import { supabase } from '@lib/supabaseClient';
 
-const fetcher = (u) => fetch(u, { cache: 'no-store', credentials: 'include' }).then(async (r) => {
-  const txt = await r.text();
-  const isJson = r.headers.get('content-type')?.includes('application/json');
-  const data = isJson && txt ? JSON.parse(txt) : (txt || null);
-  if (!r.ok) {
-    const msg = isJson ? (data?.error || JSON.stringify(data)) : (txt || 'HTTP_ERROR');
-    throw new Error(msg);
-  }
-  return data;
-});
+export const dynamic = 'force-dynamic';
 
 export default function MessagePage() {
   const router = useRouter();
 
-  // PLAN — forzamos frescura para evitar el caché post-redeem
-  const { data: planData, isLoading: planLoading, error: planError, mutate: revalidatePlan } = useSWR(
-    // clave única con ts para no agarrar respuestas viejas de algún proxy
-    `/api/me/plan?ts=${Date.now()}`,
-    fetcher,
-    { revalidateOnFocus: true, dedupingInterval: 1000 }
-  );
-  const tier = planData?.tier || 'free';
-  const isPremium = tier === 'premium';
-
-  // STATUS — solo para saber si ya existe algún mensaje (audio o video)
-  const { data: statusData, isLoading: statusLoading } = useSWR(
+  // === SWR: estado de media (audio o video) ===
+  const {
+    data: mediaData,
+    isLoading,
+    mutate,
+  } = useSWR(
     ['/api/media/status', 'any'],
     async ([url, kind]) =>
       apiFetch(url, {
@@ -43,89 +31,116 @@ export default function MessagePage() {
         headers: { 'Cache-Control': 'no-store' },
         body: { kind },
       }),
-    { revalidateOnFocus: true, dedupingInterval: 1000 }
+    {
+      revalidateOnFocus: true,
+      dedupingInterval: 1500,
+    }
   );
 
-  const hasAny = Boolean(statusData?.has);
-  const existingKind = statusData?.kind || null;
+  const existingKind = mediaData?.kind ?? null;
+  const loading = isLoading;
 
-  // Gating: SOLO Free con ≥1 mensaje ve el bloqueo.
-  const isBlockedByFreeLimit = useMemo(() => !isPremium && hasAny, [isPremium, hasAny]);
+  // UI local
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
+  const [recorderKey, setRecorderKey] = useState(0);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
-  const activeNav = 'library'; // o 'home' si preferís
+  // Coalesce de revalidaciones
+  const mutateDebounced = useMemo(() => debounce(() => mutate(), 250), [mutate]);
+
+  useEffect(() => {
+    // Cambios de auth → revalidar
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      mutateDebounced();
+    });
+
+    // Volver al foreground → revalidar
+    const onVis = () => { if (!document.hidden) mutateDebounced(); };
+    document.addEventListener('visibilitychange', onVis);
+
+    // Cambios de sesión en otra pestaña → revalidar
+    const onStorage = (e) => {
+      if (e.key && e.key.includes('sb-') && e.key.includes('-auth-token')) {
+        mutateDebounced();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+
+    return () => {
+      sub?.subscription?.unsubscribe?.();
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [mutateDebounced]);
+
+  const onAudioReady = async () => {
+    setShowConfirmation(true);
+    setTimeout(() => setShowConfirmation(false), 2000);
+    setShowAudioRecorder(false);
+    await mutate(); // refresca estado (ya hay mensaje)
+  };
+
+  const activeNav = 'home';
 
   return (
     <div className="App has-bottom-nav">
       <header className="App-header">
-        <div className="panel" style={{ padding: 16 }}>
-          <h2>MENSAJE</h2>
-          <p className="muted" style={{ marginTop: 4 }}>Elegí cómo querés guardar tu mensaje</p>
+        <h1>MENSAJE</h1>
+        {!showAudioRecorder && <h2>Elegí cómo querés guardar tu mensaje</h2>}
 
-          {/* BLOQUEO SOLO EN FREE */}
-          {isBlockedByFreeLimit ? (
-            <div className="panel" style={{ marginTop: 12, border: '1px solid #f0c', background: '#fff6fd' }}>
-              <p style={{ margin: '8px 0' }}>
-                Ya tenés un mensaje guardado ({existingKind || 'audio/video'}).
-                <br />
-                En plan Free podés tener 1. Borrá el actual para grabar otro o canjeá tu código Premium.
-              </p>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="secondary" onClick={() => router.push('/library')}>
-                  Ir a Biblioteca
+        {showConfirmation && <div className="confirmation-banner">✅ Mensaje guardado</div>}
+
+        {!loading && existingKind && !showAudioRecorder ? (
+          <div className="panel" style={{ marginTop: 12 }}>
+            <p style={{ margin: 0 }}>
+              Ya tenés un mensaje guardado (<strong>{existingKind}</strong>).
+            </p>
+            <p className="muted" style={{ marginTop: 6 }}>
+              En plan Free podés tener 1 (audio <em>o</em> video). Para grabar uno nuevo, primero borrá el actual en Configuración.
+            </p>
+          </div>
+        ) : (
+          <>
+            {!showAudioRecorder ? (
+              <div className="launcher-grid" style={{ marginTop: 12 }}>
+                {/* Grabar AUDIO */}
+                <button
+                  className="launcher-item blue"
+                  onClick={() => { setShowAudioRecorder(true); setRecorderKey(k => k + 1); }}
+                  aria-label="Grabar audio"
+                  title="Grabar audio"
+                >
+                  <div className="icon-bg bg-message" aria-hidden="true" />
+                  <div className="label">Grabar audio</div>
                 </button>
-                <button className="secondary" onClick={() => router.push('/premium')}>
-                  Canjear código
+
+                {/* Grabar VIDEO — subruta */}
+                <button
+                  className="launcher-item red"
+                  onClick={() => router.push('/message/video')}
+                  aria-label="Grabar video"
+                  title="Grabar video"
+                >
+                  <div className="icon-bg bg-message" aria-hidden="true" />
+                  <div className="label">Grabar video</div>
                 </button>
               </div>
-            </div>
-          ) : null}
-
-          {/* ACCIONES (si Premium, siempre habilitadas; si Free + 0 mensajes, habilitadas) */}
-          <div className="launcher-grid" style={{ marginTop: 16 }}>
-            <button
-              className={`launcher-item blue ${isBlockedByFreeLimit ? 'disabled' : ''}`}
-              disabled={isBlockedByFreeLimit}
-              onClick={() => router.push('/message')}
-              aria-label="Grabar audio"
-              title={isBlockedByFreeLimit ? 'Disponible con Premium o si no tenés mensajes' : 'Grabar audio'}
-            >
-              <div className="icon-bg bg-message" aria-hidden="true" />
-              <div className="label">Grabar audio</div>
-            </button>
-
-            <button
-              className={`launcher-item green ${isBlockedByFreeLimit ? 'disabled' : ''}`}
-              disabled={isBlockedByFreeLimit}
-              onClick={() => router.push('/message/video')}
-              aria-label="Grabar video"
-              title={isBlockedByFreeLimit ? 'Disponible con Premium o si no tenés mensajes' : 'Grabar video'}
-            >
-              <div className="icon-bg bg-breath" aria-hidden="true" />
-              <div className="label">Grabar video</div>
-            </button>
-
-            {/* Accesos útiles */}
-            <button
-              className="launcher-item yellow"
-              onClick={() => router.push('/library')}
-              aria-label="Ir a Biblioteca"
-            >
-              <div className="icon-bg bg-config" aria-hidden="true" />
-              <div className="label">Biblioteca</div>
-            </button>
-
-            {!isPremium && (
-              <button
-                className="launcher-item red"
-                onClick={() => router.push('/premium')}
-                aria-label="Canjear Premium"
-              >
-                <div className="icon-bg bg-contact" aria-hidden="true" />
-                <div className="label">Premium</div>
-              </button>
+            ) : (
+              // Modo AUDIO elegido: solo el recorder + info Free
+              <div className="panel" style={{ marginTop: 12 }}>
+                <AudioRecorder
+                  key={recorderKey}
+                  onAudioReady={onAudioReady}
+                  hideTitle
+                />
+                <p className="muted" style={{ marginTop: 8 }}>
+                  Plan Free: <strong>1 mensaje total</strong> (audio <em>o</em> video).
+                  Para grabar otro, primero borrá el actual en Configuración.
+                </p>
+              </div>
             )}
-          </div>
-        </div>
+          </>
+        )}
       </header>
 
       <BottomNav
