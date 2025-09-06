@@ -31,7 +31,7 @@ export default function VideoRecorder({
   const timerRef = useRef(null);
   const [banner, setBanner] = useState('');
 
-  // 👇 Nuevo: nombre visible del video
+  // 👇 Nombre visible del video
   const [title, setTitle] = useState(() => defaultTitle('video'));
 
   useEffect(() => {
@@ -111,7 +111,7 @@ export default function VideoRecorder({
     setBanner('');
     try {
       const contentType = blob.type || 'video/webm';
-      // 👇 unificado: /api/upload-url (ahora con title)
+      // 👇 unificado: /api/upload-url (incluye title)
       const { signedUrl } = await apiFetch('/api/upload-url', {
         method: 'POST',
         body: { kind: 'video', contentType, title: (title || '').trim() },
@@ -151,19 +151,18 @@ export default function VideoRecorder({
   const ss = String(elapsed % 60).padStart(2, '0');
 
   return (
-    <div className="vr-wrap">
+    <div className="vr-wrap vr-scroll">{/* 👈 ahora scrolleable */}
       {!hideTitle && <h3 className="vr-title">Grabar video</h3>}
 
-      {/* 👇 Campo para elegir nombre visible */}
-      <label style={{ display: 'block', marginBottom: 8 }}>
-        <span style={{ display: 'block', marginBottom: 4 }}>Nombre</span>
+      <label className="vr-field">
+        <span className="vr-label">Nombre</span>
         <input
+          className="vr-input"
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Ej: Video para mamá"
           maxLength={120}
-          style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #ccc' }}
         />
       </label>
 
