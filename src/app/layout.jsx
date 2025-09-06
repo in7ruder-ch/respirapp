@@ -1,3 +1,4 @@
+// src/app/layout.jsx
 import './globals.css';
 import RegisterSW from '@/components/RegisterSW';
 import { PlayerProvider } from '@/components/player/PlayerProvider';
@@ -9,10 +10,22 @@ export const metadata = {
   themeColor: '#2563eb',
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: '/favicon.ico',            // tu favicon clásico (Next lo busca en /public, ahora lo movemos)
+    icon: '/favicon.ico',
     shortcut: '/favicon.ico',
-    apple: '/icons/icon-192.png',   // icono PWA para iOS
+    apple: '/icons/icon-192.png',
   },
+  // Opcional pero recomendable para PWA en iOS
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default', // 'black' | 'black-translucent' | 'default'
+  },
+};
+
+// ✅ Viewport mobile-first + safe areas (iOS)
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover', // habilita env(safe-area-inset-*)
 };
 
 export default function RootLayout({ children }) {
@@ -22,7 +35,6 @@ export default function RootLayout({ children }) {
         <PlayerProvider>
           {children}
           <RegisterSW />
-          {/* Barra global tipo Spotify */}
           <GlobalPlayer />
         </PlayerProvider>
       </body>

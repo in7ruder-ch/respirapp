@@ -1,32 +1,23 @@
 .library-panel {
   padding: 16px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  box-sizing: border-box;
 }
 
-/* Toast de confirmación */
-.confirmation-banner {
-  margin-top: 8px;
-  padding: 8px 12px;
-  border: 1px solid #b7eb8f;
-  background: #f6ffed;
-  color: #237804;
-  border-radius: 8px;
-  font-weight: 600;
-}
+/* Tiles de creación */
+.library-tiles { margin-top: 12px; }
 
-.library-tiles {
-  margin-top: 12px;
-}
-
-.library-free-limit {
-  margin-top: 12px;
-}
+/* Aviso free */
+.library-free-limit { margin-top: 12px; }
 
 .m0 { margin: 0; }
 .mt6 { margin-top: 6px; }
 
-.library-list {
-  margin-top: 16px;
-}
+/* Lista */
+.library-list { margin-top: 16px; }
 
 .library-ul {
   list-style: none;
@@ -46,7 +37,6 @@
   font-weight: 600;
   word-break: break-word;
 }
-
 .library-title .favorite {
   color: #0a0;
   margin-left: 6px;
@@ -63,18 +53,24 @@
   gap: 8px;
   align-items: center;
 }
-
 .edit-input {
   flex: 1;
-  padding: 6px;
-  border-radius: 8px;
+  /* hereda font-size:16px de App.css */
+  padding: 12px;
+  border-radius: 10px;
   border: 1px solid #ccc;
 }
 
+/* Acciones de fila */
 .action-bar {
   display: flex;
   gap: 6px;
   align-items: center;
+}
+.action-bar .secondary,
+.action-bar button {
+  min-height: 40px;
+  padding: 8px 10px;
 }
 
 /* Recorder inline */
@@ -85,38 +81,12 @@
   border-radius: 12px;
   background: #fafafa;
 }
-
 .recorder-header {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
 }
-
 .recorder-title {
   font-weight: 600;
-}
-
-/* Toast de confirmación */
-.confirmation-banner {
-  margin-top: 8px;
-  padding: 8px 12px;
-  border: 1px solid #b7eb8f;
-  background: #f6ffed;
-  color: #237804;
-  border-radius: 8px;
-  font-weight: 600;
-  pointer-events: none; /* no bloquea clicks debajo */
-  opacity: 1;
-}
-
-/* Fade-out suave */
-@keyframes confirmationFadeOut {
-  0%   { opacity: 1;   transform: translateY(0); }
-  80%  { opacity: 0.08; }
-  100% { opacity: 0;   transform: translateY(-4px); }
-}
-
-.confirmation-fadeout {
-  animation: confirmationFadeOut 1600ms ease-in forwards;
 }

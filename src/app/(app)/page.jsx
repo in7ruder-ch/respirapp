@@ -59,12 +59,12 @@ export default function Page() {
 
   // === SWR: LISTA DE MEDIA (para favorito/último) ===
   const { data: listData } = useSWR('/api/media/list', fetcher, { revalidateOnFocus: true, dedupingInterval: 1500 });
-  const items = useMemo(() => (listData?.items || []).slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at)), [listData]);
+  const items = useMemo(() => (listData?.items || []).slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)), [listData]);
   const count = items.length;
 
   // favorito > último
   const favorite = items.find(i => i.is_favorite);
-  const latest   = items[0];
+  const latest = items[0];
   const playable = favorite || latest;
 
   // === Coalesce de revalidaciones (un solo pulso) ===
@@ -99,7 +99,7 @@ export default function Page() {
         sessionStorage.removeItem('respirapp_just_signed_in');
         refreshAllDebounced();
       }
-    } catch {}
+    } catch { }
 
     return () => {
       sub?.subscription?.unsubscribe?.();
@@ -149,8 +149,23 @@ export default function Page() {
   // ✅ etiqueta según si hay favorito o no
   const playLabel = favorite ? 'Reproducir favorito' : 'Reproducir mensaje';
 
-  // Etiqueta del tile de contacto (llamar vs gestionar)
-  const contactLabel = contactsCount === 0 ? 'Contacto' : (isPremium ? (favoriteContact ? 'Llamar' : 'Contactos') : 'Llamar');
+  // Etiqueta del tile de contacto (con nombre)
+  let contactLabel = 'Contacto';
+
+  if (contactsCount > 0) {
+    if (!isPremium) {
+      // Free → único contacto
+      contactLabel = `Llamar a ${contacts[0]?.name || 'contacto'}`;
+    } else {
+      if (favoriteContact) {
+        contactLabel = `Llamar a ${favoriteContact.name || 'contacto'}`;
+      } else if (contactsCount === 1) {
+        contactLabel = `Llamar a ${contacts[0]?.name || 'contacto'}`;
+      } else {
+        contactLabel = 'Contactos';
+      }
+    }
+  }
 
   return (
     <div className="App has-bottom-nav">
@@ -196,8 +211,8 @@ export default function Page() {
           <button
             className="launcher-item red"
             onClick={handleContact}
-            aria-label="Contacto de emergencia"
-            title={contactsCount === 0 ? 'Registrar contacto' : (isPremium ? (favoriteContact ? `Llamar a ${favoriteContact.name || 'contacto'}` : 'Abrir contactos') : `Llamar a ${contacts[0]?.name || 'contacto'}`)}
+            aria-label={contactLabel}
+            title={contactLabel}
           >
             <div className="icon-bg bg-contact" aria-hidden="true" />
             <div className="label">{contactLabel}</div>

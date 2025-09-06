@@ -1,18 +1,30 @@
+/* --- Panel base --- */
 .contacts-panel {
   padding: 16px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  box-sizing: border-box;
 }
 
+/* --- Formulario --- */
 .contact-form {
-  margin-top: 10px;
+  margin-top: 12px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .form-fields {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .form-fields label {
@@ -23,20 +35,30 @@
 }
 
 .form-fields input {
-  width: 100%;
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+  /* hereda font-size:16px de App.css */
 }
 
+/* Acciones */
 .form-actions {
   display: flex;
   gap: 8px;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.form-actions .primary,
+.form-actions .secondary,
+.form-actions button {
+  min-height: 44px;
+  padding: 10px 14px;
 }
 
+/* --- Lista de contactos --- */
 .contacts-list {
-  margin-top: 16px;
+  margin-top: 18px;
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .contacts-list ul {
@@ -48,14 +70,15 @@
 .contact-row {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 8px;
-  padding: 10px 0;
+  gap: 10px;
+  padding: 12px 0;
   border-bottom: 1px solid #eee;
 }
 
 .contact-info {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .contact-name {
@@ -74,25 +97,47 @@
   margin-top: 2px;
 }
 
+/* Edición inline */
 .edit-fields {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
-
 .edit-fields input {
-  padding: 6px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+  /* hereda font-size y paddings globales */
 }
 
 .edit-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
+/* Acciones por fila */
 .contact-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
+}
+.contact-actions .secondary,
+.contact-actions button {
+  min-height: 40px;
+  padding: 8px 10px;
+}
+
+/* --- Responsive --- */
+@media (max-width: 480px) {
+  .contacts-panel { padding-top: 12px; }
+
+  .contact-row { gap: 8px; }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .form-actions .primary,
+  .form-actions .secondary,
+  .form-actions button {
+    width: 100%;
+  }
 }

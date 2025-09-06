@@ -1,6 +1,16 @@
 /* ===========================
-   General setup (DESKTOP por defecto)
+   Base mobile-first + accesibilidad
    =========================== */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  height: 100%;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -10,6 +20,43 @@ html, body {
   color: #111827;
 }
 
+/* Controles: evitar zoom iOS y mejorar tap targets */
+input, select, textarea, button {
+  font-size: 16px;        /* evita zoom en iOS */
+  line-height: 1.25;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  background: #fff;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+button {
+  min-height: 44px;       /* tap target cómodo */
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #f7f7f7;
+  cursor: pointer;
+}
+
+button:disabled { opacity: .55; cursor: not-allowed; }
+button.secondary { background: #fafafa; }
+
+/* Focus visible accesible */
+:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* ===========================
+   Layout App
+   =========================== */
 .App {
   display: flex;
   justify-content: center;
@@ -18,6 +65,11 @@ html, body {
   padding: 1rem;
   box-sizing: border-box;
   text-align: center;
+}
+
+.App.has-bottom-nav {
+  /* reserva espacio para la nav fija + safe areas */
+  padding-bottom: calc(64px + max(env(safe-area-inset-bottom), 0px));
 }
 
 .App-header {
@@ -59,7 +111,7 @@ h3 {
   padding: 1rem 1.5rem;
   margin: 0.5rem 0;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 1rem; /* 16px con la base → sin zoom iOS */
   cursor: pointer;
   transition: background-color 0.2s ease-in-out;
   width: 100%;
@@ -96,14 +148,16 @@ h3 {
 /* Texto atenuado */
 .muted { margin: 8px 0 0; color: #6b7280; }
 
-/* ----------------------------- */
-/* GRID ESTILO LAUNCHER (HOME)   */
-/* ----------------------------- */
+/* -----------------------------
+   GRID ESTILO LAUNCHER (HOME)
+   ----------------------------- */
 .launcher-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 14px;
   padding: 8px 4px 0;
+  max-width: 560px;
+  margin: 0 auto;
 }
 
 .launcher-item {
@@ -235,11 +289,10 @@ h3 {
 }
 
 /* ===========================
-   MOBILE: fullscreen + padding nav fijo (<=768px)
+   MOBILE (<=768px)
    =========================== */
 @media (max-width: 768px) {
   .App {
-    /* pantalla completa en mobile */
     padding: 0;            /* sin padding externo */
     width: 100vw;
     min-height: 100dvh;
@@ -249,12 +302,10 @@ h3 {
   }
 
   .App.has-bottom-nav {
-    /* reserva espacio para la nav fija */
     padding-bottom: calc(64px + max(env(safe-area-inset-bottom), 0px));
   }
 
   .App-header {
-    /* wrapper ocupa toda la pantalla (menos el espacio reservado arriba) */
     border-radius: 0;
     box-shadow: none;
     max-width: none;
