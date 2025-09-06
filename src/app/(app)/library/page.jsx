@@ -9,6 +9,8 @@ import '@/styles/Library.css';
 
 import BottomNav from '@/components/BottomNav';
 import { usePlayer } from '@/components/player/PlayerProvider';
+import AudioRecorder from '@/components/AudioRecorder';
+import VideoRecorder from '@/components/VideoRecorder';
 
 async function safeParseResponse(res) {
   const txt = await res.text();
@@ -32,10 +34,17 @@ export default function LibraryPage() {
   const [busyId, setBusyId] = useState(null);
   const { playByItem } = usePlayer();
 
-  // Renombrado inline (estado simple)
+  // Renombrado
   const [editingId, setEditingId] = useState(null);
   const [editingVal, setEditingVal] = useState('');
   const [savingId, setSavingId] = useState(null);
+
+  // Creación inline
+  const [createMode, setCreateMode] = useState('none'); // 'none' | 'audio' | 'video'
+  const [recorderKey, setRecorderKey] = useState(0);
+
+  // Toast de confirmación
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   // Plan
   const {
@@ -205,9 +214,27 @@ export default function LibraryPage() {
 
   const activeNav = 'library';
 
-  // Lógica de tiles
+  // Tiles / límites
   const showCreateTiles = isPremium || (isFree && count === 0);
   const showFreeLimitPanel = isFree && count >= 1;
+
+  // Recorder handlers
+  function openAudio() { setCreateMode('audio'); setRecorderKey(k => k + 1); }
+  function openVideo() { setCreateMode('video'); setRecorderKey(k => k + 1); }
+  function closeRecorder() { setCreateMode('none'); }
+
+  async function onAudioReady() {
+    closeRecorder();
+    await mutate();
+    setShowConfirmation(true);
+    setTimeout(() => setShowConfirmation(false), 2000);
+  }
+  async function onVideoReady() {
+    closeRecorder();
+    await mutate();
+    setShowConfirmation(true);
+    setTimeout(() => setShowConfirmation(false), 2000);
+  }
 
   return (
     <div className="App has-bottom-nav">
@@ -215,29 +242,64 @@ export default function LibraryPage() {
         <div className="panel library-panel">
           <h2>📚 Biblioteca</h2>
 
-          {/* Tiles de creación */}
-          {showCreateTiles && (
-            <div className="launcher-grid library-tiles">
-              <button
-                className="launcher-item blue"
-                onClick={() => router.push('/message')}
-                aria-label="Grabar audio"
-                title="Grabar audio"
-              >
-                <div className="icon-bg bg-message" aria-hidden="true" />
-                <div className="label">Grabar audio</div>
-              </button>
+          {showConfirmation && (
+            <div className="confirmation-banner confirmation-fadeout">✅ Mensaje guardado</div>
+          )}
 
-              <button
-                className="launcher-item red"
-                onClick={() => router.push('/message/video')}
-                aria-label="Grabar video"
-                title="Grabar video"
-              >
-                <div className="icon-bg bg-message" aria-hidden="true" />
-                <div className="label">Grabar video</div>
-              </button>
-            </div>
+          {/* Tiles de creación o Recorder inline */}
+          {showCreateTiles && (
+            <>
+              {createMode === 'none' ? (
+                <div className="launcher-grid library-tiles">
+                  <button
+                    className="launcher-item blue"
+                    onClick={openAudio}
+                    aria-label="Grabar audio"
+                    title="Grabar audio"
+                  >
+                    <div className="icon-bg bg-message" aria-hidden="true" />
+                    <div className="label">Grabar audio</div>
+                  </button>
+
+                  <button
+                    className="launcher-item red"
+                    onClick={openVideo}
+                    aria-label="Grabar video"
+                    title="Grabar video"
+                  >
+                    <div className="icon-bg bg-message" aria-hidden="true" />
+                    <div className="label">Grabar video</div>
+                  </button>
+                </div>
+              ) : (
+                <div className="recorder-panel">
+                  <div className="recorder-header">
+                    <button className="secondary" onClick={closeRecorder} aria-label="Volver">← Volver</button>
+                    <div className="recorder-title">
+                      {createMode === 'audio' ? 'Grabar audio' : 'Grabar video'}
+                    </div>
+                  </div>
+
+                  {createMode === 'audio' && (
+                    <AudioRecorder
+                      key={recorderKey}
+                      onAudioReady={onAudioReady}
+                      hideTitle
+                      isPremium={isPremium}
+                      locked={isFree && count >= 1}
+                    />
+                  )}
+
+                  {createMode === 'video' && (
+                    <VideoRecorder
+                      key={recorderKey}
+                      onVideoReady={onVideoReady}
+                      hideTitle
+                    />
+                  )}
+                </div>
+              )}
+            </>
           )}
 
           {/* Aviso de límite Free */}

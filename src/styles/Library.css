@@ -2,6 +2,17 @@
   padding: 16px;
 }
 
+/* Toast de confirmación */
+.confirmation-banner {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border: 1px solid #b7eb8f;
+  background: #f6ffed;
+  color: #237804;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
 .library-tiles {
   margin-top: 12px;
 }
@@ -46,6 +57,7 @@
   margin-top: 2px;
 }
 
+/* Edición */
 .edit-line {
   display: flex;
   gap: 8px;
@@ -63,4 +75,48 @@
   display: flex;
   gap: 6px;
   align-items: center;
+}
+
+/* Recorder inline */
+.recorder-panel {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.recorder-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.recorder-title {
+  font-weight: 600;
+}
+
+/* Toast de confirmación */
+.confirmation-banner {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border: 1px solid #b7eb8f;
+  background: #f6ffed;
+  color: #237804;
+  border-radius: 8px;
+  font-weight: 600;
+  pointer-events: none; /* no bloquea clicks debajo */
+  opacity: 1;
+}
+
+/* Fade-out suave */
+@keyframes confirmationFadeOut {
+  0%   { opacity: 1;   transform: translateY(0); }
+  80%  { opacity: 0.08; }
+  100% { opacity: 0;   transform: translateY(-4px); }
+}
+
+.confirmation-fadeout {
+  animation: confirmationFadeOut 1600ms ease-in forwards;
 }
