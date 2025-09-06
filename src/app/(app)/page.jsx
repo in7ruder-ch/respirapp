@@ -26,9 +26,6 @@ export default function Page() {
   const router = useRouter();
   const { playByItem } = usePlayer();
 
-  // Fallback local para contacto
-  const localContactRef = useRef(loadContact() || null);
-
   // === SWR: MEDIA STATUS (conservamos para tu copy/UI, aunque no lo usamos para reproducir) ===
   const { data: mediaData, mutate: mutateMedia } = useSWR(
     ['/api/media/status', 'any'],
@@ -46,30 +43,21 @@ export default function Page() {
   const hasMessage = Boolean(mediaData?.has);
   const mediaKind = mediaData?.kind ?? null;
 
-  // === SWR: CONTACTO (cloud, con fallback local si falla) ===
-  const {
-    data: contactRes,
-    error: contactErr,
-    mutate: mutateContact,
-  } = useSWR(
-    '/api/contact',
-    async (url) => {
-      const r = await fetch(url, { cache: 'no-store' });
-      if (!r.ok) throw new Error('contact fetch failed');
-      return r.json();
-    },
-    {
-      revalidateOnFocus: true,
-      dedupingInterval: 1500,
-    }
-  );
-  const contact = contactRes?.contact ?? localContactRef.current;
-
-  // === SWR: PLAN + LISTA (para decidir qué reproducir) ===
+  // === SWR: PLAN ===
   const { data: planData } = useSWR('/api/me/plan', fetcher, { revalidateOnFocus: true, dedupingInterval: 1500 });
   const tier = planData?.tier || 'free';
   const isPremium = tier === 'premium';
 
+  // === SWR: LISTA DE CONTACTOS (nuevo flujo) ===
+  const { data: contactsRes, mutate: mutateContacts } = useSWR('/api/contacts/list', fetcher, {
+    revalidateOnFocus: true,
+    dedupingInterval: 1500,
+  });
+  const contacts = contactsRes?.items || [];
+  const contactsCount = contacts.length;
+  const favoriteContact = contacts.find(c => c.is_favorite) || null;
+
+  // === SWR: LISTA DE MEDIA (para favorito/último) ===
   const { data: listData } = useSWR('/api/media/list', fetcher, { revalidateOnFocus: true, dedupingInterval: 1500 });
   const items = useMemo(() => (listData?.items || []).slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at)), [listData]);
   const count = items.length;
@@ -84,9 +72,9 @@ export default function Page() {
     () =>
       debounce(() => {
         mutateMedia();
-        mutateContact();
+        mutateContacts();
       }, 250),
-    [mutateMedia, mutateContact]
+    [mutateMedia, mutateContacts]
   );
 
   useEffect(() => {
@@ -126,18 +114,43 @@ export default function Page() {
       router.push('/library');
       return;
     }
-    // 🔊/🎞️ Usa el Player global: firma por id y reproduce.
     await playByItem({ id: playable.id, kind: playable.kind });
+  };
+
+  // --------- Llamar contacto (según plan) ----------
+  const handleContact = () => {
+    if (contactsCount === 0) {
+      router.push('/contacts');
+      return;
+    }
+    if (isPremium) {
+      // Premium: si hay favorito → llamar; si no → ir a la lista
+      if (favoriteContact?.phone) {
+        window.location.href = telHref(favoriteContact.phone);
+      } else {
+        router.push('/contacts');
+      }
+      return;
+    }
+    // Free: un único contacto → llamar directo
+    const first = contacts[0];
+    if (first?.phone) {
+      window.location.href = telHref(first.phone);
+    } else {
+      router.push('/contacts');
+    }
   };
 
   const activeNav = 'home';
 
   // ---------- UI helpers ----------
   const hasAny = count > 0;
-  const showPlay = hasAny;
 
-  // ✅ NUEVO: etiqueta según si hay favorito o no
+  // ✅ etiqueta según si hay favorito o no
   const playLabel = favorite ? 'Reproducir favorito' : 'Reproducir mensaje';
+
+  // Etiqueta del tile de contacto (llamar vs gestionar)
+  const contactLabel = contactsCount === 0 ? 'Contacto' : (isPremium ? (favoriteContact ? 'Llamar' : 'Contactos') : 'Llamar');
 
   return (
     <div className="App has-bottom-nav">
@@ -146,7 +159,7 @@ export default function Page() {
         <h2>Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad</h2>
 
         <div className="launcher-grid">
-          {/* Mensaje: Home SOLO reproduce. Si no hay, CTA a Biblioteca */}
+          {/* Mensaje */}
           {hasMessage ? (
             <button
               className="launcher-item blue"
@@ -180,26 +193,15 @@ export default function Page() {
           </button>
 
           {/* Contacto */}
-          {!contact?.phone ? (
-            <button
-              className="launcher-item red"
-              onClick={() => router.push('/contacts')}
-              aria-label="Registrar contacto"
-            >
-              <div className="icon-bg bg-contact" aria-hidden="true" />
-              <div className="label">Contacto</div>
-            </button>
-          ) : (
-            <button
-              className="launcher-item red"
-              onClick={() => (window.location.href = telHref(contact.phone))}
-              title={`Llamar a ${contact?.name || 'contacto'}`}
-              aria-label="Llamar contacto"
-            >
-              <div className="icon-bg bg-contact" aria-hidden="true" />
-              <div className="label">Llamar</div>
-            </button>
-          )}
+          <button
+            className="launcher-item red"
+            onClick={handleContact}
+            aria-label="Contacto de emergencia"
+            title={contactsCount === 0 ? 'Registrar contacto' : (isPremium ? (favoriteContact ? `Llamar a ${favoriteContact.name || 'contacto'}` : 'Abrir contactos') : `Llamar a ${contacts[0]?.name || 'contacto'}`)}
+          >
+            <div className="icon-bg bg-contact" aria-hidden="true" />
+            <div className="label">{contactLabel}</div>
+          </button>
 
           {/* Config */}
           <button
