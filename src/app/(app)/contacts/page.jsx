@@ -184,9 +184,10 @@ export default function ContactsPage() {
   }
 
   // === Favorito (solo Premium) ===
-  async function fav(id) {
+  async function favContact(ct) {
     if (!isPremium) return alert('Favoritos es una función Premium.');
-    setBusyId(id);
+    setBusyId(ct.id);
+    const wasFav = !!ct.is_favorite;
     try {
       await mutate(
         async (current) => {
@@ -194,7 +195,7 @@ export default function ContactsPage() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ id }),
+            body: JSON.stringify({ id: ct.id }),
           });
           const { data, txt, isJson } = await safeParseResponse(res);
           if (res.status === 403) throw new Error('ONLY_PREMIUM');
@@ -202,12 +203,11 @@ export default function ContactsPage() {
             const msg = isJson ? (data?.error || JSON.stringify(data)) : (txt || 'FAV_ERROR');
             throw new Error(msg);
           }
-          const updated = data?.item;
-          const curItems = (current?.items || []).map((x) => ({
-            ...x,
-            is_favorite: x.id === updated.id,
-          }));
-          return { items: curItems, tier: current?.tier ?? listData?.tier };
+          const cur = (current?.items || []).map((x) => {
+            if (wasFav) return { ...x, is_favorite: false };
+            return { ...x, is_favorite: x.id === ct.id };
+          });
+          return { items: cur };
         },
         { revalidate: false }
       );
@@ -215,7 +215,7 @@ export default function ContactsPage() {
       if (e?.message === 'ONLY_PREMIUM') {
         alert('Solo usuarios Premium pueden marcar favorito.');
       } else {
-        alert('No se pudo marcar favorito.');
+        alert('No se pudo actualizar favorito.');
       }
       await mutate();
     } finally {
@@ -367,8 +367,10 @@ export default function ContactsPage() {
                         </button>
                         <button
                           className={`secondary ${!isPremium ? 'disabled' : ''}`}
-                          disabled={!isPremium || isRowBusy}
-                          onClick={() => fav(it.id)}
+                          disabled={!isPremium || busyId === ct.id}
+                          onClick={() => favContact(ct)}
+                          aria-label={isPremium ? (ct.is_favorite ? 'Quitar de favorito' : 'Marcar favorito') : 'Solo Premium'}
+                          title={isPremium ? (ct.is_favorite ? 'Quitar de favorito' : 'Marcar favorito (uno máximo)') : 'Solo Premium'}
                         >
                           ⭐
                         </button>
