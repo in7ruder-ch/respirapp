@@ -36,19 +36,63 @@ input, select, textarea {
   appearance: none;
 }
 
-button {
-  min-height: 44px;       /* tap target cómodo */
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
+/* ===========================
+   Botones consistentes
+   =========================== */
+/* Primario (acciones principales: grabar, agregar contacto, etc.) */
+.primary,
+.help-button,
+.options button.primary {
+  background-color: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 0.8rem 1.2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  width: 100%;
+  max-width: 300px;
+}
+
+.primary:hover:enabled,
+.help-button:hover:enabled,
+.options button.primary:hover:enabled {
+  background-color: #1d4ed8;
+}
+
+.primary:disabled { opacity: .55; cursor: not-allowed; }
+
+/* Secundario (acciones neutrales) */
+.secondary {
   background: #f7f7f7;
+  color: #111827;
+  border: 1px solid #ddd;
+  padding: 0.65rem 0.95rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
   cursor: pointer;
 }
 
-button:disabled { opacity: .55; cursor: not-allowed; }
-button.secondary { background: #fafafa; }
+.secondary:disabled { opacity: .55; cursor: not-allowed; }
 
-/* Focus visible accesible */
+/* Botón borrar (peligro) */
+.delete-button {
+  margin-top: 0.75rem;
+  background-color: #ef4444;
+  color: white;
+  padding: 1rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: 100%;
+  max-width: 300px;
+}
+.delete-button:hover { background-color: #dc2626; }
+
+/* Focus visible accesible (global) */
 :focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
@@ -102,24 +146,7 @@ h3 {
   color: #1f2937;
 }
 
-/* Botones genéricos (otras vistas) */
-.help-button,
-.options button {
-  background-color: #2563eb;
-  color: white;
-  border: none;
-  padding: 1rem 1.5rem;
-  margin: 0.5rem 0;
-  border-radius: 8px;
-  font-size: 1rem; /* 16px con la base → sin zoom iOS */
-  cursor: pointer;
-  transition: background-color 0.2s ease-in-out;
-  width: 100%;
-  max-width: 300px;
-}
-.help-button:hover,
-.options button:hover:enabled { background-color: #1d4ed8; }
-
+/* Acciones agrupadas (si las usás) */
 .options {
   display: flex;
   flex-direction: column;
@@ -185,7 +212,7 @@ h3 {
   left: 12%;
   right: 12%;
   top: 12%;
-  bottom: 28%; /* deja espacio para el texto dentro del tile */
+  bottom: 28%;
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
@@ -205,22 +232,22 @@ h3 {
   color: white;
 }
 
-/* Placeholders de imágenes (reemplazá por tus PNGs) */
+/* Placeholders de imágenes */
 .bg-message { background-image: url('/icons/message.png'); }
-.bg-breath  { background-image: url('/icons/breath.png');  }
+.bg-breath  { background-image: url('/icons/breath.png'); }
 .bg-contact { background-image: url('/icons/contact.png'); }
-.bg-config  { background-image: url('/icons/config.png');  }
+.bg-config  { background-image: url('/icons/config.png'); }
 
-/* Colores de fondo (ajustables) */
-.launcher-item.blue   { background-color: #2563eb; } /* Mensaje */
-.launcher-item.green  { background-color: #10b981; } /* Respirar */
-.launcher-item.red    { background-color: #f5130b; } /* Contacto */
-.launcher-item.yellow { background-color: #f4b000; } /* Config. */
+/* Colores de fondo */
+.launcher-item.blue   { background-color: #2563eb; }
+.launcher-item.green  { background-color: #10b981; }
+.launcher-item.red    { background-color: #f5130b; }
+.launcher-item.yellow { background-color: #f4b000; }
 
-/* Tile que ocupa ambas columnas (grabador inline) */
+/* Tile que ocupa ambas columnas */
 .tile-span-2 { grid-column: span 2; }
 
-/* Breathing (si usás el módulo animado) */
+/* Breathing */
 .breathing-container {
   position: relative;
   height: 250px;
@@ -266,34 +293,12 @@ h3 {
   100% { opacity: 0; }
 }
 
-/* Botón borrar (settings) */
-.delete-button {
-  margin-top: 0.75rem;
-  background-color: #ef4444;
-  color: white;
-  padding: 1rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  width: 100%;
-  max-width: 300px;
-}
-.delete-button:hover { background-color: #dc2626; }
-
-/* Textos auxiliares */
-.helper-text {
-  margin: 0.25rem 0 0.75rem 0;
-  font-size: 0.95rem;
-  color: #4b5563; /* gris 600 */
-}
-
 /* ===========================
    MOBILE (<=768px)
    =========================== */
 @media (max-width: 768px) {
   .App {
-    padding: 0;            /* sin padding externo */
+    padding: 0;
     width: 100vw;
     min-height: 100dvh;
     height: 100vh;

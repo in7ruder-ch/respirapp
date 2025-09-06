@@ -143,7 +143,7 @@ export default function SettingsPage() {
                   {fav ? <> Favorito: <strong>{fav.name}</strong>.</> : null}
                 </p>
                 <div className="settings-actions">
-                  <button className="secondary" onClick={() => router.push('/contacts')}>
+                  <button className="primary" onClick={() => router.push('/contacts')}>
                     Gestionar contactos
                   </button>
                 </div>

@@ -16,7 +16,7 @@
   margin-top: 6px;
 }
 
-/* Botones dentro de settings */
+/* Botones dentro de settings: solo espaciado/escala, sin sobreescribir colores */
 .settings-panel .primary,
 .settings-panel .secondary,
 .settings-panel button {
