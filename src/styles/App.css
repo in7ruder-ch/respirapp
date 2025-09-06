@@ -7,17 +7,17 @@ html {
   height: 100%;
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
-}
+*, *::before, *::after { box-sizing: border-box; }
 
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #fff;
+  background-color: #f9fafb;
   color: #111827;
+  /* 👇 Bloqueamos scroll global para que el scroll suceda SOLO dentro del frame */
+  overflow: hidden;
 }
 
 /* Controles: evitar zoom iOS y mejorar tap targets */
@@ -56,9 +56,7 @@ input, select, textarea {
 }
 .primary:hover:enabled,
 .help-button:hover:enabled,
-.options button.primary:hover:enabled {
-  background-color: #1d4ed8;
-}
+.options button.primary:hover:enabled { background-color: #1d4ed8; }
 .primary:disabled { opacity: .55; cursor: not-allowed; }
 
 .secondary {
@@ -85,30 +83,27 @@ input, select, textarea {
 }
 .delete-button:hover { background-color: #dc2626; }
 
-:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
-}
+:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 
 /* ===========================
    Layout App
    =========================== */
+:root { --nav-h: 60px; }
+
 .App {
   display: flex;
   justify-content: center;
-  align-items: flex-start;   /* evita “salto” del header al cambiar contenido */
-  min-height: 100dvh;
+  align-items: center;
+  height: 100dvh;   /* ocupa SIEMPRE todo el viewport dinámico */
   width: 100%;
   padding: 0;
   box-sizing: border-box;
   text-align: center;
+  /* bloquea scroll por fuera del frame */
+  overflow: hidden;
 }
 
-.App.has-bottom-nav {
-  /* reserva espacio real para la navbar fija */
-  padding-bottom: calc(60px + max(env(safe-area-inset-bottom), 0px));
-}
-
+/* El frame de contenido ocupa el alto EXACTO descontando la navbar */
 .App-header {
   background: #ffffff;
   border-radius: 16px;
@@ -119,9 +114,11 @@ input, select, textarea {
   box-sizing: border-box;
   position: relative;
 
-  /* ✅ dejamos que el contenido defina la altura; el scroll es del documento */
-  min-height: auto;
-  overflow: visible;
+  /* 👇 alto fijo dentro del viewport (restando la nav) */
+  height: calc(100dvh - var(--nav-h) - env(safe-area-inset-bottom));
+  /* 👇 el ÚNICO scroll permitido (Library, Video, listas largas) */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Tipografía */
@@ -256,8 +253,8 @@ h3 { margin-top: 1.25rem; font-size: 1.1rem; color: #1f2937; }
   border-color: #f87171;
 }
 @keyframes fadeOut {
-  0%   { opacity: 1; }
-  80%  { opacity: 1; }
+  0% { opacity: 1; }
+  80% { opacity: 1; }
   100% { opacity: 0; }
 }
 
@@ -286,4 +283,3 @@ h3 { margin-top: 1.25rem; font-size: 1.1rem; color: #1f2937; }
   .launcher-item .label { bottom: 9%; font-size: 0.95rem; }
   .icon-bg { left: 13%; right: 13%; top: 13%; bottom: 30%; }
 }
-

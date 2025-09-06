@@ -1,4 +1,4 @@
-/* Sin contenedor scroll extra: el scroll lo maneja App-header en Library */
+/* Ancho y centrado dentro del frame */
 .vr-wrap {
   max-width: 520px;
   margin: 0 auto;
@@ -91,10 +91,4 @@
   margin-left: auto;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-}
-
-.vr-page {
-  max-height: none;
-  overflow: visible;
-  padding-bottom: 12px; /* podés dejarlo para aire extra */
 }

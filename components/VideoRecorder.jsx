@@ -1,4 +1,3 @@
-// components/VideoRecorder.jsx
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -15,10 +14,7 @@ function defaultTitle(kind = 'video') {
   return `${prefix} ${isoLocal}`;
 }
 
-export default function VideoRecorder({
-  hideTitle = false,
-  onVideoReady,
-}) {
+export default function VideoRecorder({ hideTitle = false, onVideoReady }) {
   const videoRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
@@ -51,9 +47,7 @@ export default function VideoRecorder({
       }
     })();
 
-    return () => {
-      stopAll();
-    };
+    return () => { stopAll(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -127,6 +121,7 @@ export default function VideoRecorder({
       setTimeout(() => setBanner(''), 1800);
       onVideoReady?.({ ok: true });
 
+      // Sugerir un nombre nuevo para la próxima grabación
       setTitle(defaultTitle('video'));
     } catch (e) {
       const msg = String(e?.message || '');
@@ -148,7 +143,6 @@ export default function VideoRecorder({
   const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
   const ss = String(elapsed % 60).padStart(2, '0');
 
-  // ✅ Sin wrapper extra con scroll: dejamos que scrollee el App-header (igual que audio)
   return (
     <div className="vr-wrap">
       {!hideTitle && <h3 className="vr-title">Grabar video</h3>}
