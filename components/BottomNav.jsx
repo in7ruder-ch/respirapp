@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import '@/styles/App.css'
 import '@/styles/BottomNav.css';
 
 const NAV_ITEMS = [
