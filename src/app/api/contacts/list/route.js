@@ -16,14 +16,13 @@ export async function GET() {
 
   const { data, error } = await supa
     .from("emergency_contacts")
-    .select("id, name, phone, email, is_favorite, created_at")
+    .select("id, name, phone, is_favorite, created_at")
     .eq("user_id", user.id)
     .order("is_favorite", { ascending: false })
     .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Derivar plan (útil para la UI)
   const tier = await resolveTierAdmin(user.id);
   return NextResponse.json({ items: data || [], tier });
 }
@@ -38,7 +37,6 @@ async function resolveTierAdmin(userId) {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-
     if (!data) return "free";
     if (!data.valid_until) return "premium";
     return new Date(data.valid_until) > new Date() ? "premium" : "free";

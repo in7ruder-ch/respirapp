@@ -14,10 +14,9 @@ export async function POST(req) {
   const id = body?.id;
   const name = typeof body?.name === "string" ? body.name.trim() : undefined;
   const phone = typeof body?.phone === "string" ? body.phone.trim() : undefined;
-  const email = typeof body?.email === "string" ? body.email.trim() : undefined;
 
   if (!id) return NextResponse.json({ error: "Falta id" }, { status: 400 });
-  if (name === undefined && phone === undefined && email === undefined) {
+  if (name === undefined && phone === undefined) {
     return NextResponse.json({ error: "Nada para actualizar" }, { status: 400 });
   }
   if (phone !== undefined && phone.trim() === "") {
@@ -27,14 +26,13 @@ export async function POST(req) {
   const patch = {};
   if (name !== undefined) patch.name = name || null;
   if (phone !== undefined) patch.phone = phone || null;
-  if (email !== undefined) patch.email = email || null;
 
   const { data, error } = await supa
     .from("emergency_contacts")
     .update(patch)
     .eq("id", id)
     .eq("user_id", user.id)
-    .select("id, name, phone, email, is_favorite, created_at")
+    .select("id, name, phone, is_favorite, created_at")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

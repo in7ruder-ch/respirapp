@@ -18,13 +18,11 @@ export async function POST(req) {
   try { body = await req.json(); } catch {}
   const name = (body?.name || "").trim();
   const phone = (body?.phone || "").trim();
-  const email = (body?.email || "").trim();
 
   if (!name || !phone) {
     return NextResponse.json({ error: "Faltan campos obligatorios (name, phone)" }, { status: 400 });
   }
 
-  // Límite por plan
   const tier = await resolveTierAdmin(user.id);
   const isFree = tier !== "premium";
   if (isFree) {
@@ -44,10 +42,8 @@ export async function POST(req) {
       user_id: user.id,
       name,
       phone,
-      email: email || null,
-      // is_favorite: false  // Free no usa favorito, Premium decidirá luego
     })
-    .select("id, name, phone, email, is_favorite, created_at")
+    .select("id, name, phone, is_favorite, created_at")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -64,7 +60,6 @@ async function resolveTierAdmin(userId) {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-
     if (!data) return "free";
     if (!data.valid_until) return "premium";
     return new Date(data.valid_until) > new Date() ? "premium" : "free";
