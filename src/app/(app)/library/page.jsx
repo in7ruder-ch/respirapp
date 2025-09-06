@@ -218,11 +218,11 @@ export default function LibraryPage() {
             <button className="primary" onClick={() => router.push('/message')}>
               🎙️ Grabar
             </button>
-            {showPlanGate && (
+            {/* {showPlanGate && (
               <span className="muted" style={{ alignSelf: 'center' }}>
                 ⭐ Favoritos es una función Premium
               </span>
-            )}
+            )} */}
           </div>
 
           {/* Lista */}
