@@ -9,7 +9,6 @@ import '@/styles/BottomNav.css';
 
 import BottomNav from '@/components/BottomNav';
 
-import { loadContact } from '@lib/contactsStore';
 import { apiFetch } from '@lib/apiFetch';
 import { debounce } from '@lib/debounce';
 import { supabase } from '@lib/supabaseClient';

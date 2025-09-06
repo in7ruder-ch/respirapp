@@ -69,10 +69,10 @@
 
 /* ===========================
    Contenido de tabs simples (Explorar / Perfil)
-   Misma estructura visual que Biblioteca
+   → Mismo look & spacing que Biblioteca
    =========================== */
 .tab-page {
-  /* mismo contenedor que usamos en paneles/listas */
+  /* mismo ancho y padding que usamos en paneles/listas */
   max-width: 560px;
   margin: 0 auto;
   padding: 16px;
@@ -80,11 +80,11 @@
   padding-right: max(16px, env(safe-area-inset-right));
   box-sizing: border-box;
 
-  /* ocupa el alto disponible restando la navbar (sin centrar vertical) */
-  min-height: calc(100dvh - 60px - env(safe-area-inset-bottom));
+  /* ❗ que NO aporte altura extra distinta a otras vistas */
+  min-height: auto;           /* <— eliminamos cualquier min-height previo */
 }
 
-/* Igual que en Library: título centrado y sin margen superior extra */
+/* Igual que Library: título centrado y sin margen superior */
 .tab-page h2 {
   text-align: center;
   margin-top: 0;
@@ -95,4 +95,5 @@
   color: #6b7280;
   margin-top: 8px;
 }
+
 

@@ -53,6 +53,7 @@ input, select, textarea {
   cursor: pointer;
   transition: background-color 0.2s ease-in-out;
   width: 100%;
+  margin-top: 10px;
 }
 .primary:hover:enabled,
 .help-button:hover:enabled,
