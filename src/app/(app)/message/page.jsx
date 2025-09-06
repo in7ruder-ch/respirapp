@@ -41,7 +41,7 @@ export default function MessagePage() {
   const router = useRouter();
 
   // === PLAN (para gating Free vs Premium) ===
-  const { data: planData } = useSWR(`/api/me/plan?ts=${Date.now()}`, fetcherPlan, {
+  const { data: planData, isLoading: planLoading } = useSWR('/api/me/plan', fetcherPlan, {
     revalidateOnFocus: true,
     dedupingInterval: 1000,
   });
@@ -112,8 +112,8 @@ export default function MessagePage() {
 
   const activeNav = 'home';
 
-  // 🔒 Gating: SOLO FREE con mensaje existente está bloqueado.
-  const isBlockedByFreeLimit = !isPremium && !!existingKind && !loading;
+  // 🔒 Gating: SOLO FREE con mensaje existente está bloqueado — esperar a que cargue el plan
+  const isBlockedByFreeLimit = !planLoading && !isPremium && !!existingKind && !loading;
 
   return (
     <div className="App has-bottom-nav">
@@ -142,7 +142,7 @@ export default function MessagePage() {
                   onClick={() => { setShowAudioRecorder(true); setRecorderKey(k => k + 1); }}
                   aria-label="Grabar audio"
                   title="Grabar audio"
-                  disabled={loading}
+                  disabled={loading || planLoading}
                 >
                   <div className="icon-bg bg-message" aria-hidden="true" />
                   <div className="label">Grabar audio</div>
@@ -154,7 +154,7 @@ export default function MessagePage() {
                   onClick={() => router.push('/message/video')}
                   aria-label="Grabar video"
                   title="Grabar video"
-                  disabled={loading}
+                  disabled={loading || planLoading}
                 >
                   <div className="icon-bg bg-message" aria-hidden="true" />
                   <div className="label">Grabar video</div>

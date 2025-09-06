@@ -8,12 +8,7 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
  * body?: { kind?: 'audio' | 'video' | 'any' }
  *
  * Respuesta:
- *  { ok:true, has:boolean, kind: 'audio'|'video'|null, count:number }
- *
- * Compatibilidad:
- *  - {kind:'audio'} => revisa solo audio.
- *  - {kind:'video'} => revisa solo video.
- *  - {kind:'any'} o vacío => revisa cualquier mensaje y usa el último (o favorito si tu lógica lo requiere en el futuro).
+ *  { ok:true, has:boolean, kind:'audio'|'video'|null, count:number }
  */
 export async function POST(req) {
   const supabase = createRouteHandlerClient({ cookies });
@@ -21,9 +16,8 @@ export async function POST(req) {
   // Usuario
   const {
     data: { user },
-    error: authErr,
   } = await supabase.auth.getUser();
-  if (authErr || !user) {
+  if (!user) {
     return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
   }
 
@@ -40,7 +34,7 @@ export async function POST(req) {
   }
 
   try {
-    // Conteo exacto del usuario (debug y lógica futura)
+    // Conteo exacto del usuario
     const { count, error: countErr } = await supabase
       .from("media")
       .select("id", { count: "exact", head: true })
@@ -60,7 +54,7 @@ export async function POST(req) {
       });
     }
 
-    // Query del último registro por usuario (opcionalmente filtrado por kind)
+    // Último registro del usuario, opcionalmente filtrado por kind
     let q = supabase
       .from("media")
       .select("id, kind, path, created_at")
@@ -85,7 +79,6 @@ export async function POST(req) {
       count: count ?? 0,
     });
   } catch (e) {
-    // fallback ultra conservador
     return NextResponse.json({ ok: true, has: false, kind: null, count: 0 });
   }
 }
