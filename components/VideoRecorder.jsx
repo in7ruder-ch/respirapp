@@ -1,4 +1,3 @@
-// components/VideoRecorder.jsx
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -31,7 +30,7 @@ export default function VideoRecorder({
   const timerRef = useRef(null);
   const [banner, setBanner] = useState('');
 
-  // 👇 Nombre visible del video
+  // Nombre visible del video
   const [title, setTitle] = useState(() => defaultTitle('video'));
 
   useEffect(() => {
@@ -111,7 +110,7 @@ export default function VideoRecorder({
     setBanner('');
     try {
       const contentType = blob.type || 'video/webm';
-      // 👇 unificado: /api/upload-url (incluye title)
+      // unificado: /api/upload-url (incluye title)
       const { signedUrl } = await apiFetch('/api/upload-url', {
         method: 'POST',
         body: { kind: 'video', contentType, title: (title || '').trim() },
@@ -151,55 +150,58 @@ export default function VideoRecorder({
   const ss = String(elapsed % 60).padStart(2, '0');
 
   return (
-    <div className="vr-wrap vr-scroll">{/* 👈 ahora scrolleable */}
-      {!hideTitle && <h3 className="vr-title">Grabar video</h3>}
+    // 👇 Contenedor interno con scroll; NO tocamos App-header
+    <div className="vr-page">
+      <div className="vr-wrap">
+        {!hideTitle && <h3 className="vr-title">Grabar video</h3>}
 
-      <label className="vr-field">
-        <span className="vr-label">Nombre</span>
-        <input
-          className="vr-input"
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Ej: Video para mamá"
-          maxLength={120}
-        />
-      </label>
+        <label className="vr-field">
+          <span className="vr-label">Nombre</span>
+          <input
+            className="vr-input"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Ej: Video para mamá"
+            maxLength={120}
+          />
+        </label>
 
-      {permissionError && <div className="vr-alert error">{permissionError}</div>}
-      {banner && <div className="vr-alert">{banner}</div>}
+        {permissionError && <div className="vr-alert error">{permissionError}</div>}
+        {banner && <div className="vr-alert">{banner}</div>}
 
-      <div className="vr-panel">
-        <video
-          ref={videoRef}
-          className="vr-preview"
-          playsInline
-          muted
-          autoPlay
-        />
+        <div className="vr-panel">
+          <video
+            ref={videoRef}
+            className="vr-preview"
+            playsInline
+            muted
+            autoPlay
+          />
 
-        <div className="vr-controls">
-          {!isRecording ? (
-            <button
-              className="vr-btn primary"
-              onClick={startRecording}
-              disabled={!!permissionError || isUploading}
-            >
-              ⏺️ Grabar
-            </button>
-          ) : (
-            <button
-              className="vr-btn danger"
-              onClick={stopRecording}
-              disabled={isUploading}
-            >
-              ⏹️ Detener
-            </button>
-          )}
+          <div className="vr-controls">
+            {!isRecording ? (
+              <button
+                className="vr-btn primary"
+                onClick={startRecording}
+                disabled={!!permissionError || isUploading}
+              >
+                ⏺️ Grabar
+              </button>
+            ) : (
+              <button
+                className="vr-btn danger"
+                onClick={stopRecording}
+                disabled={isUploading}
+              >
+                ⏹️ Detener
+              </button>
+            )}
 
-          <span className="vr-timer" aria-live="polite">
-            {isRecording ? `${mm}:${ss}` : '00:00'}
-          </span>
+            <span className="vr-timer" aria-live="polite">
+              {isRecording ? `${mm}:${ss}` : '00:00'}
+            </span>
+          </div>
         </div>
       </div>
     </div>
