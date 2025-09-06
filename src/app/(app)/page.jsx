@@ -9,6 +9,7 @@ import '@/styles/BottomNav.css';
 
 import BottomNav from '@/components/BottomNav';
 
+import { loadContact } from '@lib/contactsStore';
 import { apiFetch } from '@lib/apiFetch';
 import { debounce } from '@lib/debounce';
 import { supabase } from '@lib/supabaseClient';
@@ -25,7 +26,10 @@ export default function Page() {
   const router = useRouter();
   const { playByItem } = usePlayer();
 
-  // === SWR: MEDIA STATUS (conservamos para tu copy/UI, aunque no lo usamos para reproducir) ===
+  // Fallback local (no se usa para el click, pero lo mantenemos por compat)
+  const localContactRef = useRef(loadContact() || null);
+
+  // === SWR: MEDIA STATUS ===
   const { data: mediaData, mutate: mutateMedia } = useSWR(
     ['/api/media/status', 'any'],
     async ([url, kind]) =>
@@ -34,46 +38,46 @@ export default function Page() {
         headers: { 'Cache-Control': 'no-store' },
         body: { kind },
       }),
-    {
-      revalidateOnFocus: true,
-      dedupingInterval: 1500,
-    }
+    { revalidateOnFocus: true, dedupingInterval: 1500 }
   );
   const hasMessage = Boolean(mediaData?.has);
   const mediaKind = mediaData?.kind ?? null;
 
   // === SWR: PLAN ===
-  const { data: planData } = useSWR('/api/me/plan', fetcher, { revalidateOnFocus: true, dedupingInterval: 1500 });
+  const { data: planData } = useSWR('/api/me/plan', fetcher, {
+    revalidateOnFocus: true, dedupingInterval: 1500
+  });
   const tier = planData?.tier || 'free';
   const isPremium = tier === 'premium';
 
-  // === SWR: LISTA DE CONTACTOS (nuevo flujo) ===
-  const { data: contactsRes, mutate: mutateContacts } = useSWR('/api/contacts/list', fetcher, {
-    revalidateOnFocus: true,
-    dedupingInterval: 1500,
+  // === SWR: LISTA DE MEDIA (para reproducir) ===
+  const { data: listData } = useSWR('/api/media/list', fetcher, {
+    revalidateOnFocus: true, dedupingInterval: 1500
   });
-  const contacts = contactsRes?.items || [];
+  const items = useMemo(
+    () => (listData?.items || []).slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at)),
+    [listData]
+  );
+  const count = items.length;
+  const favorite = items.find(i => i.is_favorite);
+  const latest   = items[0];
+  const playable = favorite || latest;
+
+  // === SWR: LISTA DE CONTACTOS (NUEVO: base para label + click) ===
+  const { data: contactsData } = useSWR('/api/contacts/list', fetcher, {
+    revalidateOnFocus: true, dedupingInterval: 1500
+  });
+  const contacts = useMemo(() => contactsData?.items || [], [contactsData]);
   const contactsCount = contacts.length;
   const favoriteContact = contacts.find(c => c.is_favorite) || null;
 
-  // === SWR: LISTA DE MEDIA (para favorito/último) ===
-  const { data: listData } = useSWR('/api/media/list', fetcher, { revalidateOnFocus: true, dedupingInterval: 1500 });
-  const items = useMemo(() => (listData?.items || []).slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)), [listData]);
-  const count = items.length;
+  // Para compatibilidad con el viejo contacto único:
+  const deprecatedSingleContact = localContactRef.current;
 
-  // favorito > último
-  const favorite = items.find(i => i.is_favorite);
-  const latest = items[0];
-  const playable = favorite || latest;
-
-  // === Coalesce de revalidaciones (un solo pulso) ===
+  // === Coalesce revalidations ===
   const refreshAllDebounced = useMemo(
-    () =>
-      debounce(() => {
-        mutateMedia();
-        mutateContacts();
-      }, 250),
-    [mutateMedia, mutateContacts]
+    () => debounce(() => { mutateMedia(); }, 250),
+    [mutateMedia]
   );
 
   useEffect(() => {
@@ -81,9 +85,7 @@ export default function Page() {
       refreshAllDebounced();
     });
 
-    const onVis = () => {
-      if (!document.hidden) refreshAllDebounced();
-    };
+    const onVis = () => { if (!document.hidden) refreshAllDebounced(); };
     document.addEventListener('visibilitychange', onVis);
 
     const onStorage = (e) => {
@@ -98,7 +100,7 @@ export default function Page() {
         sessionStorage.removeItem('respirapp_just_signed_in');
         refreshAllDebounced();
       }
-    } catch { }
+    } catch {}
 
     return () => {
       sub?.subscription?.unsubscribe?.();
@@ -107,34 +109,44 @@ export default function Page() {
     };
   }, [refreshAllDebounced]);
 
-  // --------- Reproducir mensaje (usa Global Player) ----------
+  // --------- Reproducir mensaje ----------
   const handlePlayMessage = async () => {
-    if (!playable) {
-      router.push('/library');
-      return;
-    }
+    if (!playable) { router.push('/library'); return; }
     await playByItem({ id: playable.id, kind: playable.kind });
   };
 
-  // --------- Llamar contacto (según plan) ----------
-  const handleContact = () => {
+  // --------- Click de contacto (NUEVO) ----------
+  const handleContactClick = () => {
+    // Sin contactos → ir a gestionar
     if (contactsCount === 0) {
+      // compat: si existiera el legacy local, llamar. Si no, ir a /contacts
+      if (deprecatedSingleContact?.phone && !isPremium) {
+        window.location.href = telHref(deprecatedSingleContact.phone);
+        return;
+      }
       router.push('/contacts');
       return;
     }
-    if (isPremium) {
-      // Premium: si hay favorito → llamar; si no → ir a la lista
-      if (favoriteContact?.phone) {
-        window.location.href = telHref(favoriteContact.phone);
-      } else {
-        router.push('/contacts');
-      }
+
+    // Free: solo puede haber 1 → llamar directo
+    if (!isPremium) {
+      const first = contacts[0];
+      if (first?.phone) window.location.href = telHref(first.phone);
+      else router.push('/contacts');
       return;
     }
-    // Free: un único contacto → llamar directo
-    const first = contacts[0];
-    if (first?.phone) {
-      window.location.href = telHref(first.phone);
+
+    // Premium:
+    if (contactsCount === 1) {
+      const only = contacts[0];
+      if (only?.phone) window.location.href = telHref(only.phone);
+      else router.push('/contacts');
+      return;
+    }
+
+    // Hay varios → si hay favorito, llamar; si no, ir a la lista
+    if (favoriteContact?.phone) {
+      window.location.href = telHref(favoriteContact.phone);
     } else {
       router.push('/contacts');
     }
@@ -145,24 +157,21 @@ export default function Page() {
   // ---------- UI helpers ----------
   const hasAny = count > 0;
 
-  // ✅ etiqueta según si hay favorito o no
   const playLabel = favorite ? 'Reproducir favorito' : 'Reproducir mensaje';
 
-  // Etiqueta del tile de contacto (con nombre)
+  // Etiqueta del tile de contacto
   let contactLabel = 'Contacto';
-
-  if (contactsCount > 0) {
-    if (!isPremium) {
-      // Free → único contacto
+  if (contactsCount === 0) {
+    contactLabel = 'Contacto';
+  } else if (!isPremium) {
+    contactLabel = `Llamar a ${contacts[0]?.name || 'contacto'}`;
+  } else {
+    if (contactsCount === 1) {
       contactLabel = `Llamar a ${contacts[0]?.name || 'contacto'}`;
+    } else if (favoriteContact) {
+      contactLabel = `Llamar a ${favoriteContact.name || 'contacto'}`;
     } else {
-      if (favoriteContact) {
-        contactLabel = `Llamar a ${favoriteContact.name || 'contacto'}`;
-      } else if (contactsCount === 1) {
-        contactLabel = `Llamar a ${contacts[0]?.name || 'contacto'}`;
-      } else {
-        contactLabel = 'Contactos';
-      }
+      contactLabel = 'Contactos';
     }
   }
 
@@ -206,10 +215,10 @@ export default function Page() {
             <div className="label">Respirar</div>
           </button>
 
-          {/* Contacto */}
+          {/* Contacto (NUEVO handler + label) */}
           <button
             className="launcher-item red"
-            onClick={handleContact}
+            onClick={handleContactClick}
             aria-label={contactLabel}
             title={contactLabel}
           >
