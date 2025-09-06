@@ -47,9 +47,8 @@ export default function ProfilePage() {
   return (
     <div className="App has-bottom-nav">
       <header className="App-header">
-        <div className="panel" style={{ paddingBottom: 24 }}>
+        <div className="tab-page">
           <h2>👤 Perfil</h2>
-          
 
           {loading ? (
             <p className="muted">Cargando…</p>
@@ -58,7 +57,7 @@ export default function ProfilePage() {
               <p className="muted">
                 Sesión iniciada como <strong>{user.email}</strong>
               </p>
-              <div style={{ marginTop: 12 }}>
+              <div>
                 <button
                   className="help-button"
                   onClick={handleLogout}
@@ -69,7 +68,7 @@ export default function ProfilePage() {
               </div>
             </>
           ) : (
-            <div style={{ marginTop: 8 }}>
+            <div>
               <LoginOTP onSuccess={() => (window.location.href = '/')} />
             </div>
           )}

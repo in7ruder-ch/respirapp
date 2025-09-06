@@ -1,67 +1,78 @@
-/* Navbar integrada dentro del wrapper (App-header) */
-.navbar {
-  margin-top: 16px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-
-  /* Fondo gris translúcido suave que resalta */
-  background: rgba(17, 24, 39, 0.05); /* gris 900 al 5% */
-  backdrop-filter: blur(6px);
-
-  border-radius: 12px;
-  padding: 6px 8px;
-
+.bottom-nav {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: 60px;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #fff;
+  border-top: 1px solid #eee;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  grid-auto-flow: column;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 10;
 }
 
-/* Botón como columna: icono arriba, texto abajo */
-.nav-item {
-  background: transparent;
-  border: 0;
-  outline: none;
-
+/* Reset estilo de los botones */
+.bottom-nav button {
+  all: unset; /* resetea borders, background, etc */
   display: flex;
-  flex-direction: column;      /* emoji arriba, texto abajo */
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;   /* gris base */
   cursor: pointer;
-  padding: 6px 4px;
-  border-radius: 10px;
-
-  color: #6b7280;             /* gris 500 */
-  transition: color 140ms ease, transform 140ms ease, background 140ms ease;
+  padding: 4px 0;
+  min-width: 64px;
 }
 
-.nav-item:hover {
-  transform: translateY(-1px);
-  background: rgba(17, 24, 39, 0.06);
+/* Ícono */
+.bottom-nav button svg,
+.bottom-nav button .icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  stroke-width: 2;
+  color: inherit;
 }
 
-.nav-item.active {
-  color: #2563eb;             /* azul fuerte consistente con App.css */
-  background: rgba(37, 99, 235, 0.10); /* leve highlight */
-}
-
-/* Tamaños separados para icono y texto */
-.nav-icon {
-  font-size: 1.25rem;         /* emoji más grande que el texto */
+/* Label */
+.bottom-nav button .label {
+  font-size: 11px;
   line-height: 1;
-  display: block;
+  color: inherit;
 }
 
-.nav-label {
-  font-size: 1rem;            /* pedido: 1rem para el texto */
-  line-height: 1.1;
-  font-weight: 700;
-  display: block;
+/* Estado activo */
+.bottom-nav button.active {
+  color: #2563eb; /* azul Spotify style */
+  font-weight: 600;
+}
+
+.bottom-nav button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* ===========================
+   Contenido de tabs simples (Explorar / Perfil)
+   =========================== */
+.tab-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   text-align: center;
+
+  min-height: calc(100dvh - 60px - env(safe-area-inset-bottom));
+  padding: 1.5rem;
+  box-sizing: border-box;
 }
 
-/* Soporte para pantallas pequeñas */
-@media (max-width: 380px) {
-  .nav-icon { font-size: 1.15rem; }
-  .nav-label { font-size: 0.95rem; }
+.tab-page h1,
+.tab-page h2,
+.tab-page p {
+  margin: 0.5rem 0;
 }
