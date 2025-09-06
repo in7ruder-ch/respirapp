@@ -16,7 +16,7 @@
   margin-top: 6px;
 }
 
-/* Botones dentro de settings: solo espaciado/escala, sin sobreescribir colores */
+/* Botones dentro de settings: ancho completo y márgenes consistentes */
 .settings-panel .primary,
 .settings-panel .secondary,
 .settings-panel button {
@@ -24,4 +24,12 @@
   min-height: 44px;
   padding: 10px 14px;
   margin-top: 10px;
+  width: 100%;             /* 👈 ancho completo */
+  max-width: 520px;        /* 👈 alinea con contenido */
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
 }

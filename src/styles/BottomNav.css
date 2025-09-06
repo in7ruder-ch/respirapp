@@ -72,14 +72,17 @@
    (Explorar / Perfil)
    =========================== */
 .tab-page {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
+  display: block; /* no centrar vertical */
+  text-align: left;
 
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px;
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+
+  /* ocupa alto disponible restando navbar */
   min-height: calc(100dvh - 60px - env(safe-area-inset-bottom));
-  padding: 1.5rem;
   box-sizing: border-box;
 }
 

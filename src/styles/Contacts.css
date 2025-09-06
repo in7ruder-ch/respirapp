@@ -34,23 +34,23 @@
   margin-bottom: 4px;
 }
 
-.form-fields input {
-  /* hereda font-size:16px de App.css */
-}
+/* Inputs heredan estilos globales (16px, 100%) */
 
 /* Acciones */
 .form-actions {
   display: flex;
   gap: 8px;
-  align-items: center;
+  align-items: stretch;       /* 👈 ocupa todo el ancho */
   justify-content: center;
   flex-wrap: wrap;
 }
+
 .form-actions .primary,
 .form-actions .secondary,
 .form-actions button {
   min-height: 44px;
   padding: 10px 14px;
+  width: 100%;                /* 👈 botón = ancho de inputs */
 }
 
 /* --- Lista de contactos --- */
@@ -103,9 +103,6 @@
   flex-direction: column;
   gap: 8px;
 }
-.edit-fields input {
-  /* hereda font-size y paddings globales */
-}
 
 .edit-actions {
   display: flex;
@@ -113,12 +110,12 @@
   flex-wrap: wrap;
 }
 
-/* Acciones por fila */
 .contact-actions {
   display: flex;
   gap: 8px;
   align-items: center;
 }
+
 .contact-actions .secondary,
 .contact-actions button {
   min-height: 40px;
@@ -128,16 +125,9 @@
 /* --- Responsive --- */
 @media (max-width: 480px) {
   .contacts-panel { padding-top: 12px; }
-
   .contact-row { gap: 8px; }
-
-  .form-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
+  .form-actions { flex-direction: column; }
   .form-actions .primary,
   .form-actions .secondary,
-  .form-actions button {
-    width: 100%;
-  }
+  .form-actions button { width: 100%; }
 }
