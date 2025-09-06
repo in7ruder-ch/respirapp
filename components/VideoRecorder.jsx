@@ -1,3 +1,4 @@
+// components/VideoRecorder.jsx
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -110,7 +111,6 @@ export default function VideoRecorder({
     setBanner('');
     try {
       const contentType = blob.type || 'video/webm';
-      // unificado: /api/upload-url (incluye title)
       const { signedUrl } = await apiFetch('/api/upload-url', {
         method: 'POST',
         body: { kind: 'video', contentType, title: (title || '').trim() },
@@ -127,7 +127,6 @@ export default function VideoRecorder({
       setTimeout(() => setBanner(''), 1800);
       onVideoReady?.({ ok: true });
 
-      // Sugerir un nombre nuevo para la próxima grabación
       setTitle(defaultTitle('video'));
     } catch (e) {
       const msg = String(e?.message || '');
@@ -149,59 +148,57 @@ export default function VideoRecorder({
   const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
   const ss = String(elapsed % 60).padStart(2, '0');
 
+  // ✅ Sin wrapper extra con scroll: dejamos que scrollee el App-header (igual que audio)
   return (
-    // 👇 Contenedor interno con scroll; NO tocamos App-header
-    <div className="vr-page">
-      <div className="vr-wrap">
-        {!hideTitle && <h3 className="vr-title">Grabar video</h3>}
+    <div className="vr-wrap">
+      {!hideTitle && <h3 className="vr-title">Grabar video</h3>}
 
-        <label className="vr-field">
-          <span className="vr-label">Nombre</span>
-          <input
-            className="vr-input"
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ej: Video para mamá"
-            maxLength={120}
-          />
-        </label>
+      <label className="vr-field">
+        <span className="vr-label">Nombre</span>
+        <input
+          className="vr-input"
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Ej: Video para mamá"
+          maxLength={120}
+        />
+      </label>
 
-        {permissionError && <div className="vr-alert error">{permissionError}</div>}
-        {banner && <div className="vr-alert">{banner}</div>}
+      {permissionError && <div className="vr-alert error">{permissionError}</div>}
+      {banner && <div className="vr-alert">{banner}</div>}
 
-        <div className="vr-panel">
-          <video
-            ref={videoRef}
-            className="vr-preview"
-            playsInline
-            muted
-            autoPlay
-          />
+      <div className="vr-panel">
+        <video
+          ref={videoRef}
+          className="vr-preview"
+          playsInline
+          muted
+          autoPlay
+        />
 
-          <div className="vr-controls">
-            {!isRecording ? (
-              <button
-                className="vr-btn primary"
-                onClick={startRecording}
-                disabled={!!permissionError || isUploading}
-              >
-                ⏺️ Grabar
-              </button>
-            ) : (
-              <button
-                className="vr-btn danger"
-                onClick={stopRecording}
-                disabled={isUploading}
-              >
-                ⏹️ Detener
-              </button>
-            )}
+        <div className="vr-controls">
+          {!isRecording ? (
+            <button
+              className="vr-btn primary"
+              onClick={startRecording}
+              disabled={!!permissionError || isUploading}
+            >
+              ⏺️ Grabar
+            </button>
+          ) : (
+            <button
+              className="vr-btn danger"
+              onClick={stopRecording}
+              disabled={isUploading}
+            >
+              ⏹️ Detener
+            </button>
+          )}
 
-            <span className="vr-timer" aria-live="polite">
-              {isRecording ? `${mm}:${ss}` : '00:00'}
-            </span>
-          </div>
+          <span className="vr-timer" aria-live="polite">
+            {isRecording ? `${mm}:${ss}` : '00:00'}
+          </span>
         </div>
       </div>
     </div>

@@ -1,16 +1,6 @@
-/* Contenedor que HABILITA scroll SOLO en esta vista
-   - mantiene el padding superior del App-header
-   - evita que lo tape la navbar inferior */
-.vr-page {
-  max-height: calc(100dvh - 60px - env(safe-area-inset-bottom));
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 12px;
-}
-
-/* Tu ancho original + centrado */
-.vr-wrap { 
-  max-width: 520px; 
+/* Sin contenedor scroll extra: el scroll lo maneja App-header en Library */
+.vr-wrap {
+  max-width: 520px;
   margin: 0 auto;
 }
 
@@ -53,7 +43,7 @@
   border-color: #fecaca;
 }
 
-/* Panel / preview / controles (tus estilos originales) */
+/* Panel / preview / controles */
 .vr-panel {
   border: 1px solid #e5e7eb;
   border-radius: 12px;
@@ -101,10 +91,4 @@
   margin-left: auto;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-}
-
-/* (opcional) clase utilitaria si querés usarla en otras vistas */
-.scrollable {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
