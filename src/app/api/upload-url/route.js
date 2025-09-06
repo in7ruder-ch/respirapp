@@ -31,7 +31,8 @@ function isAllowed(base, kind) {
       base === "audio/webm" ||
       base === "audio/ogg" ||
       base === "audio/mpeg" ||
-      base === "audio/mp3"
+      base === "audio/mp3" ||
+      base === "audio/mp4" // ✅ iOS/Safari (MediaRecorder) suele emitir esto
     );
   }
   if (kind === "video") {
@@ -43,6 +44,7 @@ function extFor(base, kind) {
   if (kind === "audio") {
     if (base === "audio/mpeg" || base === "audio/mp3") return ".mp3";
     if (base === "audio/ogg") return ".ogg";
+    if (base === "audio/mp4") return ".m4a"; // ✅ contenedor mp4 → .m4a
     return ".webm";
   }
   if (kind === "video") {
@@ -59,12 +61,12 @@ function genId() {
 }
 function defaultTitle(kind) {
   const now = new Date();
-  const iso = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+  const isoLocal = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
     .toISOString()
     .slice(0, 19)
     .replace("T", " ");
   const prefix = kind === "audio" ? "Audio" : kind === "video" ? "Video" : "Media";
-  return `${prefix} ${iso}`;
+  return `${prefix} ${isoLocal}`;
 }
 
 // 🔎 Tier directo desde subscriptions con service role (sin depender de lib/plan.js)
@@ -112,7 +114,10 @@ export async function POST(req) {
 
   const kind = (payload?.kind || "audio").toLowerCase();
   if (!["audio", "video"].includes(kind)) {
-    return NextResponse.json({ ok: false, message: "kind debe ser 'audio' o 'video'" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, message: "kind debe ser 'audio' o 'video'" },
+      { status: 400 }
+    );
   }
 
   const requestedCT = typeof payload?.contentType === "string" ? payload.contentType : "";
@@ -147,14 +152,14 @@ export async function POST(req) {
           code: "LIMIT_REACHED",
           message:
             "Plan Free: ya tenés un mensaje guardado (audio o video). Borrá el actual para grabar otro.",
-          tierDetectado: tier, // útil para debug en Network tab
+          tierDetectado: tier,
         },
         { status: 403 }
       );
     }
   }
 
-  // 5) Ruta destino
+  // 5) Ruta destino (Storage)
   const ext = extFor(baseCT, kind);
   const key = `${user.id}/${kind}/${genId()}${ext}`;
   const path = `${BUCKET}/${key}`;
@@ -163,7 +168,7 @@ export async function POST(req) {
   const rawTitle = typeof payload?.title === "string" ? payload.title : "";
   const title = rawTitle.trim() || defaultTitle(kind);
 
-  // 7) Reserva en DB (RLS) — ahora guardamos title
+  // 7) Reserva en DB (RLS) — guardamos title
   const { data: inserted, error: insErr } = await userClient
     .from("media")
     .insert({ user_id: user.id, kind, path, title })
@@ -194,7 +199,7 @@ export async function POST(req) {
     signedUrl: signed.signedUrl,
     token: signed.token,
     contentType: baseCT,
-    title, // 👈 eco para debug/UX si lo querés usar client-side
+    title, // eco para debug/UX si querés usarlo del lado del cliente
   });
 }
 
