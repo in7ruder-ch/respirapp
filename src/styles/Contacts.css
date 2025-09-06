@@ -1,0 +1,98 @@
+.contacts-panel {
+  padding: 16px;
+}
+
+.contact-form {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-fields label {
+  display: block;
+  font-size: 12px;
+  opacity: 0.8;
+  margin-bottom: 4px;
+}
+
+.form-fields input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.contacts-list {
+  margin-top: 16px;
+}
+
+.contacts-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.contact-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.contact-name {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.contact-name .favorite {
+  color: #0a0;
+  margin-left: 6px;
+}
+
+.contact-meta {
+  font-size: 12px;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+.edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.edit-fields input {
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.contact-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}

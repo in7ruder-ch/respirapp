@@ -26,10 +26,8 @@ export default function Page() {
   const router = useRouter();
   const { playByItem } = usePlayer();
 
-  // Fallback local para contacto (legacy)
   const localContactRef = useRef(loadContact() || null);
 
-  // === SWR: MEDIA STATUS (conservamos para tu copy/UI, aunque no lo usamos para reproducir) ===
   const { data: mediaData, mutate: mutateMedia } = useSWR(
     ['/api/media/status', 'any'],
     async ([url, kind]) =>
@@ -46,10 +44,8 @@ export default function Page() {
   const hasMessage = Boolean(mediaData?.has);
   const mediaKind = mediaData?.kind ?? null;
 
-  // === SWR: CONTACTO (legacy singular, mantenemos como fallback) ===
   const {
     data: contactRes,
-    error: contactErr,
     mutate: mutateContact,
   } = useSWR(
     '/api/contact',
@@ -58,14 +54,10 @@ export default function Page() {
       if (!r.ok) throw new Error('contact fetch failed');
       return r.json();
     },
-    {
-      revalidateOnFocus: true,
-      dedupingInterval: 1500,
-    }
+    { revalidateOnFocus: true, dedupingInterval: 1500 }
   );
   const contact = contactRes?.contact ?? localContactRef.current;
 
-  // === SWR: NUEVA LISTA DE CONTACTOS (multi + favorito premium) ===
   const { data: contactsRes } = useSWR('/api/contacts/list', fetcher, {
     revalidateOnFocus: true,
     dedupingInterval: 1500,
@@ -75,7 +67,6 @@ export default function Page() {
   const favoriteContact = contacts.find((c) => c.is_favorite);
   const chosenContact = contactsCount === 1 ? contacts[0] : (favoriteContact || null);
 
-  // === SWR: PLAN + LISTA (para decidir qué reproducir) ===
   const { data: planData } = useSWR('/api/me/plan', fetcher, { revalidateOnFocus: true, dedupingInterval: 1500 });
   const tier = planData?.tier || 'free';
   const isPremium = tier === 'premium';
@@ -84,12 +75,10 @@ export default function Page() {
   const items = useMemo(() => (listData?.items || []).slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at)), [listData]);
   const count = items.length;
 
-  // favorito > último
   const favorite = items.find(i => i.is_favorite);
   const latest   = items[0];
   const playable = favorite || latest;
 
-  // === Coalesce de revalidaciones (un solo pulso) ===
   const refreshAllDebounced = useMemo(
     () =>
       debounce(() => {
@@ -130,29 +119,23 @@ export default function Page() {
     };
   }, [refreshAllDebounced]);
 
-  // --------- Reproducir mensaje (usa Global Player) ----------
   const handlePlayMessage = async () => {
     if (!playable) {
       router.push('/library');
       return;
     }
-    // 🔊/🎞️ Usa el Player global: firma por id y reproduce.
     await playByItem({ id: playable.id, kind: playable.kind });
   };
 
-  // --------- Acción de Contacto ----------
   const handleContactAction = () => {
-    // 0 → ir a la lista/alta
     if (contactsCount === 0) {
       router.push('/contacts');
       return;
     }
-    // 1 → llamar directo
     if (contactsCount === 1) {
       window.location.href = telHref(contacts[0]?.phone);
       return;
     }
-    // N (Premium): si hay favorito → llamar directo; si no → abrir lista para elegir
     if (isPremium && favoriteContact) {
       window.location.href = telHref(favoriteContact.phone);
     } else {
@@ -161,18 +144,12 @@ export default function Page() {
   };
 
   const activeNav = 'home';
-
-  // ---------- UI helpers ----------
   const hasAny = count > 0;
-  const showPlay = hasAny;
-
   const playLabel = isPremium
     ? (count > 1 ? 'Reproducir favorito/último' : 'Reproducir mensaje')
     : 'Reproducir mensaje';
 
-  // Determinar si mostramos "Contacto" (alta) o "Llamar"
-  const hasAnyContact = contactsCount > 0 || Boolean(contact?.phone); // mantiene compatibilidad con legacy
-
+  const hasAnyContact = contactsCount > 0 || Boolean(contact?.phone);
   const callTitle =
     (chosenContact?.name && chosenContact?.phone)
       ? `Llamar a ${chosenContact.name}`
@@ -185,7 +162,6 @@ export default function Page() {
         <h2>Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad</h2>
 
         <div className="launcher-grid">
-          {/* Mensaje: Home SOLO reproduce. Si no hay, CTA a Biblioteca */}
           {hasMessage ? (
             <button
               className="launcher-item blue"
@@ -208,7 +184,6 @@ export default function Page() {
             </button>
           )}
 
-          {/* Respirar */}
           <button
             className="launcher-item green"
             onClick={() => router.push('/breathing')}
@@ -218,7 +193,6 @@ export default function Page() {
             <div className="label">Respirar</div>
           </button>
 
-          {/* Contacto */}
           {!hasAnyContact ? (
             <button
               className="launcher-item red"
@@ -240,7 +214,6 @@ export default function Page() {
             </button>
           )}
 
-          {/* Config */}
           <button
             className="launcher-item yellow"
             onClick={() => router.push('/settings')}

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import '@/styles/App.css';
 import '@/styles/BottomNav.css';
+import '@/styles/Contacts.css';
 
 import BottomNav from '@/components/BottomNav';
 
@@ -57,14 +58,12 @@ export default function ContactsPage() {
   const [adding, setAdding] = useState(false);
   const [addName, setAddName] = useState('');
   const [addPhone, setAddPhone] = useState('');
-  const [addEmail, setAddEmail] = useState('');
 
   async function addContact(e) {
     e?.preventDefault?.();
     if (freeAtLimit) return alert('Free: sólo podés guardar 1 contacto.');
     const name = (addName || '').trim();
     const phone = (addPhone || '').trim();
-    const email = (addEmail || '').trim();
     if (!name || !phone) return alert('Completá al menos Nombre y Teléfono.');
     setAdding(true);
     try {
@@ -74,7 +73,7 @@ export default function ContactsPage() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ name, phone, email }),
+            body: JSON.stringify({ name, phone }),
           });
           const { data, txt, isJson } = await safeParseResponse(res);
           if (!res.ok) {
@@ -87,7 +86,7 @@ export default function ContactsPage() {
         },
         { revalidate: false }
       );
-      setAddName(''); setAddPhone(''); setAddEmail('');
+      setAddName(''); setAddPhone('');
     } catch (e) {
       const msg = String(e?.message || '');
       if (msg.includes('LIMIT_REACHED_FREE')) {
@@ -104,22 +103,21 @@ export default function ContactsPage() {
 
   // === Edición inline ===
   const [editingId, setEditingId] = useState(null);
-  const [editing, setEditing] = useState({ name: '', phone: '', email: '' });
+  const [editing, setEditing] = useState({ name: '', phone: '' });
   const [savingId, setSavingId] = useState(null);
 
   function startEdit(it) {
     setEditingId(it.id);
-    setEditing({ name: it.name || '', phone: it.phone || '', email: it.email || '' });
+    setEditing({ name: it.name || '', phone: it.phone || '' });
   }
   function cancelEdit() {
     setEditingId(null);
-    setEditing({ name: '', phone: '', email: '' });
+    setEditing({ name: '', phone: '' });
   }
 
   async function saveEdit(it) {
     const name = (editing.name || '').trim();
     const phone = (editing.phone || '').trim();
-    const email = (editing.email || '').trim();
     if (!name || !phone) return alert('Nombre y Teléfono son obligatorios.');
     setSavingId(it.id);
     try {
@@ -129,7 +127,7 @@ export default function ContactsPage() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ id: it.id, name, phone, email }),
+            body: JSON.stringify({ id: it.id, name, phone }),
           });
           const { data, txt, isJson } = await safeParseResponse(res);
           if (!res.ok) {
@@ -143,7 +141,7 @@ export default function ContactsPage() {
         { revalidate: false }
       );
       setEditingId(null);
-      setEditing({ name: '', phone: '', email: '' });
+      setEditing({ name: '', phone: '' });
     } catch {
       alert('No se pudo actualizar el contacto.');
       await mutate();
@@ -229,70 +227,50 @@ export default function ContactsPage() {
   // === Llamar ===
   function call(phone) {
     if (!phone) return alert('Este contacto no tiene teléfono.');
-    // navegación tel: (movil); en desktop puede abrir app por defecto
-    try {
-      window.location.href = `tel:${encodeURIComponent(phone)}`;
-    } catch {
-      // no-op
-    }
+    window.location.href = `tel:${encodeURIComponent(phone)}`;
   }
 
-  const activeNav = 'profile'; // o 'library' según tu BottomNav
+  const activeNav = 'profile';
   const showPlanGate = !planLoading && !planError && !isPremium;
 
   return (
     <div className="App has-bottom-nav">
       <header className="App-header">
-        <div className="panel" style={{ padding: 16 }}>
+        <div className="contacts-panel">
           <h2>🚨 Contactos de emergencia</h2>
 
           {/* Alta */}
-          <form onSubmit={addContact} style={{ marginTop: 10 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <form onSubmit={addContact} className="contact-form">
+            <div className="form-fields">
               <div>
-                <label style={{ display: 'block', fontSize: 12, opacity: 0.8 }}>Nombre*</label>
+                <label>Nombre*</label>
                 <input
                   type="text"
                   value={addName}
                   onChange={(e) => setAddName(e.target.value)}
                   placeholder="Ej: Mamá"
                   maxLength={120}
-                  style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #ccc' }}
                   disabled={adding || freeAtLimit}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 12, opacity: 0.8 }}>Teléfono*</label>
+                <label>Teléfono*</label>
                 <input
                   type="tel"
                   value={addPhone}
                   onChange={(e) => setAddPhone(e.target.value)}
                   placeholder="+54 9 11 1234 5678"
                   maxLength={40}
-                  style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #ccc' }}
                   disabled={adding || freeAtLimit}
                 />
               </div>
             </div>
-            <div style={{ marginTop: 8 }}>
-              <label style={{ display: 'block', fontSize: 12, opacity: 0.8 }}>Email (opcional)</label>
-              <input
-                type="email"
-                value={addEmail}
-                onChange={(e) => setAddEmail(e.target.value)}
-                placeholder="ejemplo@mail.com"
-                maxLength={120}
-                style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #ccc' }}
-                disabled={adding || freeAtLimit}
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <div className="form-actions">
               <button className="primary" type="submit" disabled={adding || freeAtLimit}>
                 ➕ Agregar
               </button>
               {freeAtLimit && (
-                <span className="muted" style={{ alignSelf: 'center' }}>
+                <span className="muted">
                   Free: 1 contacto máximo. Para más, pasá a Premium.
                 </span>
               )}
@@ -300,7 +278,7 @@ export default function ContactsPage() {
           </form>
 
           {/* Lista */}
-          <div style={{ marginTop: 16 }}>
+          <div className="contacts-list">
             {listLoading ? (
               <p>Cargando…</p>
             ) : listError ? (
@@ -308,47 +286,31 @@ export default function ContactsPage() {
             ) : items.length === 0 ? (
               <p className="muted">No tenés contactos aún. Agregá tu primero arriba.</p>
             ) : (
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              <ul>
                 {items.map((it) => {
                   const isRowBusy = busyId === it.id || savingId === it.id;
                   const isEditing = editingId === it.id;
 
                   return (
-                    <li
-                      key={it.id}
-                      className="contact-row"
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr auto',
-                        gap: 8,
-                        padding: '10px 0',
-                        borderBottom: '1px solid #eee',
-                      }}
-                    >
-                      <div>
+                    <li key={it.id} className="contact-row">
+                      <div className="contact-info">
                         {!isEditing ? (
                           <>
-                            <div style={{ fontWeight: 600, wordBreak: 'break-word' }}>
+                            <div className="contact-name">
                               {it.name}
-                              {it.is_favorite && <span style={{ color: '#0a0', marginLeft: 6 }}>★</span>}
+                              {it.is_favorite && <span className="favorite">★</span>}
                             </div>
-                            <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                            <div className="contact-meta">
                               {it.phone}
-                              {it.email ? ` • ${it.email}` : ''}
-                              <span style={{ opacity: 0.6 }}>
-                                {' '}
-                                • {new Date(it.created_at).toLocaleString('es-AR', { hour12: false })}
-                              </span>
                             </div>
                           </>
                         ) : (
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                          <div className="edit-fields">
                             <input
                               value={editing.name}
                               onChange={(e) => setEditing((s) => ({ ...s, name: e.target.value }))}
                               placeholder="Nombre"
                               maxLength={120}
-                              style={{ padding: 6, borderRadius: 8, border: '1px solid #ccc' }}
                               autoFocus
                             />
                             <input
@@ -356,21 +318,12 @@ export default function ContactsPage() {
                               onChange={(e) => setEditing((s) => ({ ...s, phone: e.target.value }))}
                               placeholder="Teléfono"
                               maxLength={40}
-                              style={{ padding: 6, borderRadius: 8, border: '1px solid #ccc' }}
                             />
-                            <input
-                              value={editing.email}
-                              onChange={(e) => setEditing((s) => ({ ...s, email: e.target.value }))}
-                              placeholder="Email (opcional)"
-                              maxLength={120}
-                              style={{ gridColumn: '1 / span 2', padding: 6, borderRadius: 8, border: '1px solid #ccc' }}
-                            />
-                            <div style={{ display: 'flex', gap: 6 }}>
+                            <div className="edit-actions">
                               <button
                                 className="secondary"
                                 onClick={() => saveEdit(it)}
                                 disabled={isRowBusy}
-                                title="Guardar"
                               >
                                 💾
                               </button>
@@ -378,7 +331,6 @@ export default function ContactsPage() {
                                 className="secondary"
                                 onClick={cancelEdit}
                                 disabled={isRowBusy}
-                                title="Cancelar"
                               >
                                 ✖
                               </button>
@@ -387,14 +339,12 @@ export default function ContactsPage() {
                         )}
                       </div>
 
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <div className="contact-actions">
                         {!isEditing && (
                           <button
                             className="secondary"
                             disabled={isRowBusy}
                             onClick={() => call(it.phone)}
-                            aria-label="Llamar"
-                            title="Llamar"
                           >
                             📞
                           </button>
@@ -404,8 +354,6 @@ export default function ContactsPage() {
                             className="secondary"
                             disabled={isRowBusy}
                             onClick={() => startEdit(it)}
-                            aria-label="Editar"
-                            title="Editar"
                           >
                             ✏️
                           </button>
@@ -414,8 +362,6 @@ export default function ContactsPage() {
                           className="secondary"
                           disabled={isRowBusy}
                           onClick={() => del(it.id)}
-                          aria-label="Borrar"
-                          title="Borrar"
                         >
                           🗑️
                         </button>
@@ -423,8 +369,6 @@ export default function ContactsPage() {
                           className={`secondary ${!isPremium ? 'disabled' : ''}`}
                           disabled={!isPremium || isRowBusy}
                           onClick={() => fav(it.id)}
-                          aria-label={isPremium ? 'Marcar favorito (uno máximo)' : 'Solo Premium'}
-                          title={isPremium ? 'Marcar favorito (uno máximo)' : 'Solo Premium'}
                         >
                           ⭐
                         </button>
@@ -437,7 +381,7 @@ export default function ContactsPage() {
           </div>
 
           {showPlanGate && (
-            <div className="muted" style={{ marginTop: 8 }}>
+            <div className="muted">
               ⭐ Favoritos y múltiples contactos son funciones Premium.
             </div>
           )}
