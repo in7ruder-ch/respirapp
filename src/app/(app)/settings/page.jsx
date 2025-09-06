@@ -6,9 +6,9 @@ import useSWR from 'swr';
 
 import '@/styles/App.css';
 import '@/styles/BottomNav.css';
+import '@/styles/Settings.css';
 
 import BottomNav from '@/components/BottomNav';
-import ContactCard from '@/components/contactCard'; // archivo: contactCard.jsx (función: ContactCard)
 import { apiFetch } from '@lib/apiFetch';
 import { debounce } from '@lib/debounce';
 import { supabase } from '@lib/supabaseClient';
@@ -24,7 +24,6 @@ export default function SettingsPage() {
   const {
     data: mediaData,
     mutate: mutateMedia,
-    isLoading: mediaLoading,
   } = useSWR(
     ['/api/media/status', 'any'],
     async ([url, kind]) =>
@@ -36,22 +35,15 @@ export default function SettingsPage() {
     { revalidateOnFocus: true, dedupingInterval: 1500 }
   );
   const hasMessage = Boolean(mediaData?.has);
-  const mediaKind = mediaData?.kind ?? null;
 
-  // === SWR: contacto en cloud ===
-  const {
-    data: contactRes,
-    mutate: mutateContact,
-  } = useSWR(
-    '/api/contact',
-    async (url) => {
-      const r = await fetch(url, { cache: 'no-store' });
-      if (!r.ok) throw new Error('contact fetch failed');
-      return r.json();
-    },
-    { revalidateOnFocus: true, dedupingInterval: 1500 }
-  );
-  const contact = contactRes?.contact ?? null;
+  // === SWR: lista de contactos (nuevo flujo) ===
+  const { data: contactsRes } = useSWR('/api/contacts/list', fetcher, {
+    revalidateOnFocus: true,
+    dedupingInterval: 1500,
+  });
+  const contacts = contactsRes?.items || [];
+  const contactsCount = contacts.length;
+  const fav = contacts.find(c => c.is_favorite);
 
   // === SWR: plan actual (free/premium) ===
   const { data: planData } = useSWR('/api/me/plan', fetcher, {
@@ -61,27 +53,23 @@ export default function SettingsPage() {
   const tier = planData?.tier || 'free';
   const isPremium = tier === 'premium';
 
-  // Coalesce de revalidaciones (un solo pulso)
+  // Coalesce de revalidaciones
   const refreshAllDebounced = useMemo(
     () =>
       debounce(() => {
         mutateMedia();
-        mutateContact();
       }, 250),
-    [mutateMedia, mutateContact]
+    [mutateMedia]
   );
 
   useEffect(() => {
-    // Cambios de auth → revalidar
     const { data: sub } = supabase.auth.onAuthStateChange(() => {
       refreshAllDebounced();
     });
 
-    // Volver al foreground → revalidar
     const onVis = () => { if (!document.hidden) refreshAllDebounced(); };
     document.addEventListener('visibilitychange', onVis);
 
-    // Cambios de sesión en otra pestaña → revalidar
     const onStorage = (e) => {
       if (e.key && e.key.includes('sb-') && e.key.includes('-auth-token')) {
         refreshAllDebounced();
@@ -103,7 +91,7 @@ export default function SettingsPage() {
     try {
       await apiFetch('/api/media/delete', { method: 'POST', body: { kind: 'any' } });
       setMsg('Mensaje eliminado.');
-      await mutateMedia(); // refresca estado de media
+      await mutateMedia();
     } catch (e) {
       setMsg(e.message || 'No se pudo borrar el mensaje.');
     } finally {
@@ -116,39 +104,50 @@ export default function SettingsPage() {
   return (
     <div className="App has-bottom-nav">
       <header className="App-header">
-        <div className="panel" style={{ paddingBottom: 24 }}>
+        <div className="panel settings-panel">
           <h2>⚙️ Configuración</h2>
 
-          {/* === Plan actual === */}
-          <section className="settings-section" style={{ marginTop: 12 }}>
+          {/* Plan actual */}
+          <section className="settings-section">
             <h3>Tu plan</h3>
             <p>
               Plan actual: <strong>{tier.toUpperCase()}</strong>
             </p>
             {isPremium ? (
-              <p className="muted" style={{ marginTop: 6 }}>
+              <p className="muted">
                 Sos Premium: almacenamiento de mensajes <strong>ilimitado</strong>. Gestioná tus mensajes en{' '}
                 <a className="underline" href="/library">Biblioteca</a>.
               </p>
             ) : (
-              <p className="muted" style={{ marginTop: 6 }}>
+              <p className="muted">
                 Plan Free: <strong>1 mensaje</strong> permitido (audio <em>o</em> video). Para ilimitados, canjeá tu código en{' '}
                 <a className="underline" href="/premium">Premium</a>.
               </p>
             )}
           </section>
 
-          {/* === Contacto de emergencia === */}
-          <section className="settings-section" style={{ marginTop: 16 }}>
-            <h3>Contacto de emergencia</h3>
-            {contact?.phone ? (
-              <ContactCard
-                onSaved={() => mutateContact()}   // refresca SWR al guardar/borrar
-                showQuickActions={false}
-                showSMS={false}
-              />
+          {/* Contactos */}
+          <section className="settings-section">
+            <h3>Contactos de emergencia</h3>
+            {contactsCount === 0 ? (
+              <>
+                <p className="muted">No tenés contactos de emergencia guardados.</p>
+                <button className="primary" onClick={() => router.push('/contacts')}>
+                  ➕ Agregar contacto
+                </button>
+              </>
             ) : (
-              <p className="muted">No tenés un contacto de emergencia guardado.</p>
+              <>
+                <p>
+                  Tenés <strong>{contactsCount}</strong> contacto{contactsCount > 1 ? 's' : ''}.
+                  {fav ? <> Favorito: <strong>{fav.name}</strong>.</> : null}
+                </p>
+                <div className="settings-actions">
+                  <button className="secondary" onClick={() => router.push('/contacts')}>
+                    Gestionar contactos
+                  </button>
+                </div>
+              </>
             )}
           </section>
         </div>
