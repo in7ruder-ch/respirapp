@@ -1,9 +1,22 @@
-/* Ancho y centrado dentro del frame */
+/* ===========================
+   VideoRecorder (compacto)
+   =========================== */
+
+/* Contenedor con scroll SOLO para esta vista */
+.vr-page {
+  max-height: calc(100dvh - 60px - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 12px;
+}
+
+/* Ancho y centrado del recorder */
 .vr-wrap {
   max-width: 520px;
   margin: 0 auto;
 }
 
+/* Título */
 .vr-title {
   font-size: 18px;
   margin: 0 0 12px 0;
@@ -43,7 +56,7 @@
   border-color: #fecaca;
 }
 
-/* Panel / preview / controles */
+/* Panel */
 .vr-panel {
   border: 1px solid #e5e7eb;
   border-radius: 12px;
@@ -51,15 +64,29 @@
   padding: 12px;
 }
 
+/* ====== PREVIEW COMPACTO ======
+   - Quitamos aspect-ratio fijo
+   - Altura responsive con límites
+   - object-fit: cover (llena, puede recortar un poco)
+*/
 .vr-preview {
   width: 100%;
-  aspect-ratio: 9 / 16;
+  height: clamp(200px, 45vh, 360px);
   background: #000;
   border-radius: 10px;
   display: block;
   object-fit: cover;
 }
 
+/* Si preferís NO recortar, podés agregar esta clase al <video>:
+   <video className="vr-preview vr-preview--contain" ... />
+*/
+.vr-preview.vr-preview--contain {
+  object-fit: contain;
+  background: #000; /* bordes negros si sobra espacio */
+}
+
+/* Controles */
 .vr-controls {
   display: flex;
   align-items: center;
@@ -91,4 +118,12 @@
   margin-left: auto;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+}
+
+/* ====== Ajustes por altura de pantalla ====== */
+@media (max-height: 640px) {
+  .vr-preview { height: clamp(180px, 35vh, 300px); }
+}
+@media (min-height: 820px) {
+  .vr-preview { height: clamp(220px, 50vh, 420px); }
 }
