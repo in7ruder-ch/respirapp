@@ -183,7 +183,7 @@ export default function Page() {
           {!contact?.phone ? (
             <button
               className="launcher-item red"
-              onClick={() => router.push('/contact')}
+              onClick={() => router.push('/contacts')}
               aria-label="Registrar contacto"
             >
               <div className="icon-bg bg-contact" aria-hidden="true" />
