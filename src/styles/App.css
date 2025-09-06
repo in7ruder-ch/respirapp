@@ -18,11 +18,12 @@ html, body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f9fafb;
   color: #111827;
+  overflow: hidden; /* 👈 bloquea scroll global */
 }
 
 /* Controles: evitar zoom iOS y mejorar tap targets */
 input, select, textarea, button {
-  font-size: 16px;        /* evita zoom en iOS */
+  font-size: 16px;
   line-height: 1.25;
 }
 
@@ -39,7 +40,6 @@ input, select, textarea {
 /* ===========================
    Botones consistentes
    =========================== */
-/* Primario (acciones principales: grabar, agregar contacto, etc.) */
 .primary,
 .help-button,
 .options button.primary {
@@ -55,16 +55,13 @@ input, select, textarea {
   width: 100%;
   max-width: 300px;
 }
-
 .primary:hover:enabled,
 .help-button:hover:enabled,
 .options button.primary:hover:enabled {
   background-color: #1d4ed8;
 }
-
 .primary:disabled { opacity: .55; cursor: not-allowed; }
 
-/* Secundario (acciones neutrales) */
 .secondary {
   background: #f7f7f7;
   color: #111827;
@@ -74,10 +71,8 @@ input, select, textarea {
   font-size: 0.95rem;
   cursor: pointer;
 }
-
 .secondary:disabled { opacity: .55; cursor: not-allowed; }
 
-/* Botón borrar (peligro) */
 .delete-button {
   margin-top: 0.75rem;
   background-color: #ef4444;
@@ -92,7 +87,6 @@ input, select, textarea {
 }
 .delete-button:hover { background-color: #dc2626; }
 
-/* Focus visible accesible (global) */
 :focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
@@ -105,16 +99,17 @@ input, select, textarea {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100dvh; /* mejor soporte en móviles y fallback en desktop */
-  padding: 1rem;
+  height: 100dvh;     /* 👈 ocupa siempre 100% del viewport dinámico */
+  width: 100%;
+  padding: 0;
   box-sizing: border-box;
   text-align: center;
 }
 
+/* ❌ eliminamos la reserva extra, ya no hace falta
 .App.has-bottom-nav {
-  /* reserva espacio para la nav fija + safe areas */
   padding-bottom: calc(64px + max(env(safe-area-inset-bottom), 0px));
-}
+} */
 
 .App-header {
   background: #ffffff;
@@ -125,28 +120,18 @@ input, select, textarea {
   width: 100%;
   box-sizing: border-box;
   position: relative;
+
+  /* 👇 ocupa el alto exacto descontando la navbar */
+  min-height: calc(100dvh - 60px - env(safe-area-inset-bottom));
+  overflow-y: auto; /* por si alguna vista necesita scroll interno */
 }
 
 /* Tipografía */
-h1 {
-  margin-bottom: 1.2rem;
-  font-size: 2.4rem;
-  color: #111827;
-}
+h1 { margin-bottom: 1.2rem; font-size: 2.4rem; color: #111827; }
+h2 { margin-bottom: 0.75rem; font-size: 1.3rem; color: #1f2937; }
+h3 { margin-top: 1.25rem; font-size: 1.1rem; color: #1f2937; }
 
-h2 {
-  margin-bottom: 0.75rem;
-  font-size: 1.3rem;
-  color: #1f2937;
-}
-
-h3 {
-  margin-top: 1.25rem;
-  font-size: 1.1rem;
-  color: #1f2937;
-}
-
-/* Acciones agrupadas (si las usás) */
+/* Acciones agrupadas */
 .options {
   display: flex;
   flex-direction: column;
@@ -154,25 +139,17 @@ h3 {
   padding: 0 1rem;
   gap: 0.75rem;
 }
+.options button:disabled { background-color: #9ca3af; cursor: not-allowed; }
 
-.options button:disabled {
-  background-color: #9ca3af;
-  cursor: not-allowed;
-}
-
-/* Link volver */
 .back-link { color: #2563eb; text-decoration: underline; cursor: pointer; }
 .back-link:hover { opacity: .85; }
 
-/* Paneles (contacto / settings / breathing selector) */
 .panel { text-align: left; }
 .panel h2 { text-align: center; margin-top: 0; }
 
-/* Secciones de configuración */
 .settings-section { margin-top: 12px; margin-bottom: 16px; }
 .settings-actions { display: flex; justify-content: center; gap: 0.5rem; }
 
-/* Texto atenuado */
 .muted { margin: 8px 0 0; color: #6b7280; }
 
 /* -----------------------------
@@ -186,7 +163,6 @@ h3 {
   max-width: 560px;
   margin: 0 auto;
 }
-
 .launcher-item {
   position: relative;
   display: flex;
@@ -202,11 +178,9 @@ h3 {
   border: none;
   overflow: hidden;
 }
-
 .launcher-item:hover { transform: scale(1.04); opacity: 0.95; }
 .launcher-item:active { transform: scale(0.98); }
 
-/* Capa del ícono (imagen sin texto) */
 .icon-bg {
   position: absolute;
   left: 12%;
@@ -219,7 +193,6 @@ h3 {
   pointer-events: none;
 }
 
-/* Texto dentro del tile */
 .launcher-item .label {
   position: absolute;
   left: 8%;
@@ -232,19 +205,16 @@ h3 {
   color: white;
 }
 
-/* Placeholders de imágenes */
 .bg-message { background-image: url('/icons/message.png'); }
 .bg-breath  { background-image: url('/icons/breath.png'); }
 .bg-contact { background-image: url('/icons/contact.png'); }
 .bg-config  { background-image: url('/icons/config.png'); }
 
-/* Colores de fondo */
 .launcher-item.blue   { background-color: #2563eb; }
 .launcher-item.green  { background-color: #10b981; }
 .launcher-item.red    { background-color: #f5130b; }
 .launcher-item.yellow { background-color: #f4b000; }
 
-/* Tile que ocupa ambas columnas */
 .tile-span-2 { grid-column: span 2; }
 
 /* Breathing */
@@ -297,25 +267,13 @@ h3 {
    MOBILE (<=768px)
    =========================== */
 @media (max-width: 768px) {
-  .App {
-    padding: 0;
-    width: 100vw;
-    min-height: 100dvh;
-    height: 100vh;
-    align-items: stretch;
-    justify-content: stretch;
-  }
-
-  .App.has-bottom-nav {
-    padding-bottom: calc(64px + max(env(safe-area-inset-bottom), 0px));
-  }
+  .App { width: 100vw; }
 
   .App-header {
     border-radius: 0;
     box-shadow: none;
     max-width: none;
     width: 100%;
-    min-height: 100%;
     padding-top: calc(1rem + env(safe-area-inset-top));
     padding-right: calc(0.75rem + env(safe-area-inset-right));
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));

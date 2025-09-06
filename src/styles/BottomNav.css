@@ -1,10 +1,13 @@
-/* Contenedor de la barra */
+/* ===========================
+   Bottom Navigation
+   =========================== */
 .bottom-nav {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   height: 60px;
+  padding-top: 6px; /* 👈 aire arriba para separar íconos de la línea */
   padding-bottom: env(safe-area-inset-bottom);
   background: #fff;
   border-top: 1px solid #eee;
@@ -15,7 +18,7 @@
   z-index: 10;
 }
 
-/* 🔒 Reset botones dentro de la nav */
+/* Reset fuerte para ítems dentro de la nav */
 .bottom-nav button,
 .bottom-nav .bn-item {
   all: unset;
@@ -28,6 +31,8 @@
   border: none;
   background: transparent;
   box-shadow: none;
+  appearance: none;
+  -webkit-appearance: none;
   -webkit-tap-highlight-color: transparent;
 
   color: #6b7280;
@@ -38,12 +43,48 @@
   cursor: pointer;
 }
 
-/* Activo + foco */
-.bn-item.is-active { color: #2563eb; font-weight: 600; }
-.bn-item:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+/* Estado activo + accesibilidad */
+.bn-item.is-active {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.bn-item:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
 
 /* Emoji/Icono */
-.bn-icon { font-size: 20px; line-height: 1; }
+.bn-icon {
+  font-size: 20px;
+  line-height: 1;
+}
 
 /* Label */
-.bn-label { font-size: 11px; line-height: 1; color: inherit; }
+.bn-label {
+  font-size: 11px;
+  line-height: 1;
+  color: inherit;
+}
+
+/* ===========================
+   Contenido de tabs simples
+   (Explorar / Perfil)
+   =========================== */
+.tab-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+
+  min-height: calc(100dvh - 60px - env(safe-area-inset-bottom));
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.tab-page h1,
+.tab-page h2,
+.tab-page p {
+  margin: 0.5rem 0;
+}
