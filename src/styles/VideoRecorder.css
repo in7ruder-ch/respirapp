@@ -92,3 +92,9 @@
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
+
+.vr-page {
+  max-height: none;
+  overflow: visible;
+  padding-bottom: 12px; /* podés dejarlo para aire extra */
+}
