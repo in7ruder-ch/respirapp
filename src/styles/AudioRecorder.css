@@ -17,7 +17,6 @@
   border: none;
   border-radius: 8px;
   width: 100%;
-  max-width: 300px;
   cursor: pointer;
   transition: background-color 0.2s ease;
   background-color: #2563eb;
