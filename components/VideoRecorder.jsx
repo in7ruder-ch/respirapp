@@ -5,6 +5,16 @@ import { useEffect, useRef, useState } from 'react';
 import { apiFetch } from '@lib/apiFetch';
 import '@/styles/VideoRecorder.css';
 
+function defaultTitle(kind = 'video') {
+  const d = new Date();
+  const isoLocal = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', ' ');
+  const prefix = kind === 'video' ? 'Video' : kind === 'audio' ? 'Audio' : 'Media';
+  return `${prefix} ${isoLocal}`;
+}
+
 export default function VideoRecorder({
   hideTitle = false,
   onVideoReady,
@@ -20,6 +30,9 @@ export default function VideoRecorder({
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef(null);
   const [banner, setBanner] = useState('');
+
+  // 👇 Nuevo: nombre visible del video
+  const [title, setTitle] = useState(() => defaultTitle('video'));
 
   useEffect(() => {
     (async () => {
@@ -98,10 +111,10 @@ export default function VideoRecorder({
     setBanner('');
     try {
       const contentType = blob.type || 'video/webm';
-      // 👇 unificado: /api/upload-url
+      // 👇 unificado: /api/upload-url (ahora con title)
       const { signedUrl } = await apiFetch('/api/upload-url', {
         method: 'POST',
-        body: { kind: 'video', contentType },
+        body: { kind: 'video', contentType, title: (title || '').trim() },
       });
 
       const putRes = await fetch(signedUrl, {
@@ -114,6 +127,9 @@ export default function VideoRecorder({
       setBanner('✅ Video guardado');
       setTimeout(() => setBanner(''), 1800);
       onVideoReady?.({ ok: true });
+
+      // Sugerir un nombre nuevo para la próxima grabación
+      setTitle(defaultTitle('video'));
     } catch (e) {
       const msg = String(e?.message || '');
       if (msg.includes('LIMIT_REACHED')) {
@@ -129,7 +145,7 @@ export default function VideoRecorder({
   function inferBlobType(chunks) {
     const withType = chunks?.find?.((c) => c?.type && c.type !== 'application/octet-stream');
     return withType?.type || 'video/webm';
-    }
+  }
 
   const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
   const ss = String(elapsed % 60).padStart(2, '0');
@@ -137,6 +153,19 @@ export default function VideoRecorder({
   return (
     <div className="vr-wrap">
       {!hideTitle && <h3 className="vr-title">Grabar video</h3>}
+
+      {/* 👇 Campo para elegir nombre visible */}
+      <label style={{ display: 'block', marginBottom: 8 }}>
+        <span style={{ display: 'block', marginBottom: 4 }}>Nombre</span>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Ej: Video para mamá"
+          maxLength={120}
+          style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #ccc' }}
+        />
+      </label>
 
       {permissionError && <div className="vr-alert error">{permissionError}</div>}
       {banner && <div className="vr-alert">{banner}</div>}
