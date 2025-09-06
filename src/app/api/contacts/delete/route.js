@@ -1,0 +1,25 @@
+import { NextResponse } from "next/server";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
+
+export const dynamic = "force-dynamic";
+
+export async function POST(req) {
+  const supa = createRouteHandlerClient({ cookies });
+  const { data: { user } } = await supa.auth.getUser();
+  if (!user) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+
+  let body = {};
+  try { body = await req.json(); } catch {}
+  const id = body?.id;
+  if (!id) return NextResponse.json({ error: "Falta id" }, { status: 400 });
+
+  const { error } = await supa
+    .from("emergency_contacts")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}

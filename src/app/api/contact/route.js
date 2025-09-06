@@ -1,123 +1,113 @@
-// src/app/api/contact/route.js
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 
-// Normaliza y valida teléfono (acepta +, espacios, guiones, paréntesis)
-function normalizePhone(raw) {
-  const s = (raw || "").trim();
-  if (!s) return "";
-  return s.replace(/\s+/g, " ");
-}
-function isValidPhone(p) {
-  return /^[+\d][\d\s()-]{5,}$/.test(p || "");
-}
+export const dynamic = "force-dynamic";
 
-// GET: { ok, contact|null }
+/**
+ * GET /api/contact  (DEPRECATED)
+ * Devuelve 1 contacto “resuelto” desde emergency_contacts:
+ * - favorito si existe
+ * - sino, el más reciente
+ * - sino, null
+ */
 export async function GET() {
-  const supabase = createRouteHandlerClient({ cookies });
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const supa = createRouteHandlerClient({ cookies });
+  const { data: { user } } = await supa.auth.getUser();
   if (!user) {
-    return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
+    return withDeprecated(NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 }));
   }
 
-  const { data, error } = await supabase
-    .from("contacts")
-    .select("id,name,phone,created_at,updated_at")
+  // favorito primero, luego el más reciente
+  const { data, error } = await supa
+    .from("emergency_contacts")
+    .select("id, name, phone, email, is_favorite, created_at")
     .eq("user_id", user.id)
-    .maybeSingle();
+    .order("is_favorite", { ascending: false })
+    .order("created_at", { ascending: false });
 
-  // PGRST116 = no rows (PostgREST). Si viene, lo tratamos como null.
-  if (error && error.code !== "PGRST116") {
-    return NextResponse.json({ ok: false, message: error.message }, { status: 500 });
+  if (error) {
+    return withDeprecated(NextResponse.json({ error: error.message }, { status: 500 }));
   }
 
-  return NextResponse.json({ ok: true, contact: data ?? null });
+  const item = (data && data.length > 0) ? data[0] : null;
+  return withDeprecated(NextResponse.json({ contact: item }));
 }
 
-// POST: upsert del contacto { name, phone }
+/**
+ * POST /api/contact  (DEPRECATED)
+ * Mantiene compatibilidad “contacto único”:
+ * - Si hay alguno → actualiza el más reciente
+ * - Sino → crea uno nuevo
+ * Body: { name, phone, email? }
+ */
 export async function POST(req) {
-  const supabase = createRouteHandlerClient({ cookies });
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const supa = createRouteHandlerClient({ cookies });
+  const { data: { user } } = await supa.auth.getUser();
   if (!user) {
-    return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
+    return withDeprecated(NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 }));
   }
 
-  let payload = {};
-  try {
-    payload = await req.json();
-  } catch {
-    return NextResponse.json({ ok: false, message: "Invalid JSON" }, { status: 400 });
-  }
-
-  const name = (payload.name || "").trim();
-  const phone = normalizePhone(payload.phone || "");
-
+  let body = {};
+  try { body = await req.json(); } catch {}
+  const name = (body?.name || "").trim();
+  const phone = (body?.phone || "").trim();
+  const email = (body?.email || "").trim();
   if (!name || !phone) {
-    return NextResponse.json({ ok: false, message: "Faltan name o phone" }, { status: 400 });
-  }
-  if (!isValidPhone(phone)) {
-    return NextResponse.json({ ok: false, message: "Teléfono inválido" }, { status: 400 });
+    return withDeprecated(NextResponse.json({ error: "Faltan campos (name, phone)" }, { status: 400 }));
   }
 
-  // ¿Ya existe contacto para este user?
-  const { data: existing, error: selErr } = await supabase
-    .from("contacts")
+  // Obtener el más reciente (si existe)
+  const { data: existing, error: listErr } = await supa
+    .from("emergency_contacts")
     .select("id")
     .eq("user_id", user.id)
-    .maybeSingle();
+    .order("created_at", { ascending: false })
+    .limit(1);
 
-  if (selErr && selErr.code !== "PGRST116") {
-    return NextResponse.json({ ok: false, message: selErr.message }, { status: 500 });
+  if (listErr) {
+    return withDeprecated(NextResponse.json({ error: listErr.message }, { status: 500 }));
   }
 
-  if (existing) {
-    const { data: updated, error: updErr } = await supabase
-      .from("contacts")
-      .update({ name, phone })
-      .eq("id", existing.id)
-      .select("id,name,phone,created_at,updated_at")
+  if (existing && existing.length > 0) {
+    // Actualizar el más reciente
+    const id = existing[0].id;
+    const { data: upd, error: updErr } = await supa
+      .from("emergency_contacts")
+      .update({ name, phone, email: email || null })
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .select("id, name, phone, email, is_favorite, created_at")
       .single();
 
     if (updErr) {
-      return NextResponse.json({ ok: false, message: updErr.message }, { status: 500 });
+      return withDeprecated(NextResponse.json({ error: updErr.message }, { status: 500 }));
     }
-    return NextResponse.json({ ok: true, contact: updated });
+    return withDeprecated(NextResponse.json({ contact: upd }));
   } else {
-    const { data: inserted, error: insErr } = await supabase
-      .from("contacts")
-      .insert({ user_id: user.id, name, phone })
-      .select("id,name,phone,created_at,updated_at")
+    // Crear uno nuevo
+    const { data: ins, error: insErr } = await supa
+      .from("emergency_contacts")
+      .insert({
+        user_id: user.id,
+        name,
+        phone,
+        email: email || null,
+      })
+      .select("id, name, phone, email, is_favorite, created_at")
       .single();
 
     if (insErr) {
-      return NextResponse.json({ ok: false, message: insErr.message }, { status: 500 });
+      return withDeprecated(NextResponse.json({ error: insErr.message }, { status: 500 }));
     }
-    return NextResponse.json({ ok: true, contact: inserted });
+    return withDeprecated(NextResponse.json({ contact: ins }));
   }
 }
 
-// DELETE: elimina el contacto del usuario (si existe)
-export async function DELETE() {
-  const supabase = createRouteHandlerClient({ cookies });
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
-  }
-
-  const { error } = await supabase.from("contacts").delete().eq("user_id", user.id);
-  if (error) {
-    return NextResponse.json({ ok: false, message: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true });
+function withDeprecated(resp) {
+  // Añadimos un header deprecado para ayudarte a detectar usos residuales
+  try {
+    resp.headers.set("X-Deprecated-Route", "/api/contact is deprecated. Use /api/contacts/*");
+  } catch {}
+  return resp;
 }

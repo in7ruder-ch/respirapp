@@ -26,7 +26,7 @@ export default function Page() {
   const router = useRouter();
   const { playByItem } = usePlayer();
 
-  // Fallback local para contacto
+  // Fallback local para contacto (legacy)
   const localContactRef = useRef(loadContact() || null);
 
   // === SWR: MEDIA STATUS (conservamos para tu copy/UI, aunque no lo usamos para reproducir) ===
@@ -46,7 +46,7 @@ export default function Page() {
   const hasMessage = Boolean(mediaData?.has);
   const mediaKind = mediaData?.kind ?? null;
 
-  // === SWR: CONTACTO (cloud, con fallback local si falla) ===
+  // === SWR: CONTACTO (legacy singular, mantenemos como fallback) ===
   const {
     data: contactRes,
     error: contactErr,
@@ -64,6 +64,16 @@ export default function Page() {
     }
   );
   const contact = contactRes?.contact ?? localContactRef.current;
+
+  // === SWR: NUEVA LISTA DE CONTACTOS (multi + favorito premium) ===
+  const { data: contactsRes } = useSWR('/api/contacts/list', fetcher, {
+    revalidateOnFocus: true,
+    dedupingInterval: 1500,
+  });
+  const contacts = contactsRes?.items || [];
+  const contactsCount = contacts.length;
+  const favoriteContact = contacts.find((c) => c.is_favorite);
+  const chosenContact = contactsCount === 1 ? contacts[0] : (favoriteContact || null);
 
   // === SWR: PLAN + LISTA (para decidir qué reproducir) ===
   const { data: planData } = useSWR('/api/me/plan', fetcher, { revalidateOnFocus: true, dedupingInterval: 1500 });
@@ -130,6 +140,26 @@ export default function Page() {
     await playByItem({ id: playable.id, kind: playable.kind });
   };
 
+  // --------- Acción de Contacto ----------
+  const handleContactAction = () => {
+    // 0 → ir a la lista/alta
+    if (contactsCount === 0) {
+      router.push('/contacts');
+      return;
+    }
+    // 1 → llamar directo
+    if (contactsCount === 1) {
+      window.location.href = telHref(contacts[0]?.phone);
+      return;
+    }
+    // N (Premium): si hay favorito → llamar directo; si no → abrir lista para elegir
+    if (isPremium && favoriteContact) {
+      window.location.href = telHref(favoriteContact.phone);
+    } else {
+      router.push('/contacts');
+    }
+  };
+
   const activeNav = 'home';
 
   // ---------- UI helpers ----------
@@ -139,6 +169,14 @@ export default function Page() {
   const playLabel = isPremium
     ? (count > 1 ? 'Reproducir favorito/último' : 'Reproducir mensaje')
     : 'Reproducir mensaje';
+
+  // Determinar si mostramos "Contacto" (alta) o "Llamar"
+  const hasAnyContact = contactsCount > 0 || Boolean(contact?.phone); // mantiene compatibilidad con legacy
+
+  const callTitle =
+    (chosenContact?.name && chosenContact?.phone)
+      ? `Llamar a ${chosenContact.name}`
+      : 'Llamar';
 
   return (
     <div className="App has-bottom-nav">
@@ -181,10 +219,10 @@ export default function Page() {
           </button>
 
           {/* Contacto */}
-          {!contact?.phone ? (
+          {!hasAnyContact ? (
             <button
               className="launcher-item red"
-              onClick={() => router.push('/contact')}
+              onClick={() => router.push('/contacts')}
               aria-label="Registrar contacto"
             >
               <div className="icon-bg bg-contact" aria-hidden="true" />
@@ -193,8 +231,8 @@ export default function Page() {
           ) : (
             <button
               className="launcher-item red"
-              onClick={() => (window.location.href = telHref(contact.phone))}
-              title={`Llamar a ${contact?.name || 'contacto'}`}
+              onClick={handleContactAction}
+              title={callTitle}
               aria-label="Llamar contacto"
             >
               <div className="icon-bg bg-contact" aria-hidden="true" />
