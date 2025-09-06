@@ -1,0 +1,66 @@
+.library-panel {
+  padding: 16px;
+}
+
+.library-tiles {
+  margin-top: 12px;
+}
+
+.library-free-limit {
+  margin-top: 12px;
+}
+
+.m0 { margin: 0; }
+.mt6 { margin-top: 6px; }
+
+.library-list {
+  margin-top: 16px;
+}
+
+.library-ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.library-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.library-title {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.library-title .favorite {
+  color: #0a0;
+  margin-left: 6px;
+}
+
+.library-meta {
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.edit-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.edit-input {
+  flex: 1;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.action-bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}

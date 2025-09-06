@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 
 import '@/styles/App.css';
 import '@/styles/BottomNav.css';
+import '@/styles/Library.css';
 
 import BottomNav from '@/components/BottomNav';
 import { usePlayer } from '@/components/player/PlayerProvider';
@@ -31,21 +32,21 @@ export default function LibraryPage() {
   const [busyId, setBusyId] = useState(null);
   const { playByItem } = usePlayer();
 
-  // === Renombrado inline (estado global simple) ===
+  // Renombrado inline (estado simple)
   const [editingId, setEditingId] = useState(null);
   const [editingVal, setEditingVal] = useState('');
   const [savingId, setSavingId] = useState(null);
 
-  // Plan (para habilitar ⭐ solo en premium)
+  // Plan
   const {
     data: planData,
     error: planError,
     isLoading: planLoading,
   } = useSWR('/api/me/plan', fetcher, { revalidateOnFocus: true, dedupingInterval: 1500 });
 
-  // Resolver tier robusto: string | {tier} | {plan}
   const tierRaw = typeof planData === 'string' ? planData : (planData?.tier || planData?.plan || 'free');
   const isPremium = tierRaw === 'premium';
+  const isFree = !isPremium;
 
   // Lista de media
   const {
@@ -60,7 +61,6 @@ export default function LibraryPage() {
 
   const items = useMemo(() => {
     const arr = listData?.items || [];
-    // Asegurar title legible si viniera vacío (el API ya hace fallback, pero por las dudas)
     const withTitle = arr.map((it) => {
       if (it?.title && String(it.title).trim()) return it;
       const created = it?.created_at ? new Date(it.created_at) : null;
@@ -70,6 +70,8 @@ export default function LibraryPage() {
     });
     return withTitle.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }, [listData]);
+
+  const count = items.length;
 
   async function play(id, kind) {
     setBusyId(id);
@@ -149,17 +151,15 @@ export default function LibraryPage() {
     }
   }
 
-  // === Renombrar ===
+  // Renombrar
   function startEdit(it) {
     setEditingId(it.id);
     setEditingVal(it.title || '');
   }
-
-  function cancelEdit(it) {
+  function cancelEdit() {
     setEditingId(null);
     setEditingVal('');
   }
-
   async function saveEdit(it) {
     const newTitle = (editingVal || '').trim();
     if (!newTitle) {
@@ -174,7 +174,6 @@ export default function LibraryPage() {
     try {
       await mutate(
         async (current) => {
-          // Llamada API
           const res = await fetch('/api/media/rename', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -186,7 +185,6 @@ export default function LibraryPage() {
             const msg = isJson ? (data?.error || JSON.stringify(data)) : (txt || 'RENAME_ERROR');
             throw new Error(msg);
           }
-          // Optimistic update
           const curItems = (current?.items || []).map((x) =>
             x.id === it.id ? { ...x, title: newTitle } : x
           );
@@ -206,72 +204,88 @@ export default function LibraryPage() {
   }
 
   const activeNav = 'library';
-  const showPlanGate = !planLoading && !planError && !isPremium;
+
+  // Lógica de tiles
+  const showCreateTiles = isPremium || (isFree && count === 0);
+  const showFreeLimitPanel = isFree && count >= 1;
 
   return (
     <div className="App has-bottom-nav">
       <header className="App-header">
-        <div className="panel" style={{ padding: 16 }}>
+        <div className="panel library-panel">
           <h2>📚 Biblioteca</h2>
 
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <button className="primary" onClick={() => router.push('/message')}>
-              🎙️ Grabar
-            </button>
-            {/* {showPlanGate && (
-              <span className="muted" style={{ alignSelf: 'center' }}>
-                ⭐ Favoritos es una función Premium
-              </span>
-            )} */}
-          </div>
+          {/* Tiles de creación */}
+          {showCreateTiles && (
+            <div className="launcher-grid library-tiles">
+              <button
+                className="launcher-item blue"
+                onClick={() => router.push('/message')}
+                aria-label="Grabar audio"
+                title="Grabar audio"
+              >
+                <div className="icon-bg bg-message" aria-hidden="true" />
+                <div className="label">Grabar audio</div>
+              </button>
+
+              <button
+                className="launcher-item red"
+                onClick={() => router.push('/message/video')}
+                aria-label="Grabar video"
+                title="Grabar video"
+              >
+                <div className="icon-bg bg-message" aria-hidden="true" />
+                <div className="label">Grabar video</div>
+              </button>
+            </div>
+          )}
+
+          {/* Aviso de límite Free */}
+          {showFreeLimitPanel && (
+            <div className="panel library-free-limit">
+              <p className="m0">Ya tenés un mensaje guardado.</p>
+              <p className="muted mt6">
+                En plan Free podés tener 1 (audio <em>o</em> video). Para grabar uno nuevo, primero borrá el actual.
+              </p>
+            </div>
+          )}
 
           {/* Lista */}
-          <div style={{ marginTop: 16 }}>
+          <div className="library-list">
             {listLoading ? (
               <p>Cargando…</p>
             ) : listError ? (
               <p className="text-red-600">Error al cargar la biblioteca.</p>
             ) : items.length === 0 ? (
-              <p className="muted">No tenés mensajes aún. Grabá tu primer mensaje con el botón de arriba.</p>
+              <p className="muted">No tenés mensajes aún.</p>
             ) : (
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              <ul className="library-ul">
                 {items.map((it) => {
                   const isEditing = editingId === it.id;
                   const isRowBusy = busyId === it.id || savingId === it.id;
                   const title = isEditing ? editingVal : (it.title || '');
 
                   return (
-                    <li
-                      key={it.id}
-                      className="library-row"
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr auto',
-                        gap: 8,
-                        padding: '10px 0',
-                        borderBottom: '1px solid #eee',
-                      }}
-                    >
+                    <li key={it.id} className="library-row">
                       <div>
-                        {/* Título editable */}
                         {!isEditing ? (
                           <>
-                            <div style={{ fontWeight: 600, wordBreak: 'break-word' }}>
+                            <div className="library-title">
                               {title}
-                              {it.is_favorite && <span style={{ color: '#0a0', marginLeft: 6 }}>★</span>}
+                              {it.is_favorite && <span className="favorite">★</span>}
                             </div>
-                            <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                            <div className="library-meta muted">
                               {it.kind?.toUpperCase()} • {new Date(it.created_at).toLocaleString('es-AR', { hour12: false })}
                             </div>
                           </>
                         ) : (
-                          <div style={{ display: 'flex', gap: 8 }}>
+                          <div className="edit-line">
                             <input
+                              className="edit-input"
                               value={title}
                               onChange={(e) => setEditingVal(e.target.value)}
                               maxLength={120}
                               placeholder="Nombre del mensaje"
-                              style={{ flex: 1, padding: 6, borderRadius: 8, border: '1px solid #ccc' }}
                               autoFocus
                             />
                             <button
@@ -284,7 +298,7 @@ export default function LibraryPage() {
                             </button>
                             <button
                               className="secondary"
-                              onClick={() => cancelEdit(it)}
+                              onClick={() => cancelEdit()}
                               disabled={savingId === it.id}
                               title="Cancelar"
                             >
@@ -294,8 +308,7 @@ export default function LibraryPage() {
                         )}
                       </div>
 
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                        {/* Editar */}
+                      <div className="action-bar">
                         {!isEditing && (
                           <button
                             className="secondary"
