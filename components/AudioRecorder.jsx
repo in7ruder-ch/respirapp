@@ -25,16 +25,30 @@ function pickSupportedMime() {
   return null;
 }
 
+// Default legible para el nombre visible
+function defaultTitle(kind = 'audio') {
+  const d = new Date();
+  const isoLocal = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', ' ');
+  const prefix = kind === 'audio' ? 'Audio' : kind === 'video' ? 'Video' : 'Media';
+  return `${prefix} ${isoLocal}`;
+}
+
 export default function AudioRecorder({
   hideTitle = false,
   onAudioReady,      // callback: se llama tras subida exitosa
   locked = false,    // si true, bloquear grabación (servidor dice que ya hay audio) — aplica a Free
-  isPremium = false, // 👈 nuevo: para UX de límite
+  isPremium = false, // 👈 para UX de límite
 }) {
   const [isRecording, setIsRecording] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
   const [disabled, setDisabled] = useState(locked);
+
+  // 👇 Nuevo: nombre visible del mensaje
+  const [title, setTitle] = useState(() => defaultTitle('audio'));
 
   const mediaRef = useRef(null);
   const chunksRef = useRef([]);
@@ -57,6 +71,7 @@ export default function AudioRecorder({
           contentType: blob.type || 'audio/webm',
           duration: null,
           size: blob.size ?? null,
+          title: (title || '').trim(), // 👈 enviar título elegido
         },
       });
       signedUrl = res?.signedUrl;
@@ -104,7 +119,7 @@ export default function AudioRecorder({
       if (!isPremium) {
         setError('Plan Free: ya guardaste tu único audio.');
       } else {
-        // Para Premium, no deberíamos estar disabled; pero por las dudas lo ignoramos
+        // Para Premium, no deberíamos estar disabled; por si acaso lo ignoramos
         setDisabled(false);
       }
       return;
@@ -148,6 +163,8 @@ export default function AudioRecorder({
             const ok = await uploadToSupabase(blob);
             if (ok) {
               try { onAudioReady && onAudioReady(blob); } catch {}
+              // Re-sugerir un nombre nuevo para la próxima grabación
+              setTitle(defaultTitle('audio'));
             }
           } catch (err) {
             setError(err.message || String(err));
@@ -172,6 +189,19 @@ export default function AudioRecorder({
   return (
     <div className="audio-recorder">
       {!hideTitle && <h3>Mensaje personalizado</h3>}
+
+      {/* 👇 Campo para elegir nombre visible */}
+      <label style={{ display: 'block', marginBottom: 8 }}>
+        <span style={{ display: 'block', marginBottom: 4 }}>Nombre</span>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Ej: Audio para mamá"
+          maxLength={120}
+          style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #ccc' }}
+        />
+      </label>
 
       {status && <p style={{ marginBottom: 8 }}>{status}</p>}
       {error && <p style={{ color: 'crimson', marginBottom: 8 }}>{error}</p>}

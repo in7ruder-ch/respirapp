@@ -57,6 +57,15 @@ function genId() {
   } catch {}
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
+function defaultTitle(kind) {
+  const now = new Date();
+  const iso = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 19)
+    .replace("T", " ");
+  const prefix = kind === "audio" ? "Audio" : kind === "video" ? "Video" : "Media";
+  return `${prefix} ${iso}`;
+}
 
 // 🔎 Tier directo desde subscriptions con service role (sin depender de lib/plan.js)
 async function resolveTierAdmin(userId) {
@@ -77,7 +86,7 @@ async function resolveTierAdmin(userId) {
 
 /**
  * POST /api/upload-url
- * body: { kind: 'audio' | 'video', contentType?: string }
+ * body: { kind: 'audio' | 'video', contentType?: string, title?: string }
  * Regla FREE: 1 mensaje TOTAL (audio O video).
  */
 export async function POST(req) {
@@ -138,7 +147,7 @@ export async function POST(req) {
           code: "LIMIT_REACHED",
           message:
             "Plan Free: ya tenés un mensaje guardado (audio o video). Borrá el actual para grabar otro.",
-          tierDetectado: tier, // 👈 útil para debug en Network tab
+          tierDetectado: tier, // útil para debug en Network tab
         },
         { status: 403 }
       );
@@ -150,10 +159,14 @@ export async function POST(req) {
   const key = `${user.id}/${kind}/${genId()}${ext}`;
   const path = `${BUCKET}/${key}`;
 
-  // 6) Reserva en DB (RLS)
+  // 6) Título visible (opcional desde el cliente)
+  const rawTitle = typeof payload?.title === "string" ? payload.title : "";
+  const title = rawTitle.trim() || defaultTitle(kind);
+
+  // 7) Reserva en DB (RLS) — ahora guardamos title
   const { data: inserted, error: insErr } = await userClient
     .from("media")
-    .insert({ user_id: user.id, kind, path })
+    .insert({ user_id: user.id, kind, path, title })
     .select("id")
     .single();
 
@@ -161,7 +174,7 @@ export async function POST(req) {
     return NextResponse.json({ ok: false, message: insErr.message }, { status: 500 });
   }
 
-  // 7) Firmar URL de subida (service role en Storage)
+  // 8) Firmar URL de subida (service role en Storage)
   const { data: signed, error: signErr } = await admin.storage
     .from(BUCKET)
     .createSignedUploadUrl(key);
@@ -181,11 +194,12 @@ export async function POST(req) {
     signedUrl: signed.signedUrl,
     token: signed.token,
     contentType: baseCT,
+    title, // 👈 eco para debug/UX si lo querés usar client-side
   });
 }
 
 export async function GET() {
-  return NextResponse.json({ ok: true, info: "POST con {kind, contentType}" });
+  return NextResponse.json({ ok: true, info: "POST con {kind, contentType, title?}" });
 }
 export async function OPTIONS() {
   return new Response(null, { status: 204 });

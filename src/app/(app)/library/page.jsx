@@ -31,6 +31,11 @@ export default function LibraryPage() {
   const [busyId, setBusyId] = useState(null);
   const { playByItem } = usePlayer();
 
+  // === Renombrado inline (estado global simple) ===
+  const [editingId, setEditingId] = useState(null);
+  const [editingVal, setEditingVal] = useState('');
+  const [savingId, setSavingId] = useState(null);
+
   // Plan (para habilitar ⭐ solo en premium)
   const {
     data: planData,
@@ -38,8 +43,9 @@ export default function LibraryPage() {
     isLoading: planLoading,
   } = useSWR('/api/me/plan', fetcher, { revalidateOnFocus: true, dedupingInterval: 1500 });
 
-  const tier = planData?.tier || 'free';
-  const isPremium = tier === 'premium';
+  // Resolver tier robusto: string | {tier} | {plan}
+  const tierRaw = typeof planData === 'string' ? planData : (planData?.tier || planData?.plan || 'free');
+  const isPremium = tierRaw === 'premium';
 
   // Lista de media
   const {
@@ -54,7 +60,15 @@ export default function LibraryPage() {
 
   const items = useMemo(() => {
     const arr = listData?.items || [];
-    return arr.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    // Asegurar title legible si viniera vacío (el API ya hace fallback, pero por las dudas)
+    const withTitle = arr.map((it) => {
+      if (it?.title && String(it.title).trim()) return it;
+      const created = it?.created_at ? new Date(it.created_at) : null;
+      const when = created ? created.toLocaleString('es-AR', { hour12: false }) : '';
+      const kindNice = it?.kind === 'audio' ? 'Audio' : it?.kind === 'video' ? 'Video' : 'Media';
+      return { ...it, title: `${kindNice}${when ? ' ' + when : ''}` };
+    });
+    return withTitle.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }, [listData]);
 
   async function play(id, kind) {
@@ -135,6 +149,62 @@ export default function LibraryPage() {
     }
   }
 
+  // === Renombrar ===
+  function startEdit(it) {
+    setEditingId(it.id);
+    setEditingVal(it.title || '');
+  }
+
+  function cancelEdit(it) {
+    setEditingId(null);
+    setEditingVal('');
+  }
+
+  async function saveEdit(it) {
+    const newTitle = (editingVal || '').trim();
+    if (!newTitle) {
+      alert('El nombre no puede estar vacío.');
+      return;
+    }
+    if (newTitle === it.title) {
+      setEditingId(null);
+      return;
+    }
+    setSavingId(it.id);
+    try {
+      await mutate(
+        async (current) => {
+          // Llamada API
+          const res = await fetch('/api/media/rename', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ id: it.id, title: newTitle }),
+          });
+          const { data, txt, isJson } = await safeParseResponse(res);
+          if (!res.ok) {
+            const msg = isJson ? (data?.error || JSON.stringify(data)) : (txt || 'RENAME_ERROR');
+            throw new Error(msg);
+          }
+          // Optimistic update
+          const curItems = (current?.items || []).map((x) =>
+            x.id === it.id ? { ...x, title: newTitle } : x
+          );
+          return { items: curItems };
+        },
+        { revalidate: false }
+      );
+      setEditingId(null);
+      setEditingVal('');
+    } catch (e) {
+      alert('No se pudo renombrar: ' + (e?.message || 'RENAME_ERROR'));
+      await mutate();
+    } finally {
+      await mutate();
+      setSavingId(null);
+    }
+  }
+
   const activeNav = 'library';
   const showPlanGate = !planLoading && !planError && !isPremium;
 
@@ -165,54 +235,110 @@ export default function LibraryPage() {
               <p className="muted">No tenés mensajes aún. Grabá tu primer mensaje con el botón de arriba.</p>
             ) : (
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                {items.map((it) => (
-                  <li
-                    key={it.id}
-                    className="library-row"
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr auto',
-                      gap: 8,
-                      padding: '10px 0',
-                      borderBottom: '1px solid #eee',
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: 600 }}>
-                        {it.kind?.toUpperCase()} {it.is_favorite && <span style={{ color: '#0a0' }}>★</span>}
+                {items.map((it) => {
+                  const isEditing = editingId === it.id;
+                  const isRowBusy = busyId === it.id || savingId === it.id;
+                  const title = isEditing ? editingVal : (it.title || '');
+
+                  return (
+                    <li
+                      key={it.id}
+                      className="library-row"
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr auto',
+                        gap: 8,
+                        padding: '10px 0',
+                        borderBottom: '1px solid #eee',
+                      }}
+                    >
+                      <div>
+                        {/* Título editable */}
+                        {!isEditing ? (
+                          <>
+                            <div style={{ fontWeight: 600, wordBreak: 'break-word' }}>
+                              {title}
+                              {it.is_favorite && <span style={{ color: '#0a0', marginLeft: 6 }}>★</span>}
+                            </div>
+                            <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                              {it.kind?.toUpperCase()} • {new Date(it.created_at).toLocaleString('es-AR', { hour12: false })}
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <input
+                              value={title}
+                              onChange={(e) => setEditingVal(e.target.value)}
+                              maxLength={120}
+                              placeholder="Nombre del mensaje"
+                              style={{ flex: 1, padding: 6, borderRadius: 8, border: '1px solid #ccc' }}
+                              autoFocus
+                            />
+                            <button
+                              className="secondary"
+                              onClick={() => saveEdit(it)}
+                              disabled={savingId === it.id}
+                              title="Guardar"
+                            >
+                              💾
+                            </button>
+                            <button
+                              className="secondary"
+                              onClick={() => cancelEdit(it)}
+                              disabled={savingId === it.id}
+                              title="Cancelar"
+                            >
+                              ✖
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button
-                        className="secondary"
-                        disabled={busyId === it.id}
-                        onClick={() => play(it.id, it.kind)}
-                        aria-label="Reproducir"
-                        title="Reproducir"
-                      >
-                        ▶
-                      </button>
-                      <button
-                        className="secondary"
-                        disabled={busyId === it.id}
-                        onClick={() => del(it.id)}
-                        aria-label="Borrar"
-                        title="Borrar"
-                      >
-                        🗑️
-                      </button>
-                      <button
-                        className={`secondary ${!isPremium ? 'disabled' : ''}`}
-                        disabled={!isPremium || busyId === it.id}
-                        onClick={() => fav(it.id)}
-                        aria-label={isPremium ? 'Marcar favorito (uno máximo)' : 'Solo Premium'}
-                        title={isPremium ? 'Marcar favorito (uno máximo)' : 'Solo Premium'}
-                      >
-                        ⭐
-                      </button>
-                    </div>
-                  </li>
-                ))}
+
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        {/* Editar */}
+                        {!isEditing && (
+                          <button
+                            className="secondary"
+                            disabled={isRowBusy}
+                            onClick={() => startEdit(it)}
+                            aria-label="Renombrar"
+                            title="Renombrar"
+                          >
+                            ✏️
+                          </button>
+                        )}
+
+                        <button
+                          className="secondary"
+                          disabled={isRowBusy}
+                          onClick={() => play(it.id, it.kind)}
+                          aria-label="Reproducir"
+                          title="Reproducir"
+                        >
+                          ▶
+                        </button>
+                        <button
+                          className="secondary"
+                          disabled={isRowBusy}
+                          onClick={() => del(it.id)}
+                          aria-label="Borrar"
+                          title="Borrar"
+                        >
+                          🗑️
+                        </button>
+                        <button
+                          className={`secondary ${!isPremium ? 'disabled' : ''}`}
+                          disabled={!isPremium || isRowBusy}
+                          onClick={() => fav(it.id)}
+                          aria-label={isPremium ? 'Marcar favorito (uno máximo)' : 'Solo Premium'}
+                          title={isPremium ? 'Marcar favorito (uno máximo)' : 'Solo Premium'}
+                        >
+                          ⭐
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
