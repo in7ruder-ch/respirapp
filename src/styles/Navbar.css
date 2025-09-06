@@ -1,6 +1,8 @@
 .bottom-nav {
   position: fixed;
-  left: 0; right: 0; bottom: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   height: 60px;
   padding-bottom: env(safe-area-inset-bottom);
   background: #fff;
@@ -12,9 +14,9 @@
   z-index: 10;
 }
 
-/* Reset estilo de los botones */
-.bottom-nav button {
-  all: unset; /* resetea borders, background, etc */
+/* Ítems de navegación */
+.bn-item {
+  all: unset; /* reset de estilos de botón */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -22,38 +24,33 @@
   gap: 4px;
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;   /* gris base */
+  color: #6b7280; /* gris base */
   cursor: pointer;
-  padding: 4px 0;
   min-width: 64px;
 }
 
-/* Ícono */
-.bottom-nav button svg,
-.bottom-nav button .icon {
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  stroke-width: 2;
-  color: inherit;
+.bn-item:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Emoji/Icono */
+.bn-icon {
+  font-size: 20px;
+  line-height: 1;
 }
 
 /* Label */
-.bottom-nav button .label {
+.bn-label {
   font-size: 11px;
   line-height: 1;
   color: inherit;
 }
 
 /* Estado activo */
-.bottom-nav button.active {
-  color: #2563eb; /* azul Spotify style */
+.bn-item.is-active {
+  color: #2563eb; /* azul al activo */
   font-weight: 600;
-}
-
-.bottom-nav button:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
 }
 
 /* ===========================
