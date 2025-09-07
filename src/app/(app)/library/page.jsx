@@ -1,13 +1,11 @@
 'use client';
 import { useState, useMemo } from 'react';
 import useSWR from 'swr';
-import { useRouter } from 'next/navigation';
 
 import '@/styles/App.css';
 import '@/styles/BottomNav.css';
 import '@/styles/Library.css';
 
-import BottomNav from '@/components/BottomNav';
 import { usePlayer } from '@/components/player/PlayerProvider';
 import AudioRecorder from '@/components/AudioRecorder';
 import VideoRecorder from '@/components/VideoRecorder';
@@ -30,7 +28,6 @@ const fetcher = async (u) => {
 };
 
 export default function LibraryPage() {
-  const router = useRouter();
   const [busyId, setBusyId] = useState(null);
   const { playByItem } = usePlayer();
 
@@ -132,7 +129,7 @@ export default function LibraryPage() {
     try {
       await mutate(
         async (current) => {
-          // Llamada al toggle
+          // Toggle
           const res = await fetch('/api/media/favorite', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -146,7 +143,6 @@ export default function LibraryPage() {
             throw new Error(msg);
           }
 
-          // Optimistic result: si estaba marcado, ahora ninguno; si no, este.
           const curItems = (current?.items || []).map((x) => {
             if (wasFav) return { ...x, is_favorite: false };
             return { ...x, is_favorite: x.id === it.id };
@@ -220,8 +216,6 @@ export default function LibraryPage() {
     }
   }
 
-  const activeNav = 'library';
-
   // Tiles / límites
   const showCreateTiles = isPremium || (isFree && count === 0);
   const showFreeLimitPanel = isFree && count >= 1;
@@ -247,7 +241,8 @@ export default function LibraryPage() {
   return (
     <div className="App has-bottom-nav">
       <header className="App-header">
-        <div className="panel library-panel">
+        {/* wrapper estable para lista y empty */}
+        <div className="screen-wrap panel library-panel">
           <h2>📚 Biblioteca</h2>
 
           {showConfirmation && (
@@ -427,14 +422,6 @@ export default function LibraryPage() {
           </div>
         </div>
       </header>
-
-      <BottomNav
-        active={activeNav}
-        onHome={() => router.push('/')}
-        onLibrary={() => router.push('/library')}
-        onPlaceholder1={() => router.push('/explore')}
-        onPlaceholder2={() => router.push('/profile')}
-      />
     </div>
   );
 }

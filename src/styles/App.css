@@ -283,3 +283,70 @@ h3 { margin-top: 1.25rem; font-size: 1.1rem; color: #1f2937; }
   .launcher-item .label { bottom: 9%; font-size: 0.95rem; }
   .icon-bg { left: 13%; right: 13%; top: 13%; bottom: 30%; }
 }
+
+/* Fuerza que el panel siempre ocupe el contenedor esperado y
+   que los hijos no “achiquen” por contenido */
+.library-panel,
+.contacts-panel {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Cualquier contenedor de lista / grid o estado vacío dentro del panel
+   debe ocupar ancho completo del panel */
+.library-panel > * ,
+.contacts-panel > * {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Por si alguna lista mete un inline-size “intrínseco” por error */
+.library-panel ul,
+.contacts-panel ul {
+  width: 100%;
+  max-width: none;
+}
+
+/* --- HOTFIX ancho estable en páginas dentro de header --- */
+.App-header { 
+  width: 100%;
+  display: block;           /* evita que flex centre por ancho intrínseco */
+}
+
+.App-header > .panel,
+.App-header > .library-panel,
+.App-header > .contacts-panel,
+.App-header > .screen-wrap {
+  width: 100%;
+  max-width: 560px;         /* el mismo ancho que ves en Vercel */
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* los bloques internos no deben encoger el contenedor */
+.library-list,
+.library-empty,
+.launcher-grid,
+.contacts-list,
+.contacts-empty {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Desktop: asegurar ancho cómodo del wrapper */
+@media (min-width: 640px) {
+  .screen-wrap,
+  .library-panel,
+  .contacts-panel {
+    max-width: 720px;   /* igual que prod/preview cómodo */
+    width: 100%;
+    margin: 0 auto;
+  }
+}
+
+/* Por si alguna regla vieja limita a 360px en estados vacíos */
+.library-empty,
+.contacts-empty {
+  max-width: none !important;
+  width: 100%;
+}

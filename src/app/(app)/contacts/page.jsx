@@ -2,13 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
-import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import '@/styles/App.css';
 import '@/styles/BottomNav.css';
 import '@/styles/Contacts.css';
-
-import BottomNav from '@/components/BottomNav';
 
 async function safeParseResponse(res) {
   const txt = await res.text();
@@ -27,7 +25,8 @@ const fetcher = async (u) => {
 };
 
 export default function ContactsPage() {
-  const router = useRouter();
+  const t = useTranslations('contacts');
+
   const [busyId, setBusyId] = useState(null);
 
   // Plan (para gating)
@@ -61,10 +60,10 @@ export default function ContactsPage() {
 
   async function addContact(e) {
     e?.preventDefault?.();
-    if (freeAtLimit) return alert('Free: sólo podés guardar 1 contacto.');
+    if (freeAtLimit) return alert(t('freeLimit1'));
     const name = (addName || '').trim();
     const phone = (addPhone || '').trim();
-    if (!name || !phone) return alert('Completá al menos Nombre y Teléfono.');
+    if (!name || !phone) return alert(t('requiredNamePhone'));
     setAdding(true);
     try {
       await mutate(
@@ -90,9 +89,9 @@ export default function ContactsPage() {
     } catch (e) {
       const msg = String(e?.message || '');
       if (msg.includes('LIMIT_REACHED_FREE')) {
-        alert('Plan Free: ya tenés 1 contacto guardado.');
+        alert(t('freeAlreadyOne'));
       } else {
-        alert('No se pudo agregar el contacto.');
+        alert(t('addError'));
       }
       await mutate();
     } finally {
@@ -118,7 +117,7 @@ export default function ContactsPage() {
   async function saveEdit(it) {
     const name = (editing.name || '').trim();
     const phone = (editing.phone || '').trim();
-    if (!name || !phone) return alert('Nombre y Teléfono son obligatorios.');
+    if (!name || !phone) return alert(t('requiredNamePhone'));
     setSavingId(it.id);
     try {
       await mutate(
@@ -143,7 +142,7 @@ export default function ContactsPage() {
       setEditingId(null);
       setEditing({ name: '', phone: '' });
     } catch {
-      alert('No se pudo actualizar el contacto.');
+      alert(t('updateError'));
       await mutate();
     } finally {
       await mutate();
@@ -153,7 +152,7 @@ export default function ContactsPage() {
 
   // === Borrar ===
   async function del(id) {
-    if (!confirm('¿Borrar este contacto?')) return;
+    if (!confirm(t('confirmDelete'))) return;
     setBusyId(id);
     try {
       await mutate(
@@ -175,7 +174,7 @@ export default function ContactsPage() {
         { revalidate: false }
       );
     } catch {
-      alert('No se pudo borrar el contacto.');
+      alert(t('deleteError'));
       await mutate();
     } finally {
       await mutate();
@@ -185,7 +184,7 @@ export default function ContactsPage() {
 
   // === Favorito (solo Premium) ===
   async function favContact(it) {
-    if (!isPremium) return alert('Favoritos es una función Premium.');
+    if (!isPremium) return alert(t('onlyPremium'));
     setBusyId(it.id);
     const wasFav = !!it.is_favorite;
     try {
@@ -203,7 +202,6 @@ export default function ContactsPage() {
             const msg = isJson ? (data?.error || JSON.stringify(data)) : (txt || 'FAV_ERROR');
             throw new Error(msg);
           }
-          // Toggle único: si ya era favorito → limpiar todos; si no, setear sólo éste.
           const cur = (current?.items || []).map((x) => {
             if (wasFav) return { ...x, is_favorite: false };
             return { ...x, is_favorite: x.id === it.id };
@@ -214,9 +212,9 @@ export default function ContactsPage() {
       );
     } catch (e) {
       if (e?.message === 'ONLY_PREMIUM') {
-        alert('Solo usuarios Premium pueden marcar favorito.');
+        alert(t('onlyPremium'));
       } else {
-        alert('No se pudo actualizar favorito.');
+        alert(t('favoriteError'));
       }
       await mutate();
     } finally {
@@ -227,40 +225,39 @@ export default function ContactsPage() {
 
   // === Llamar ===
   function call(phone) {
-    if (!phone) return alert('Este contacto no tiene teléfono.');
+    if (!phone) return alert(t('missingPhone'));
     window.location.href = `tel:${encodeURIComponent(phone)}`;
   }
 
-  const activeNav = 'profile';
   const showPlanGate = !planLoading && !planError && !isPremium;
 
   return (
     <div className="App has-bottom-nav">
       <header className="App-header">
-        <div className="contacts-panel">
-          <h2>🚨 Contactos de emergencia</h2>
+        <div className="screen-wrap contacts-panel">
+          <h2>🚨 {t('title')}</h2>
 
           {/* Alta */}
           <form onSubmit={addContact} className="contact-form">
             <div className="form-fields">
               <div>
-                <label>Nombre*</label>
+                <label>{t('nameLabel')}*</label>
                 <input
                   type="text"
                   value={addName}
                   onChange={(e) => setAddName(e.target.value)}
-                  placeholder="Ej: Mamá"
+                  placeholder={t('namePlaceholder')}
                   maxLength={120}
                   disabled={adding || freeAtLimit}
                 />
               </div>
               <div>
-                <label>Teléfono*</label>
+                <label>{t('phoneLabel')}*</label>
                 <input
                   type="tel"
                   value={addPhone}
                   onChange={(e) => setAddPhone(e.target.value)}
-                  placeholder="+54 9 11 1234 5678"
+                  placeholder={t('phonePlaceholder')}
                   maxLength={40}
                   disabled={adding || freeAtLimit}
                 />
@@ -268,12 +265,10 @@ export default function ContactsPage() {
             </div>
             <div className="form-actions">
               <button className="primary" type="submit" disabled={adding || freeAtLimit}>
-                ➕ Agregar
+                ➕ {t('add')}
               </button>
               {freeAtLimit && (
-                <span className="muted">
-                  Free: 1 contacto máximo. Para más, pasá a Premium.
-                </span>
+                <span className="muted">{t('freeNote')}</span>
               )}
             </div>
           </form>
@@ -281,11 +276,11 @@ export default function ContactsPage() {
           {/* Lista */}
           <div className="contacts-list">
             {listLoading ? (
-              <p>Cargando…</p>
+              <p>{t('loading')}</p>
             ) : listError ? (
-              <p className="text-red-600">Error al cargar tus contactos.</p>
+              <p className="text-red-600">{t('loadError')}</p>
             ) : items.length === 0 ? (
-              <p className="muted">No tenés contactos aún. Agregá tu primero arriba.</p>
+              <p className="muted">{t('empty')}</p>
             ) : (
               <ul>
                 {items.map((it) => {
@@ -301,23 +296,21 @@ export default function ContactsPage() {
                               {it.name}
                               {it.is_favorite && <span className="favorite">★</span>}
                             </div>
-                            <div className="contact-meta">
-                              {it.phone}
-                            </div>
+                            <div className="contact-meta">{it.phone}</div>
                           </>
                         ) : (
                           <div className="edit-fields">
                             <input
                               value={editing.name}
                               onChange={(e) => setEditing((s) => ({ ...s, name: e.target.value }))}
-                              placeholder="Nombre"
+                              placeholder={t('namePlaceholder')}
                               maxLength={120}
                               autoFocus
                             />
                             <input
                               value={editing.phone}
                               onChange={(e) => setEditing((s) => ({ ...s, phone: e.target.value }))}
-                              placeholder="Teléfono"
+                              placeholder={t('phonePlaceholder')}
                               maxLength={40}
                             />
                             <div className="edit-actions">
@@ -325,6 +318,8 @@ export default function ContactsPage() {
                                 className="secondary"
                                 onClick={() => saveEdit(it)}
                                 disabled={isRowBusy}
+                                title={t('save')}
+                                aria-label={t('save')}
                               >
                                 💾
                               </button>
@@ -332,6 +327,8 @@ export default function ContactsPage() {
                                 className="secondary"
                                 onClick={cancelEdit}
                                 disabled={isRowBusy}
+                                title={t('cancel')}
+                                aria-label={t('cancel')}
                               >
                                 ✖
                               </button>
@@ -346,6 +343,8 @@ export default function ContactsPage() {
                             className="secondary"
                             disabled={isRowBusy}
                             onClick={() => call(it.phone)}
+                            title={t('call')}
+                            aria-label={t('call')}
                           >
                             📞
                           </button>
@@ -355,6 +354,8 @@ export default function ContactsPage() {
                             className="secondary"
                             disabled={isRowBusy}
                             onClick={() => startEdit(it)}
+                            title={t('edit')}
+                            aria-label={t('edit')}
                           >
                             ✏️
                           </button>
@@ -363,6 +364,8 @@ export default function ContactsPage() {
                           className="secondary"
                           disabled={isRowBusy}
                           onClick={() => del(it.id)}
+                          title={t('delete')}
+                          aria-label={t('delete')}
                         >
                           🗑️
                         </button>
@@ -370,8 +373,16 @@ export default function ContactsPage() {
                           className={`secondary ${!isPremium ? 'disabled' : ''}`}
                           disabled={!isPremium || isRowBusy}
                           onClick={() => favContact(it)}
-                          aria-label={isPremium ? (it.is_favorite ? 'Quitar de favorito' : 'Marcar favorito') : 'Solo Premium'}
-                          title={isPremium ? (it.is_favorite ? 'Quitar de favorito' : 'Marcar favorito (uno máximo)') : 'Solo Premium'}
+                          aria-label={
+                            isPremium
+                              ? (it.is_favorite ? t('unfavorite') : t('favorite'))
+                              : t('onlyPremiumShort')
+                          }
+                          title={
+                            isPremium
+                              ? (it.is_favorite ? t('unfavorite') : t('favoriteOne'))
+                              : t('onlyPremiumShort')
+                          }
                         >
                           ⭐
                         </button>
@@ -384,20 +395,10 @@ export default function ContactsPage() {
           </div>
 
           {showPlanGate && (
-            <div className="muted">
-              ⭐ Favoritos y múltiples contactos son funciones Premium.
-            </div>
+            <div className="muted">{t('premiumHint')}</div>
           )}
         </div>
       </header>
-
-      <BottomNav
-        active={activeNav}
-        onHome={() => router.push('/')}
-        onLibrary={() => router.push('/library')}
-        onPlaceholder1={() => router.push('/explore')}
-        onPlaceholder2={() => router.push('/profile')}
-      />
     </div>
   );
 }
