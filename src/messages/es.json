@@ -1,0 +1,201 @@
+{
+  "app": {
+    "name": "RESPIRA",
+    "tagline": "Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad"
+  },
+  "nav": {
+    "home": "Inicio",
+    "library": "Biblioteca",
+    "explore": "Explorar",
+    "profile": "Perfil",
+    "aria": "Navegación inferior"
+  },
+  "home": {
+    "breathe": "Respirar juntos",
+    "config": "Configuración",
+    "play": "Reproducir mensaje",
+    "playFav": "Reproducir favorito",
+    "goLibrary": "Ir a Biblioteca",
+    "goLibraryTitle": "Ir a Biblioteca para grabar tu primer mensaje",
+    "playTitle": "Reproducir {kind, select, audio {audio} video {video} other {mensaje}}",
+    "contact": "Contacto",
+    "contacts": "Contactos",
+    "callName": "Llamar a {name}",
+    "callFallback": "Llamar a contacto"
+  },
+  "settings": {
+    "title": "Configuración",
+     "planTitle": "Tu plan",
+    "currentPlan": "Plan actual:",
+    "premiumNote": "Sos Premium: almacenamiento de mensajes ilimitado. Gestioná tus mensajes en",
+    "freeNote": "Plan Free: 1 mensaje permitido (audio o video). Para ilimitados, canjeá tu código en",
+    "premiumLink": "Premium",
+    "contactsTitle": "Contactos de emergencia",
+    "noContacts": "No tenés contactos de emergencia guardados.",
+    "addContact": "Agregar contacto",
+    "manageContacts": "Gestionar contactos",
+    "contactsCount": "Tenés {count, plural, one {# contacto.} other {# contactos.}}",
+    "favorite": "Favorito",
+    "deleteSuccess": "Mensaje eliminado.",
+    "deleteError": "No se pudo borrar el mensaje.",
+    "language": "Idioma",
+    "language.es": "Español",
+    "language.en": "Inglés",
+    "language.de": "Alemán"
+  },
+  "contacts": {
+    "title": "Contactos de emergencia",
+    "nameLabel": "Nombre",
+    "phoneLabel": "Teléfono",
+    "namePlaceholder": "Ej: Mamá",
+    "phonePlaceholder": "+54 9 11 1234 5678",
+    "add": "Agregar",
+    "freeNote": "Free: 1 contacto máximo. Para más, pasá a Premium.",
+    "loading": "Cargando…",
+    "loadError": "Error al cargar tus contactos.",
+    "empty": "No tenés contactos aún. Agregá tu primero arriba.",
+    "freeLimit1": "Free: sólo podés guardar 1 contacto.",
+    "requiredNamePhone": "Completá al menos Nombre y Teléfono.",
+    "freeAlreadyOne": "Plan Free: ya tenés 1 contacto guardado.",
+    "addError": "No se pudo agregar el contacto.",
+    "updateError": "No se pudo actualizar el contacto.",
+    "confirmDelete": "¿Borrar este contacto?",
+    "deleteError": "No se pudo borrar el contacto.",
+    "onlyPremium": "Solo usuarios Premium pueden marcar favorito.",
+    "favoriteError": "No se pudo actualizar favorito.",
+    "missingPhone": "Este contacto no tiene teléfono.",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "call": "Llamar",
+    "edit": "Editar",
+    "delete": "Borrar",
+    "favorite": "Marcar favorito",
+    "unfavorite": "Quitar de favorito",
+    "favoriteOne": "Marcar favorito (uno máximo)",
+    "onlyPremiumShort": "Solo Premium",
+    "premiumHint": "⭐ Favoritos y múltiples contactos son funciones Premium."
+  },
+  "library": {
+    "title": "Biblioteca",
+    "savedBanner": "Mensaje guardado",
+    "recordAudio": "Grabar audio",
+    "recordVideo": "Grabar video",
+    "back": "Volver",
+    "freeLimitTitle": "Ya tenés un mensaje guardado.",
+    "freeLimitDesc": "En plan Free podés tener 1 (audio <em>o</em> video). Para grabar uno nuevo, primero borrá el actual.",
+    "loading": "Cargando…",
+    "loadError": "Error al cargar la biblioteca.",
+    "empty": "No tenés mensajes aún.",
+    "renamePlaceholder": "Nombre del mensaje",
+    "rename": "Renombrar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "play": "Reproducir",
+    "delete": "Borrar",
+    "favorite": "Marcar favorito",
+    "unfavorite": "Quitar de favorito",
+    "favoriteOne": "Marcar favorito (uno máximo)",
+    "onlyPremiumShort": "Solo Premium",
+    "onlyPremium": "Solo usuarios Premium pueden marcar favorito.",
+    "favoriteError": "No se pudo actualizar favorito.",
+    "deleteConfirm": "¿Borrar este mensaje? Esta acción es permanente.",
+    "deleteError": "No se pudo borrar el mensaje.",
+    "playError": "No se pudo reproducir el mensaje.",
+    "renameEmpty": "El nombre no puede estar vacío.",
+    "renameError": "No se pudo renombrar",
+    "kind": {
+      "audio": "Audio",
+      "video": "Video",
+      "media": "Media"
+    }
+  },
+  "explore": {
+    "title": "Explorar",
+    "soon": "Próximamente: recursos, artículos y contenido recomendado."
+  },
+   "common": {
+    "loading": "Cargando…"
+  },
+  "profile": {
+    "title": "Perfil",
+    "loggedInAs": "Sesión iniciada como",
+    "logout": "Cerrar sesión",
+    "loggingOut": "Cerrando…"
+  },
+  "recorder": {
+    "customMessage": "Mensaje personalizado",
+    "name": "Nombre",
+    "namePlaceholder": "Ej: Audio para mamá",
+    "record": "Grabar mensaje",
+    "stop": "Detener grabación",
+    "preparing": "Preparando subida…",
+    "uploading": "Subiendo audio…",
+    "processing": "Procesando…",
+    "success": "✅ Subida exitosa",
+    "needLogin": "Necesitás iniciar sesión para guardar tu mensaje.",
+    "planLimit": "Alcanzaste tu límite de plan.",
+    "signUrlError": "No se pudo obtener la URL firmada",
+    "supabaseError": "Error subiendo a Supabase",
+    "freeAlreadySaved": "Plan Free: ya guardaste tu único audio.",
+    "noSupport": "Tu navegador no soporta grabación de audio.",
+    "offline": "Estás sin conexión. Intenta nuevamente con internet.",
+    "permissionError": "No se pudo iniciar la grabación. Revisa permisos del micrófono.",
+    "freeNote": "Plan Free: 1 audio permitido. Para ilimitados, pasá a Premium."
+  },
+  "vrecorder": {
+    "title": "Grabar video",
+    "name": "Nombre",
+    "namePlaceholder": "Ej: Video para mamá",
+    "record": "Grabar",
+    "stop": "Detener",
+    "permissionError": "No pudimos acceder a cámara/micrófono. Revisá permisos del navegador.",
+    "startError": "No se pudo iniciar la grabación en este navegador.",
+    "uploadError": "Error al subir el video. Intentá nuevamente.",
+    "freeLimitBanner": "⚠️ Plan Free: ya tenés un mensaje guardado. Borrá el actual en Config.",
+    "savedBanner": "Video guardado"
+  },
+  "login": {
+    "signinTitle": "Iniciar sesión",
+    "signinSubtitle": "Ingresá tu correo y te enviaremos un código.",
+    "emailPlaceholder": "tunombre@correo.com",
+    "sendCode": "Enviar código",
+    "sending": "Enviando...",
+    "sent": "Te enviamos un código a tu correo.",
+    "codeTitle": "Ingresar código",
+    "codeSubtitle": "Revisá tu correo e ingresá el código recibido.",
+    "codePlaceholder": "123456",
+    "verify": "Verificar",
+    "verifying": "Verificando...",
+    "success": "Sesión iniciada correctamente.",
+    "invalidCode": "El código no es válido o expiró.",
+    "sendError": "No pudimos enviar el código. Intentá nuevamente.",
+    "welcome": "¡Bienvenido!",
+    "youCanClose": "Ya podés cerrar esta ventana."
+  },
+  "breathing": {
+    "title": "Respiración guiada",
+    "pickOne": "Elegí una técnica para practicar ahora."
+  },
+  "breathingsel": {
+    "ariaMenu": "Técnicas de respiración",
+    "pickOne": "Elegí una técnica para practicar ahora.",
+    "phase": {
+      "inhale": "Inhalá",
+      "hold": "Mantené",
+      "exhale": "Exhalá",
+      "empty": "Vacío"
+    },
+    "techs": {
+      "diaphragmatic": "Diafragmática",
+      "478": "4-7-8",
+      "box": "Box Breathing",
+      "336": "3-3-6",
+      "countSimple": "Conteo simple",
+      "generic": "Técnica de respiración"
+    },
+    "count": {
+      "1": "Uno", "2": "Dos", "3": "Tres", "4": "Cuatro", "5": "Cinco",
+      "6": "Seis", "7": "Siete", "8": "Ocho", "9": "Nueve", "10": "Diez"
+    }
+  }
+}

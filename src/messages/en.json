@@ -1,0 +1,201 @@
+{
+  "app": {
+    "name": "RESPIRA",
+    "tagline": "Effective Response for Panic Situations and Anxiety Reduction"
+  },
+  "nav": {
+    "home": "Home",
+    "library": "Library",
+    "explore": "Explore",
+    "profile": "Profile",
+    "aria": "Bottom navigation"
+  },
+  "home": {
+    "breathe": "Breathe together",
+    "config": "Settings",
+    "play": "Play message",
+    "playFav": "Play favorite",
+    "goLibrary": "Go to Library",
+    "goLibraryTitle": "Go to Library to record your first message",
+    "playTitle": "Play {kind, select, audio {audio} video {video} other {message}}",
+    "contact": "Contact",
+    "contacts": "Contacts",
+    "callName": "Call {name}",
+    "callFallback": "Call contact"
+  },
+  "settings": {
+    "title": "Settings",
+    "planTitle": "Your plan",
+    "currentPlan": "Current plan:",
+    "premiumNote": "You're Premium: unlimited message storage. Manage your messages in",
+    "freeNote": "Free plan: 1 message allowed (audio or video). For unlimited, redeem your code in",
+    "premiumLink": "Premium",
+    "contactsTitle": "Emergency contacts",
+    "noContacts": "You have no emergency contacts saved.",
+    "addContact": "Add contact",
+    "manageContacts": "Manage contacts",
+    "contactsCount": "You have {count, plural, one {# contact.} other {# contacts.}}",
+    "favorite": "Favorite",
+    "deleteSuccess": "Message deleted.",
+    "deleteError": "Couldn't delete the message.",
+    "language": "Language",
+    "language.es": "Spanish",
+    "language.en": "English",
+    "language.de": "German"
+  },
+  "contacts": {
+    "title": "Emergency contacts",
+    "nameLabel": "Name",
+    "phoneLabel": "Phone",
+    "namePlaceholder": "e.g. Mom",
+    "phonePlaceholder": "+1 555 123 4567",
+    "add": "Add",
+    "freeNote": "Free: 1 contact max. Upgrade to Premium for more.",
+    "loading": "Loading…",
+    "loadError": "Error loading your contacts.",
+    "empty": "You don't have contacts yet. Add your first above.",
+    "freeLimit1": "Free plan: you can only save 1 contact.",
+    "requiredNamePhone": "Please fill in Name and Phone.",
+    "freeAlreadyOne": "Free plan: you already have 1 contact saved.",
+    "addError": "Couldn't add the contact.",
+    "updateError": "Couldn't update the contact.",
+    "confirmDelete": "Delete this contact?",
+    "deleteError": "Couldn't delete the contact.",
+    "onlyPremium": "Only Premium users can set a favorite.",
+    "favoriteError": "Couldn't update favorite.",
+    "missingPhone": "This contact has no phone.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "call": "Call",
+    "edit": "Edit",
+    "delete": "Delete",
+    "favorite": "Mark favorite",
+    "unfavorite": "Remove favorite",
+    "favoriteOne": "Mark favorite (single)",
+    "onlyPremiumShort": "Premium only",
+    "premiumHint": "⭐ Favorites and multiple contacts are Premium features."
+  },
+  "library": {
+    "title": "Library",
+    "savedBanner": "Message saved",
+    "recordAudio": "Record audio",
+    "recordVideo": "Record video",
+    "back": "Back",
+    "freeLimitTitle": "You already have one message saved.",
+    "freeLimitDesc": "On Free you can keep 1 (audio <em>or</em> video). To record a new one, delete the current one first.",
+    "loading": "Loading…",
+    "loadError": "Error loading your library.",
+    "empty": "You don't have any messages yet.",
+    "renamePlaceholder": "Message name",
+    "rename": "Rename",
+    "save": "Save",
+    "cancel": "Cancel",
+    "play": "Play",
+    "delete": "Delete",
+    "favorite": "Mark favorite",
+    "unfavorite": "Remove favorite",
+    "favoriteOne": "Mark favorite (single)",
+    "onlyPremiumShort": "Premium only",
+    "onlyPremium": "Only Premium users can set a favorite.",
+    "favoriteError": "Couldn't update favorite.",
+    "deleteConfirm": "Delete this message? This action is permanent.",
+    "deleteError": "Couldn't delete the message.",
+    "playError": "Couldn't play the message.",
+    "renameEmpty": "Name cannot be empty.",
+    "renameError": "Couldn't rename",
+    "kind": {
+      "audio": "Audio",
+      "video": "Video",
+      "media": "Media"
+    }
+  },
+  "explore": {
+    "title": "Explore",
+    "soon": "Coming soon: resources, articles and recommended content."
+  },
+  "common": {
+    "loading": "Loading…"
+  },
+  "profile": {
+    "title": "Profile",
+    "loggedInAs": "Signed in as",
+    "logout": "Sign out",
+    "loggingOut": "Signing out…"
+  },
+  "recorder": {
+    "customMessage": "Custom message",
+    "name": "Name",
+    "namePlaceholder": "e.g., Audio for mom",
+    "record": "Record message",
+    "stop": "Stop recording",
+    "preparing": "Preparing upload…",
+    "uploading": "Uploading audio…",
+    "processing": "Processing…",
+    "success": "✅ Upload successful",
+    "needLogin": "You need to sign in to save your message.",
+    "planLimit": "You reached your plan limit.",
+    "signUrlError": "Couldn't get a signed URL",
+    "supabaseError": "Error uploading to Supabase",
+    "freeAlreadySaved": "Free plan: you've already saved your single audio.",
+    "noSupport": "Your browser doesn't support audio recording.",
+    "offline": "You're offline. Please try again with internet.",
+    "permissionError": "Couldn’t start recording. Check microphone permissions.",
+    "freeNote": "Free plan: 1 audio allowed. Upgrade to Premium for unlimited."
+  },
+  "vrecorder": {
+    "title": "Record video",
+    "name": "Name",
+    "namePlaceholder": "e.g., Video for mom",
+    "record": "Record",
+    "stop": "Stop",
+    "permissionError": "We couldn't access camera/microphone. Check your browser permissions.",
+    "startError": "Couldn’t start recording in this browser.",
+    "uploadError": "Error uploading the video. Please try again.",
+    "freeLimitBanner": "⚠️ Free plan: you already saved one message. Delete the current one in Settings.",
+    "savedBanner": "Video saved"
+  },
+  "login": {
+    "signinTitle": "Sign in",
+    "signinSubtitle": "Enter your email and we’ll send you a code.",
+    "emailPlaceholder": "you@domain.com",
+    "sendCode": "Send code",
+    "sending": "Sending...",
+    "sent": "We sent a code to your email.",
+    "codeTitle": "Enter code",
+    "codeSubtitle": "Check your email and enter the code you received.",
+    "codePlaceholder": "123456",
+    "verify": "Verify",
+    "verifying": "Verifying...",
+    "success": "Signed in successfully.",
+    "invalidCode": "The code is invalid or expired.",
+    "sendError": "We couldn’t send the code. Please try again.",
+    "welcome": "Welcome!",
+    "youCanClose": "You can close this window now."
+  },
+  "breathing": {
+    "title": "Guided breathing",
+    "pickOne": "Choose a technique to practice now."
+  },
+  "breathingsel": {
+    "ariaMenu": "Breathing techniques",
+    "pickOne": "Choose a technique to practice now.",
+    "phase": {
+      "inhale": "Inhale",
+      "hold": "Hold",
+      "exhale": "Exhale",
+      "empty": "Empty"
+    },
+    "techs": {
+      "diaphragmatic": "Diaphragmatic",
+      "478": "4-7-8",
+      "box": "Box Breathing",
+      "336": "3-3-6",
+      "countSimple": "Simple count",
+      "generic": "Breathing technique"
+    },
+    "count": {
+      "1": "One", "2": "Two", "3": "Three", "4": "Four", "5": "Five",
+      "6": "Six", "7": "Seven", "8": "Eight", "9": "Nine", "10": "Ten"
+    }
+  }
+}

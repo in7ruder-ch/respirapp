@@ -1,0 +1,201 @@
+{
+  "app": {
+    "name": "RESPIRA",
+    "tagline": "Wirksame Antwort bei Panik und zur Angstreduktion"
+  },
+  "nav": {
+    "home": "Start",
+    "library": "Bibliothek",
+    "explore": "Entdecken",
+    "profile": "Profil",
+    "aria": "Untere Navigation"
+  },
+  "home": {
+    "breathe": "Zusammen atmen",
+    "config": "Einstellungen",
+    "play": "Nachricht abspielen",
+    "playFav": "Favorit abspielen",
+    "goLibrary": "Zur Bibliothek",
+    "goLibraryTitle": "Zur Bibliothek, um deine erste Nachricht aufzunehmen",
+    "playTitle": "{kind, select, audio {Audio} video {Video} other {Nachricht}} abspielen",
+    "contact": "Kontakt",
+    "contacts": "Kontakte",
+    "callName": "{name} anrufen",
+    "callFallback": "Kontakt anrufen"
+  },
+  "settings": {
+    "title": "Einstellungen",
+     "planTitle": "Dein Plan",
+    "currentPlan": "Aktueller Plan:",
+    "premiumNote": "Du bist Premium: unbegrenzter Nachrichtenspeicher. Verwalte deine Nachrichten in",
+    "freeNote": "Free: 1 Nachricht erlaubt (Audio oder Video). Für unbegrenzt löse deinen Code ein in",
+    "premiumLink": "Premium",
+    "contactsTitle": "Notfallkontakte",
+    "noContacts": "Du hast keine Notfallkontakte gespeichert.",
+    "addContact": "Kontakt hinzufügen",
+    "manageContacts": "Kontakte verwalten",
+    "contactsCount": "Du hast {count, plural, one {# Kontakt.} other {# Kontakte.}}",
+    "favorite": "Favorit",
+    "deleteSuccess": "Nachricht gelöscht.",
+    "deleteError": "Nachricht konnte nicht gelöscht werden.",
+    "language": "Sprache",
+    "language.es": "Spanisch",
+    "language.en": "Englisch",
+    "language.de": "Deutsch"
+  },
+  "contacts": {
+    "title": "Notfallkontakte",
+    "nameLabel": "Name",
+    "phoneLabel": "Telefon",
+    "namePlaceholder": "Z. B. Mama",
+    "phonePlaceholder": "+49 151 1234567",
+    "add": "Hinzufügen",
+    "freeNote": "Free: max. 1 Kontakt. Für mehr → Premium.",
+    "loading": "Wird geladen…",
+    "loadError": "Fehler beim Laden deiner Kontakte.",
+    "empty": "Du hast noch keine Kontakte. Füge oben deinen ersten hinzu.",
+    "freeLimit1": "Free: Du kannst nur 1 Kontakt speichern.",
+    "requiredNamePhone": "Bitte Name und Telefon ausfüllen.",
+    "freeAlreadyOne": "Free: Du hast bereits 1 Kontakt gespeichert.",
+    "addError": "Kontakt konnte nicht hinzugefügt werden.",
+    "updateError": "Kontakt konnte nicht aktualisiert werden.",
+    "confirmDelete": "Diesen Kontakt löschen?",
+    "deleteError": "Kontakt konnte nicht gelöscht werden.",
+    "onlyPremium": "Nur Premium-Nutzer können Favoriten setzen.",
+    "favoriteError": "Favorit konnte nicht aktualisiert werden.",
+    "missingPhone": "Dieser Kontakt hat keine Telefonnummer.",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "call": "Anrufen",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "favorite": "Als Favorit markieren",
+    "unfavorite": "Favorit entfernen",
+    "favoriteOne": "Als Favorit markieren (einzig)",
+    "onlyPremiumShort": "Nur Premium",
+    "premiumHint": "⭐ Favoriten und mehrere Kontakte sind Premium-Funktionen."
+  },
+  "library": {
+    "title": "Bibliothek",
+    "savedBanner": "Nachricht gespeichert",
+    "recordAudio": "Audio aufnehmen",
+    "recordVideo": "Video aufnehmen",
+    "back": "Zurück",
+    "freeLimitTitle": "Du hast bereits eine Nachricht gespeichert.",
+    "freeLimitDesc": "Im Free-Plan kannst du 1 (Audio <em>oder</em> Video) behalten. Um eine neue aufzunehmen, lösche zuerst die aktuelle.",
+    "loading": "Wird geladen…",
+    "loadError": "Fehler beim Laden deiner Bibliothek.",
+    "empty": "Du hast noch keine Nachrichten.",
+    "renamePlaceholder": "Nachrichtenname",
+    "rename": "Umbenennen",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "play": "Abspielen",
+    "delete": "Löschen",
+    "favorite": "Als Favorit markieren",
+    "unfavorite": "Favorit entfernen",
+    "favoriteOne": "Als Favorit markieren (einzig)",
+    "onlyPremiumShort": "Nur Premium",
+    "onlyPremium": "Nur Premium-Nutzer können Favoriten setzen.",
+    "favoriteError": "Favorit konnte nicht aktualisiert werden.",
+    "deleteConfirm": "Diese Nachricht löschen? Dieser Vorgang ist endgültig.",
+    "deleteError": "Nachricht konnte nicht gelöscht werden.",
+    "playError": "Nachricht konnte nicht abgespielt werden.",
+    "renameEmpty": "Der Name darf nicht leer sein.",
+    "renameError": "Konnte nicht umbenennen",
+    "kind": {
+      "audio": "Audio",
+      "video": "Video",
+      "media": "Media"
+    }
+  },
+  "explore": {
+    "title": "Entdecken",
+    "soon": "Bald verfügbar: Ressourcen, Artikel und empfohlene Inhalte."
+  },
+  "common": {
+    "loading": "Wird geladen…"
+  },
+  "profile": {
+    "title": "Profil",
+    "loggedInAs": "Angemeldet als",
+    "logout": "Abmelden",
+    "loggingOut": "Wird abgemeldet…"
+  },
+  "recorder": {
+    "customMessage": "Personalisierte Nachricht",
+    "name": "Name",
+    "namePlaceholder": "Z. B. Audio für Mama",
+    "record": "Nachricht aufnehmen",
+    "stop": "Aufnahme stoppen",
+    "preparing": "Upload wird vorbereitet…",
+    "uploading": "Audio wird hochgeladen…",
+    "processing": "Wird verarbeitet…",
+    "success": "✅ Upload erfolgreich",
+    "needLogin": "Zum Speichern musst du dich anmelden.",
+    "planLimit": "Du hast dein Planlimit erreicht.",
+    "signUrlError": "Signierte URL konnte nicht abgerufen werden",
+    "supabaseError": "Fehler beim Upload zu Supabase",
+    "freeAlreadySaved": "Free: Du hast bereits dein einziges Audio gespeichert.",
+    "noSupport": "Dein Browser unterstützt keine Audioaufnahme.",
+    "offline": "Du bist offline. Bitte versuche es mit Internet erneut.",
+    "permissionError": "Aufnahme konnte nicht gestartet werden. Mikrofonrechte prüfen.",
+    "freeNote": "Free: 1 Audio erlaubt. Für unbegrenzt → Premium."
+  },
+  "vrecorder": {
+    "title": "Video aufnehmen",
+    "name": "Name",
+    "namePlaceholder": "Z. B. Video für Mama",
+    "record": "Aufnehmen",
+    "stop": "Stoppen",
+    "permissionError": "Zugriff auf Kamera/Mikrofon nicht möglich. Bitte Browserrechte prüfen.",
+    "startError": "Aufnahme konnte in diesem Browser nicht gestartet werden.",
+    "uploadError": "Fehler beim Hochladen des Videos. Bitte erneut versuchen.",
+    "freeLimitBanner": "⚠️ Free: Du hast bereits eine Nachricht gespeichert. Lösche die aktuelle in den Einstellungen.",
+    "savedBanner": "Video gespeichert"
+  },
+  "login": {
+    "signinTitle": "Anmelden",
+    "signinSubtitle": "Gib deine E-Mail ein und wir senden dir einen Code.",
+    "emailPlaceholder": "du@domain.de",
+    "sendCode": "Code senden",
+    "sending": "Wird gesendet...",
+    "sent": "Wir haben dir einen Code per E-Mail gesendet.",
+    "codeTitle": "Code eingeben",
+    "codeSubtitle": "Prüfe deine E-Mail und gib den erhaltenen Code ein.",
+    "codePlaceholder": "123456",
+    "verify": "Bestätigen",
+    "verifying": "Wird überprüft...",
+    "success": "Erfolgreich angemeldet.",
+    "invalidCode": "Der Code ist ungültig oder abgelaufen.",
+    "sendError": "Code konnte nicht gesendet werden. Bitte erneut versuchen.",
+    "welcome": "Willkommen!",
+    "youCanClose": "Du kannst dieses Fenster jetzt schließen."
+  },
+  "breathing": {
+    "title": "Geführte Atmung",
+    "pickOne": "Wähle eine Technik zum Üben."
+  },
+  "breathingsel": {
+    "ariaMenu": "Atemtechniken",
+    "pickOne": "Wähle eine Technik zum Üben.",
+    "phase": {
+      "inhale": "Einatmen",
+      "hold": "Anhalten",
+      "exhale": "Ausatmen",
+      "empty": "Leerlauf"
+    },
+    "techs": {
+      "diaphragmatic": "Zwerchfellatmung",
+      "478": "4-7-8",
+      "box": "Box Breathing",
+      "336": "3-3-6",
+      "countSimple": "Einfaches Zählen",
+      "generic": "Atemtechnik"
+    },
+    "count": {
+      "1": "Eins", "2": "Zwei", "3": "Drei", "4": "Vier", "5": "Fünf",
+      "6": "Sechs", "7": "Sieben", "8": "Acht", "9": "Neun", "10": "Zehn"
+    }
+  }
+}
