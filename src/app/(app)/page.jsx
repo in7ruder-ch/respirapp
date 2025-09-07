@@ -25,7 +25,7 @@ const fetcher = (u) => fetch(u, { cache: 'no-store' }).then(r => r.json());
 export default function Page() {
   const router = useRouter();
   const { playByItem } = usePlayer();
-
+  //
   // Fallback local (no se usa para el click, pero lo mantenemos por compat)
   const localContactRef = useRef(loadContact() || null);
 
