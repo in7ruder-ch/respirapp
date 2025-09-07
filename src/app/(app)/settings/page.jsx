@@ -12,11 +12,15 @@ import BottomNav from '@/components/BottomNav';
 import { apiFetch } from '@lib/apiFetch';
 import { debounce } from '@lib/debounce';
 import { supabase } from '@lib/supabaseClient';
+import { useTranslations } from 'next-intl';
 
 const fetcher = (u) => fetch(u, { cache: 'no-store' }).then(r => r.json());
 
 export default function SettingsPage() {
   const router = useRouter();
+  const t = useTranslations('settings');
+  const tNav = useTranslations('nav');
+
   const [msg, setMsg] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -90,10 +94,10 @@ export default function SettingsPage() {
     setIsDeleting(true);
     try {
       await apiFetch('/api/media/delete', { method: 'POST', body: { kind: 'any' } });
-      setMsg('Mensaje eliminado.');
+      setMsg(t('deleteSuccess'));
       await mutateMedia();
     } catch (e) {
-      setMsg(e.message || 'No se pudo borrar el mensaje.');
+      setMsg(e.message || t('deleteError'));
     } finally {
       setIsDeleting(false);
     }
@@ -105,46 +109,50 @@ export default function SettingsPage() {
     <div className="App has-bottom-nav">
       <header className="App-header">
         <div className="panel settings-panel">
-          <h2>⚙️ Configuración</h2>
+          <h2>⚙️ {t('title')}</h2>
 
           {/* Plan actual */}
           <section className="settings-section">
-            <h3>Tu plan</h3>
+            <h3>{t('planTitle')}</h3>
             <p>
-              Plan actual: <strong>{tier.toUpperCase()}</strong>
+              {t('currentPlan')} <strong>{tier.toUpperCase()}</strong>
             </p>
             {isPremium ? (
               <p className="muted">
-                Sos Premium: almacenamiento de mensajes <strong>ilimitado</strong>. Gestioná tus mensajes en{' '}
-                <a className="underline" href="/library">Biblioteca</a>.
+                {t('premiumNote')}{' '}
+                <a className="underline" href="/library">{tNav('library')}</a>.
               </p>
             ) : (
               <p className="muted">
-                Plan Free: <strong>1 mensaje</strong> permitido (audio <em>o</em> video). Para ilimitados, canjeá tu código en{' '}
-                <a className="underline" href="/premium">Premium</a>.
+                {t('freeNote')}{' '}
+                <a className="underline" href="/premium">{t('premiumLink')}</a>.
               </p>
             )}
           </section>
 
           {/* Contactos */}
           <section className="settings-section">
-            <h3>Contactos de emergencia</h3>
+            <h3>{t('contactsTitle')}</h3>
             {contactsCount === 0 ? (
               <>
-                <p className="muted">No tenés contactos de emergencia guardados.</p>
+                <p className="muted">{t('noContacts')}</p>
                 <button className="primary" onClick={() => router.push('/contacts')}>
-                  ➕ Agregar contacto
+                  ➕ {t('addContact')}
                 </button>
               </>
             ) : (
               <>
                 <p>
-                  Tenés <strong>{contactsCount}</strong> contacto{contactsCount > 1 ? 's' : ''}.
-                  {fav ? <> Favorito: <strong>{fav.name}</strong>.</> : null}
+                  {t('contactsCount', { count: contactsCount })}{' '}
+                  {fav ? (
+                    <>
+                      {t('favorite')}: <strong>{fav.name}</strong>.
+                    </>
+                  ) : null}
                 </p>
                 <div className="settings-actions">
                   <button className="primary" onClick={() => router.push('/contacts')}>
-                    Gestionar contactos
+                    {t('manageContacts')}
                   </button>
                 </div>
               </>

@@ -10,6 +10,26 @@
     "profile": "Profil",
     "aria": "Untere Navigation"
   },
+   "premium": {
+    "title": "Premium",
+    "loadingPlan": "Tarif wird geladen…",
+    "loadError": "Fehler beim Laden des Tarifs.",
+    "currentPlan": "Dein aktueller Tarif: <strong>{tier}</strong>",
+    "freeHint": "Im Free-Tarif kannst du 1 Nachricht behalten. Mit Premium unbegrenzt.",
+    "premiumHint": "Du bist Premium: unbegrenzter Speicher.",
+    "haveCode": "Hast du einen Code?",
+    "placeholder": "Z. B.: VIP-2025-XX",
+    "redeem": "Einlösen",
+    "redeeming": "Einlösen…",
+    "okRedirect": "Fertig! Weiterleitung…",
+    "err": {
+      "unauth": "Zum Einlösen anmelden.",
+      "invalid": "Ungültiger Code.",
+      "expired": "Der Code ist abgelaufen.",
+      "maxed": "Der Code wurde bereits maximal verwendet.",
+      "generic": "Einlösen fehlgeschlagen."
+    }
+  },
   "home": {
     "breathe": "Zusammen atmen",
     "config": "Einstellungen",
@@ -39,9 +59,11 @@
     "deleteSuccess": "Nachricht gelöscht.",
     "deleteError": "Nachricht konnte nicht gelöscht werden.",
     "language": "Sprache",
-    "language.es": "Spanisch",
-    "language.en": "Englisch",
-    "language.de": "Deutsch"
+    "languages": {
+      "es": "Spanisch",
+      "en": "Englisch",
+      "de": "Deutsch"
+    }
   },
   "contacts": {
     "title": "Notfallkontakte",
@@ -114,7 +136,8 @@
     "soon": "Bald verfügbar: Ressourcen, Artikel und empfohlene Inhalte."
   },
   "common": {
-    "loading": "Wird geladen…"
+    "loading": "Wird geladen…",
+    "back": "Zurück"
   },
   "profile": {
     "title": "Profil",

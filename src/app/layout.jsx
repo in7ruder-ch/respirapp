@@ -4,41 +4,48 @@ import RegisterSW from '@/components/RegisterSW';
 import { PlayerProvider } from '@/components/player/PlayerProvider';
 import GlobalPlayer from '@/components/player/GlobalPlayer';
 
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
+
 export const metadata = {
   title: 'RESPIRApp',
   description: 'Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad',
-  themeColor: '#2563eb',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon.ico',
     apple: '/icons/icon-192.png',
   },
-  // Opcional pero recomendable para PWA en iOS
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default', // 'black' | 'black-translucent' | 'default'
+    statusBarStyle: 'default',
   },
 };
 
-// ✅ Viewport mobile-first + safe areas (iOS)
+// ✅ Viewport mobile-first + safe areas (iOS) + themeColor aquí
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,  // 🔒 no permite zoom
-  userScalable: 'no', // 🔒 opcional, algunos navegadores lo piden
+  maximumScale: 1,
+  userScalable: 'no',
   viewportFit: 'cover',
+  themeColor: '#2563eb',
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="es">
+    <html lang={locale}>
       <body>
-        <PlayerProvider>
-          {children}
-          <RegisterSW />
-          <GlobalPlayer />
-        </PlayerProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <PlayerProvider>
+            {children}
+            <RegisterSW />
+            <GlobalPlayer />
+          </PlayerProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

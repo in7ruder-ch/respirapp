@@ -10,6 +10,26 @@
     "profile": "Perfil",
     "aria": "Navegación inferior"
   },
+  "premium": {
+    "title": "Premium",
+    "loadingPlan": "Cargando plan…",
+    "loadError": "Error al cargar el plan.",
+    "currentPlan": "Tu plan actual: <strong>{tier}</strong>",
+    "freeHint": "Con Free podés guardar 1 mensaje. Con Premium, ilimitados.",
+    "premiumHint": "Sos Premium: almacenamiento ilimitado.",
+    "haveCode": "¿Tenés un código?",
+    "placeholder": "Ej: VIP-2025-XX",
+    "redeem": "Canjear",
+    "redeeming": "Canjeando…",
+    "okRedirect": "¡Listo! Redirigiendo…",
+    "err": {
+      "unauth": "Iniciá sesión para canjear.",
+      "invalid": "Código inválido.",
+      "expired": "El código está vencido.",
+      "maxed": "El código alcanzó el máximo de usos.",
+      "generic": "No se pudo canjear."
+    }
+  },
   "home": {
     "breathe": "Respirar juntos",
     "config": "Configuración",
@@ -25,7 +45,7 @@
   },
   "settings": {
     "title": "Configuración",
-     "planTitle": "Tu plan",
+    "planTitle": "Tu plan",
     "currentPlan": "Plan actual:",
     "premiumNote": "Sos Premium: almacenamiento de mensajes ilimitado. Gestioná tus mensajes en",
     "freeNote": "Plan Free: 1 mensaje permitido (audio o video). Para ilimitados, canjeá tu código en",
@@ -39,9 +59,11 @@
     "deleteSuccess": "Mensaje eliminado.",
     "deleteError": "No se pudo borrar el mensaje.",
     "language": "Idioma",
-    "language.es": "Español",
-    "language.en": "Inglés",
-    "language.de": "Alemán"
+    "languages": {
+      "es": "Español",
+      "en": "Inglés",
+      "de": "Alemán"
+    }
   },
   "contacts": {
     "title": "Contactos de emergencia",
@@ -113,8 +135,9 @@
     "title": "Explorar",
     "soon": "Próximamente: recursos, artículos y contenido recomendado."
   },
-   "common": {
-    "loading": "Cargando…"
+  "common": {
+    "loading": "Cargando…",
+    "back": "Volver"
   },
   "profile": {
     "title": "Perfil",
@@ -194,8 +217,16 @@
       "generic": "Técnica de respiración"
     },
     "count": {
-      "1": "Uno", "2": "Dos", "3": "Tres", "4": "Cuatro", "5": "Cinco",
-      "6": "Seis", "7": "Siete", "8": "Ocho", "9": "Nueve", "10": "Diez"
+      "1": "Uno",
+      "2": "Dos",
+      "3": "Tres",
+      "4": "Cuatro",
+      "5": "Cinco",
+      "6": "Seis",
+      "7": "Siete",
+      "8": "Ocho",
+      "9": "Nueve",
+      "10": "Diez"
     }
   }
 }

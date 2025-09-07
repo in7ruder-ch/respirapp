@@ -1,3 +1,4 @@
+// src/app/profile/page.jsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -8,11 +9,16 @@ import '@/styles/BottomNav.css';
 import BottomNav from '@/components/BottomNav';
 import LoginOTP from '@/components/LoginOTP';
 import { supabase } from '@lib/supabaseClient';
+import { useTranslations } from 'next-intl';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
+
+  const t = useTranslations('profile');
+  const tc = useTranslations('common'); // ← mover hook fuera del JSX
 
   useEffect(() => {
     (async () => {
@@ -48,14 +54,15 @@ export default function ProfilePage() {
     <div className="App has-bottom-nav">
       <header className="App-header">
         <div className="tab-page">
-          <h2>👤 Perfil</h2>
+          <h2>👤 {t('title')}</h2>
+          <LanguageSwitcher />
 
           {loading ? (
-            <p className="muted">Cargando…</p>
+            <p className="muted">{tc('loading')}</p>
           ) : user ? (
             <>
               <p className="muted">
-                Sesión iniciada como <strong>{user.email}</strong>
+                {t('loggedInAs')} <strong>{user.email}</strong>
               </p>
               <div>
                 <button
@@ -63,7 +70,7 @@ export default function ProfilePage() {
                   onClick={handleLogout}
                   disabled={loggingOut}
                 >
-                  {loggingOut ? 'Cerrando…' : 'Cerrar sesión'}
+                  {loggingOut ? t('loggingOut') : t('logout')}
                 </button>
               </div>
             </>

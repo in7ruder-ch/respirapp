@@ -1,27 +1,41 @@
 // src/app/(app)/layout.jsx
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import BottomNav from "@/components/BottomNav";
-import "@/styles/AppShell.css";
+import {redirect} from 'next/navigation';
+import {createServerComponentClient} from '@supabase/auth-helpers-nextjs';
+import {cookies} from 'next/headers';
 
-export const dynamic = "force-dynamic"; // evita cachear sesión
+import '@/styles/App.css';
+import '@/styles/BottomNav.css';
 
-export default async function AppLayout({ children }) {
-  const supabase = createServerComponentClient({ cookies });
+import BottomNav from '@/components/BottomNav';
+
+export default async function AppLayout({children}) {
+  // Next 15: cookies() await + pasar como función
+  const cookieStore = await cookies();
+  const supabase = createServerComponentClient({
+    cookies: () => cookieStore
+  });
+
   const {
-    data: { session },
+    data: {session}
   } = await supabase.auth.getSession();
 
   if (!session) {
-    redirect("/profile"); // página pública de login
+    redirect('/profile');
   }
 
-  // Layout del segmento protegido
+  // Ítems serializables (sin handlers). Si luego usamos i18n, acá
+  // reemplazamos href/label con withLocale() y traducciones.
+  const navItems = [
+    { id: 'home',    label: 'Inicio',     emoji: '🏠', href: '/' },
+    { id: 'library', label: 'Biblioteca', emoji: '📚', href: '/library' },
+    { id: 'p1',      label: 'Explorar',   emoji: '🧭', href: '/explore' },
+    { id: 'p2',      label: 'Perfil',     emoji: '👤', href: '/profile' },
+  ];
+
   return (
-    <div className="app-shell">
+    <div className="App has-bottom-nav">
       <main className="page">{children}</main>
-      <BottomNav />
+      <BottomNav items={navItems} />
     </div>
   );
 }

@@ -3,8 +3,12 @@
 
 import React, { useEffect, useState } from 'react';
 import '@/styles/Breathing.css';
+import { useTranslations } from 'next-intl';
 
 export default function Breathing({ phases = [], onBack }) {
+  const tB = useTranslations('breathing');
+  const tCommon = useTranslations('common');
+
   // Duración inicial (en segundos) desde la primera fase si existe
   const initialSeconds = phases?.[0]?.duration ? Math.round(phases[0].duration / 1000) : 0;
 
@@ -43,10 +47,10 @@ export default function Breathing({ phases = [], onBack }) {
   if (!Array.isArray(phases) || phases.length === 0) {
     return (
       <div className="breathing-container">
-        <p className="instruction">No hay fases de respiración configuradas.</p>
+        <p className="instruction">{tB('noPhases')}</p>
         {onBack && (
           <span className="back-link" onClick={onBack}>
-            ← Volver
+            ← {tCommon('back')}
           </span>
         )}
       </div>
@@ -63,6 +67,10 @@ export default function Breathing({ phases = [], onBack }) {
         style={{
           backgroundColor: color,
           animationDuration: `${duration}ms`,
+          // 👉 Evita que el flex la deforme: siempre círculo perfecto
+          aspectRatio: '1 / 1',
+          borderRadius: '50%',
+          overflow: 'hidden',
         }}
       >
         <span className="countdown">{timeLeft}</span>
@@ -74,7 +82,7 @@ export default function Breathing({ phases = [], onBack }) {
 
       {onBack && (
         <span className="back-link" onClick={onBack}>
-          ← Volver
+          ← {tCommon('back')}
         </span>
       )}
     </div>

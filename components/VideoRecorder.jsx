@@ -3,18 +3,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { apiFetch } from '@lib/apiFetch';
 import '@/styles/VideoRecorder.css';
+import { useTranslations } from 'next-intl';
 
-function defaultTitle(kind = 'video') {
+function isoLocalNow() {
   const d = new Date();
-  const isoLocal = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
     .toISOString()
     .slice(0, 19)
     .replace('T', ' ');
-  const prefix = kind === 'video' ? 'Video' : kind === 'audio' ? 'Audio' : 'Media';
-  return `${prefix} ${isoLocal}`;
 }
 
 export default function VideoRecorder({ hideTitle = false, onVideoReady }) {
+  const t = useTranslations('vrecorder');
+  const tLib = useTranslations('library');
+
   const videoRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
@@ -27,8 +29,8 @@ export default function VideoRecorder({ hideTitle = false, onVideoReady }) {
   const timerRef = useRef(null);
   const [banner, setBanner] = useState('');
 
-  // Nombre visible del video
-  const [title, setTitle] = useState(() => defaultTitle('video'));
+  // Nombre visible (prefijo localizado)
+  const [title, setTitle] = useState(() => `${tLib('kind.video')} ${isoLocalNow()}`);
 
   useEffect(() => {
     (async () => {
@@ -43,7 +45,7 @@ export default function VideoRecorder({ hideTitle = false, onVideoReady }) {
           await videoRef.current.play().catch(() => {});
         }
       } catch (e) {
-        setPermissionError('No pudimos acceder a cámara/micrófono. Revisá permisos del navegador.');
+        setPermissionError(t('permissionError'));
       }
     })();
 
@@ -77,7 +79,7 @@ export default function VideoRecorder({ hideTitle = false, onVideoReady }) {
       setElapsed(0);
       timerRef.current = setInterval(() => setElapsed((s) => s + 1), 1000);
     } catch {
-      setPermissionError('No se pudo iniciar la grabación en este navegador.');
+      setPermissionError(t('startError'));
     }
   }
 
@@ -115,20 +117,20 @@ export default function VideoRecorder({ hideTitle = false, onVideoReady }) {
         headers: { 'content-type': contentType },
         body: blob,
       });
-      if (!putRes.ok) throw new Error('No se pudo subir el video.');
+      if (!putRes.ok) throw new Error('UPLOAD_ERROR');
 
-      setBanner('✅ Video guardado');
+      setBanner(t('saved'));
       setTimeout(() => setBanner(''), 1800);
       onVideoReady?.({ ok: true });
 
       // Sugerir un nombre nuevo para la próxima grabación
-      setTitle(defaultTitle('video'));
+      setTitle(`${tLib('kind.video')} ${isoLocalNow()}`);
     } catch (e) {
       const msg = String(e?.message || '');
       if (msg.includes('LIMIT_REACHED')) {
-        setBanner('⚠️ Plan Free: ya tenés un mensaje guardado. Borrá el actual en Config.');
+        setBanner(t('limitFree'));
       } else {
-        setBanner('⚠️ Error al subir el video. Intentá nuevamente.');
+        setBanner(t('uploadError'));
       }
     } finally {
       setIsUploading(false);
@@ -145,16 +147,16 @@ export default function VideoRecorder({ hideTitle = false, onVideoReady }) {
 
   return (
     <div className="vr-wrap">
-      {!hideTitle && <h3 className="vr-title">Grabar video</h3>}
+      {!hideTitle && <h3 className="vr-title">{t('recordVideo')}</h3>}
 
       <label className="vr-field">
-        <span className="vr-label">Nombre</span>
+        <span className="vr-label">{t('name')}</span>
         <input
           className="vr-input"
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Ej: Video para mamá"
+          placeholder={t('namePlaceholder')}
           maxLength={120}
         />
       </label>
@@ -178,7 +180,7 @@ export default function VideoRecorder({ hideTitle = false, onVideoReady }) {
               onClick={startRecording}
               disabled={!!permissionError || isUploading}
             >
-              ⏺️ Grabar
+              ⏺️ {t('record')}
             </button>
           ) : (
             <button
@@ -186,11 +188,11 @@ export default function VideoRecorder({ hideTitle = false, onVideoReady }) {
               onClick={stopRecording}
               disabled={isUploading}
             >
-              ⏹️ Detener
+              ⏹️ {t('stop')}
             </button>
           )}
 
-          <span className="vr-timer" aria-live="polite">
+          <span className="vr-timer">
             {isRecording ? `${mm}:${ss}` : '00:00'}
           </span>
         </div>
