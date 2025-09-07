@@ -10,6 +10,26 @@
     "profile": "Profile",
     "aria": "Bottom navigation"
   },
+  "premium": {
+    "title": "Premium",
+    "loadingPlan": "Loading plan…",
+    "loadError": "Error loading plan.",
+    "currentPlan": "Your current plan: <strong>{tier}</strong>",
+    "freeHint": "On Free you can keep 1 message. On Premium, unlimited.",
+    "premiumHint": "You're Premium: unlimited storage.",
+    "haveCode": "Got a code?",
+    "placeholder": "Ex: VIP-2025-XX",
+    "redeem": "Redeem",
+    "redeeming": "Redeeming…",
+    "okRedirect": "Done! Redirecting…",
+    "err": {
+      "unauth": "Sign in to redeem.",
+      "invalid": "Invalid code.",
+      "expired": "The code has expired.",
+      "maxed": "The code has reached its maximum uses.",
+      "generic": "Could not redeem."
+    }
+  },
   "home": {
     "breathe": "Breathe together",
     "config": "Settings",
@@ -116,7 +136,8 @@
     "soon": "Coming soon: resources, articles and recommended content."
   },
   "common": {
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "back": "Back"
   },
   "profile": {
     "title": "Profile",

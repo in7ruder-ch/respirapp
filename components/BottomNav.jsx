@@ -1,47 +1,38 @@
 'use client';
 
-import React, { useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import {usePathname} from 'next/navigation';
+import {useTranslations} from 'next-intl';
 import '@/styles/BottomNav.css';
 
-const NAV_ITEMS = [
-  { id: 'home',    label: 'Inicio',     emoji: '🏠', href: '/' },
-  { id: 'library', label: 'Biblioteca', emoji: '📚', href: '/library' },
-  { id: 'p1',      label: 'Explorar',   emoji: '🧭', href: '/explore' },
-  { id: 'p2',      label: 'Perfil',     emoji: '👤', href: '/profile' },
-];
-
-export default function BottomNav({ items }) {
+export default function BottomNav() {
   const pathname = usePathname();
-  const router   = useRouter();
-  const navItems = items?.length ? items : NAV_ITEMS;
+  const t = useTranslations('nav');
 
-  useEffect(() => {
-    // Prefetch preventivo (Link ya prefetch-ea en viewport, esto es extra)
-    try {
-      navItems.forEach(i => router.prefetch?.(i.href));
-    } catch {}
-  }, [router, navItems]);
-
-  const isActive = (href) => {
-    if (href === '/') return pathname === '/' || pathname === '/(app)' || pathname === '/(app)/';
-    return pathname === href || pathname.startsWith(`${href}/`) || pathname.startsWith(`/(app)${href}`);
-  };
+  const items = [
+    { href: '/', key: 'home', icon: '🏠' },
+    { href: '/library', key: 'library', icon: '🎧' },
+    { href: '/explore', key: 'explore', icon: '🧭' },
+    { href: '/profile', key: 'profile', icon: '👤' },
+  ];
 
   return (
-    <nav className="bottom-nav" role="navigation" aria-label="Navegación inferior">
-      {navItems.map(({ id, label, emoji, href }) => {
-        const active = isActive(href);
+    <nav className="bottom-nav" aria-label="Bottom navigation">
+      {items.map(({ href, key, icon }) => {
+        const active = pathname === href || (href !== '/' && pathname?.startsWith(href));
+        const label = t(key);
+
         return (
           <Link
-            key={id}
+            key={href}
             href={href}
             className={`bn-item ${active ? 'is-active' : ''}`}
-            aria-label={label}
             aria-current={active ? 'page' : undefined}
+            aria-label={label}
+            title={label}
+            prefetch={false}
           >
-            <span className="bn-icon" aria-hidden="true">{emoji}</span>
+            <span className="bn-icon" aria-hidden="true">{icon}</span>
             <span className="bn-label">{label}</span>
           </Link>
         );

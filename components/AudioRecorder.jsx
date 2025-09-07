@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import '@/styles/AudioRecorder.css';
 import { apiFetch } from '@lib/apiFetch';
+import { useTranslations } from 'next-intl';
 
 function pickSupportedMime() {
   const candidates = [
@@ -25,15 +26,13 @@ function pickSupportedMime() {
   return null;
 }
 
-// Default legible para el nombre visible
-function defaultTitle(kind = 'audio') {
+// ISO local "YYYY-MM-DD HH:mm:ss"
+function isoLocalNow() {
   const d = new Date();
-  const isoLocal = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
     .toISOString()
     .slice(0, 19)
     .replace('T', ' ');
-  const prefix = kind === 'audio' ? 'Audio' : kind === 'video' ? 'Video' : 'Media';
-  return `${prefix} ${isoLocal}`;
 }
 
 export default function AudioRecorder({
@@ -42,13 +41,16 @@ export default function AudioRecorder({
   locked = false,    // si true, bloquear grabación (servidor dice que ya hay audio) — aplica a Free
   isPremium = false, // 👈 para UX de límite
 }) {
+  const t = useTranslations('recorder');
+  const tLib = useTranslations('library');
+
   const [isRecording, setIsRecording] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
   const [disabled, setDisabled] = useState(locked);
 
-  // 👇 Nuevo: nombre visible del mensaje
-  const [title, setTitle] = useState(() => defaultTitle('audio'));
+  // Nombre visible por defecto (localizado)
+  const [title, setTitle] = useState(() => `${tLib('kind.audio')} ${isoLocalNow()}`);
 
   const mediaRef = useRef(null);
   const chunksRef = useRef([]);
@@ -60,7 +62,7 @@ export default function AudioRecorder({
 
   async function uploadToSupabase(blob) {
     setError('');
-    setStatus('Preparando subida…');
+    setStatus(t('preparing'));
 
     let signedUrl;
     try {
@@ -71,30 +73,29 @@ export default function AudioRecorder({
           contentType: blob.type || 'audio/webm',
           duration: null,
           size: blob.size ?? null,
-          title: (title || '').trim(), // 👈 enviar título elegido
+          title: (title || '').trim(),
         },
       });
       signedUrl = res?.signedUrl;
-      if (!signedUrl) throw new Error('No se pudo obtener la URL firmada');
+      if (!signedUrl) throw new Error(t('signUrlError'));
     } catch (e) {
       if (e.status === 401) {
-        setError('Necesitás iniciar sesión para guardar tu mensaje.');
+        setError(t('needLogin'));
         setStatus('');
         return false;
       }
       if (e.status === 403) {
-        // Límite (solo debería ocurrir en Free). Si llegara a pasar en Premium, mostramos el mensaje del backend.
-        setError(e.message || 'Alcanzaste tu límite de plan.');
+        setError(e.message || t('planLimit'));
         if (!isPremium) setDisabled(true);
         setStatus('');
         return false;
       }
-      setError(e.message || 'No se pudo obtener la URL firmada');
+      setError(e.message || t('signUrlError'));
       setStatus('');
       return false;
     }
 
-    setStatus('Subiendo audio…');
+    setStatus(t('uploading'));
 
     const put = await fetch(signedUrl, {
       method: 'PUT',
@@ -105,11 +106,11 @@ export default function AudioRecorder({
       body: blob,
     });
 
-    if (!put.ok) throw new Error('Error subiendo a Supabase');
+    if (!put.ok) throw new Error(t('supabaseError'));
 
     // ✅ Bloqueamos solo a Free; Premium puede seguir grabando otras veces
     setDisabled(!isPremium);
-    setStatus('✅ Subida exitosa');
+    setStatus(t('success'));
     return true;
   }
 
@@ -117,9 +118,8 @@ export default function AudioRecorder({
     setError('');
     if (disabled) {
       if (!isPremium) {
-        setError('Plan Free: ya guardaste tu único audio.');
+        setError(t('freeAlreadySaved'));
       } else {
-        // Para Premium, no deberíamos estar disabled; por si acaso lo ignoramos
         setDisabled(false);
       }
       return;
@@ -127,7 +127,7 @@ export default function AudioRecorder({
 
     const mimeType = pickSupportedMime();
     if (!mimeType) {
-      setError('Tu navegador no soporta grabación de audio.');
+      setError(t('noSupport'));
       return;
     }
 
@@ -145,26 +145,26 @@ export default function AudioRecorder({
 
       mr.onstart = () => {
         setIsRecording(true);
-        setStatus('Grabando…');
+        setStatus(t('record')); // usar la key como estado corto "Grabando…"/"Record"
       };
 
       mr.onstop = async () => {
         setIsRecording(false);
-        setStatus('Procesando…');
+        setStatus(t('processing'));
 
         const blob = new Blob(chunksRef.current, { type: mimeType });
         chunksRef.current = [];
 
         if (!navigator.onLine) {
-          setError('Estás sin conexión. Intenta nuevamente con internet.');
+          setError(t('offline'));
           setStatus('');
         } else {
           try {
             const ok = await uploadToSupabase(blob);
             if (ok) {
               try { onAudioReady && onAudioReady(blob); } catch {}
-              // Re-sugerir un nombre nuevo para la próxima grabación
-              setTitle(defaultTitle('audio'));
+              // Sugerir un nombre nuevo para la próxima grabación
+              setTitle(`${tLib('kind.audio')} ${isoLocalNow()}`);
             }
           } catch (err) {
             setError(err.message || String(err));
@@ -178,7 +178,7 @@ export default function AudioRecorder({
       mr.start();
     } catch (err) {
       console.error(err);
-      setError('No se pudo iniciar la grabación. Revisa permisos del micrófono.');
+      setError(t('permissionError'));
     }
   }
 
@@ -188,16 +188,16 @@ export default function AudioRecorder({
 
   return (
     <div className="audio-recorder">
-      {!hideTitle && <h3>Mensaje personalizado</h3>}
+      {!hideTitle && <h3>{t('customMessage')}</h3>}
 
-      {/* 👇 Campo para elegir nombre visible */}
+      {/* Campo para elegir nombre visible */}
       <label style={{ display: 'block', marginBottom: 8 }}>
-        <span style={{ display: 'block', marginBottom: 4 }}>Nombre</span>
+        <span style={{ display: 'block', marginBottom: 4 }}>{t('name')}</span>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Ej: Audio para mamá"
+          placeholder={t('namePlaceholder')}
           maxLength={120}
           style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #ccc' }}
         />
@@ -213,18 +213,18 @@ export default function AudioRecorder({
           disabled={disabled}
           aria-disabled={disabled}
         >
-          🎤 Grabar mensaje
+          🎤 {t('record')}
         </button>
       ) : (
         <button className="audio-button" onClick={stopRecording}>
-          ⏹️ Detener grabación
+          ⏹️ {t('stop')}
         </button>
       )}
 
       {/* Nota de límite SOLO para Free */}
       {!isPremium && (
         <small style={{ display: 'block', marginTop: 8, opacity: 0.8 }}>
-          Plan Free: 1 audio permitido. Para ilimitados, pasá a Premium.
+          {t('freeNote')}
         </small>
       )}
     </div>

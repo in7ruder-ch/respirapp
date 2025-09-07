@@ -9,6 +9,7 @@ import '@/styles/Library.css';
 import { usePlayer } from '@/components/player/PlayerProvider';
 import AudioRecorder from '@/components/AudioRecorder';
 import VideoRecorder from '@/components/VideoRecorder';
+import { useTranslations } from 'next-intl';
 
 async function safeParseResponse(res) {
   const txt = await res.text();
@@ -28,6 +29,8 @@ const fetcher = async (u) => {
 };
 
 export default function LibraryPage() {
+  const t = useTranslations('library');
+
   const [busyId, setBusyId] = useState(null);
   const { playByItem } = usePlayer();
 
@@ -71,11 +74,14 @@ export default function LibraryPage() {
       if (it?.title && String(it.title).trim()) return it;
       const created = it?.created_at ? new Date(it.created_at) : null;
       const when = created ? created.toLocaleString('es-AR', { hour12: false }) : '';
-      const kindNice = it?.kind === 'audio' ? 'Audio' : it?.kind === 'video' ? 'Video' : 'Media';
+      const kindNice =
+        it?.kind === 'audio' ? t('kind.audio') :
+        it?.kind === 'video' ? t('kind.video') :
+        t('kind.media');
       return { ...it, title: `${kindNice}${when ? ' ' + when : ''}` };
     });
     return withTitle.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  }, [listData]);
+  }, [listData, t]);
 
   const count = items.length;
 
@@ -84,14 +90,14 @@ export default function LibraryPage() {
     try {
       await playByItem({ id, kind });
     } catch {
-      alert('No se pudo reproducir el mensaje.');
+      alert(t('playError'));
     } finally {
       setBusyId(null);
     }
   }
 
   async function del(id) {
-    if (!confirm('¿Borrar este mensaje? Esta acción es permanente.')) return;
+    if (!confirm(t('deleteConfirm'))) return;
     setBusyId(id);
     try {
       await mutate(
@@ -113,7 +119,7 @@ export default function LibraryPage() {
         { revalidate: false }
       );
     } catch {
-      alert('No se pudo borrar el mensaje.');
+      alert(t('deleteError'));
       await mutate();
     } finally {
       await mutate();
@@ -122,7 +128,7 @@ export default function LibraryPage() {
   }
 
   async function fav(it) {
-    if (!isPremium) return alert('Favoritos es una función Premium.');
+    if (!isPremium) return alert(t('onlyPremium'));
     setBusyId(it.id);
     const wasFav = !!it.is_favorite;
 
@@ -153,9 +159,9 @@ export default function LibraryPage() {
       );
     } catch (e) {
       if (e?.message === 'ONLY_PREMIUM') {
-        alert('Solo usuarios Premium pueden marcar favorito.');
+        alert(t('onlyPremium'));
       } else {
-        alert('No se pudo actualizar favorito.');
+        alert(t('favoriteError'));
       }
       await mutate();
     } finally {
@@ -176,7 +182,7 @@ export default function LibraryPage() {
   async function saveEdit(it) {
     const newTitle = (editingVal || '').trim();
     if (!newTitle) {
-      alert('El nombre no puede estar vacío.');
+      alert(t('renameEmpty'));
       return;
     }
     if (newTitle === it.title) {
@@ -208,7 +214,7 @@ export default function LibraryPage() {
       setEditingId(null);
       setEditingVal('');
     } catch (e) {
-      alert('No se pudo renombrar: ' + (e?.message || 'RENAME_ERROR'));
+      alert(t('renameError') + ': ' + (e?.message || 'RENAME_ERROR'));
       await mutate();
     } finally {
       await mutate();
@@ -243,10 +249,10 @@ export default function LibraryPage() {
       <header className="App-header">
         {/* wrapper estable para lista y empty */}
         <div className="screen-wrap panel library-panel">
-          <h2>📚 Biblioteca</h2>
+          <h2>📚 {t('title')}</h2>
 
           {showConfirmation && (
-            <div className="confirmation-banner confirmation-fadeout">✅ Mensaje guardado</div>
+            <div className="confirmation-banner confirmation-fadeout">✅ {t('savedBanner')}</div>
           )}
 
           {/* Tiles de creación o Recorder inline */}
@@ -257,29 +263,25 @@ export default function LibraryPage() {
                   <button
                     className="launcher-item blue"
                     onClick={openAudio}
-                    aria-label="Grabar audio"
-                    title="Grabar audio"
                   >
                     <div className="icon-bg bg-message" aria-hidden="true" />
-                    <div className="label">Grabar audio</div>
+                    <div className="label">{t('recordAudio')}</div>
                   </button>
 
                   <button
                     className="launcher-item red"
                     onClick={openVideo}
-                    aria-label="Grabar video"
-                    title="Grabar video"
                   >
                     <div className="icon-bg bg-message" aria-hidden="true" />
-                    <div className="label">Grabar video</div>
+                    <div className="label">{t('recordVideo')}</div>
                   </button>
                 </div>
               ) : (
                 <div className="recorder-panel">
                   <div className="recorder-header">
-                    <button className="secondary" onClick={closeRecorder} aria-label="Volver">← Volver</button>
+                    <button className="secondary" onClick={closeRecorder}>← {t('back')}</button>
                     <div className="recorder-title">
-                      {createMode === 'audio' ? 'Grabar audio' : 'Grabar video'}
+                      {createMode === 'audio' ? t('recordAudio') : t('recordVideo')}
                     </div>
                   </div>
 
@@ -308,9 +310,13 @@ export default function LibraryPage() {
           {/* Aviso de límite Free */}
           {showFreeLimitPanel && (
             <div className="panel library-free-limit">
-              <p className="m0">Ya tenés un mensaje guardado.</p>
+              <p className="m0">{t('freeLimitTitle')}</p>
               <p className="muted mt6">
-                En plan Free podés tener 1 (audio <em>o</em> video). Para grabar uno nuevo, primero borrá el actual.
+                {
+                  t.rich('freeLimitDesc', {
+                    em: (chunks) => <em>{chunks}</em>
+                  })
+                }
               </p>
             </div>
           )}
@@ -318,11 +324,11 @@ export default function LibraryPage() {
           {/* Lista */}
           <div className="library-list">
             {listLoading ? (
-              <p>Cargando…</p>
+              <p>{t('loading')}</p>
             ) : listError ? (
-              <p className="text-red-600">Error al cargar la biblioteca.</p>
+              <p className="text-red-600">{t('loadError')}</p>
             ) : items.length === 0 ? (
-              <p className="muted">No tenés mensajes aún.</p>
+              <p className="muted">{t('empty')}</p>
             ) : (
               <ul className="library-ul">
                 {items.map((it) => {
@@ -340,7 +346,11 @@ export default function LibraryPage() {
                               {it.is_favorite && <span className="favorite">★</span>}
                             </div>
                             <div className="library-meta muted">
-                              {it.kind?.toUpperCase()} • {new Date(it.created_at).toLocaleString('es-AR', { hour12: false })}
+                              {(it.kind === 'audio' && t('kind.audio')) ||
+                               (it.kind === 'video' && t('kind.video')) ||
+                               t('kind.media')}
+                              {' • '}
+                              {new Date(it.created_at).toLocaleString('es-AR', { hour12: false })}
                             </div>
                           </>
                         ) : (
@@ -350,14 +360,13 @@ export default function LibraryPage() {
                               value={title}
                               onChange={(e) => setEditingVal(e.target.value)}
                               maxLength={120}
-                              placeholder="Nombre del mensaje"
+                              placeholder={t('renamePlaceholder')}
                               autoFocus
                             />
                             <button
                               className="secondary"
                               onClick={() => saveEdit(it)}
                               disabled={savingId === it.id}
-                              title="Guardar"
                             >
                               💾
                             </button>
@@ -365,7 +374,6 @@ export default function LibraryPage() {
                               className="secondary"
                               onClick={() => cancelEdit()}
                               disabled={savingId === it.id}
-                              title="Cancelar"
                             >
                               ✖
                             </button>
@@ -379,8 +387,6 @@ export default function LibraryPage() {
                             className="secondary"
                             disabled={isRowBusy}
                             onClick={() => startEdit(it)}
-                            aria-label="Renombrar"
-                            title="Renombrar"
                           >
                             ✏️
                           </button>
@@ -390,8 +396,6 @@ export default function LibraryPage() {
                           className="secondary"
                           disabled={isRowBusy}
                           onClick={() => play(it.id, it.kind)}
-                          aria-label="Reproducir"
-                          title="Reproducir"
                         >
                           ▶
                         </button>
@@ -399,8 +403,6 @@ export default function LibraryPage() {
                           className="secondary"
                           disabled={isRowBusy}
                           onClick={() => del(it.id)}
-                          aria-label="Borrar"
-                          title="Borrar"
                         >
                           🗑️
                         </button>
@@ -408,8 +410,6 @@ export default function LibraryPage() {
                           className={`secondary ${!isPremium ? 'disabled' : ''}`}
                           disabled={!isPremium || isRowBusy}
                           onClick={() => fav(it)}
-                          aria-label={isPremium ? (it.is_favorite ? 'Quitar de favorito' : 'Marcar favorito') : 'Solo Premium'}
-                          title={isPremium ? (it.is_favorite ? 'Quitar de favorito' : 'Marcar favorito (uno máximo)') : 'Solo Premium'}
                         >
                           ⭐
                         </button>

@@ -14,6 +14,7 @@ import { apiFetch } from '@lib/apiFetch';
 import { debounce } from '@lib/debounce';
 import { supabase } from '@lib/supabaseClient';
 import { usePlayer } from '@/components/player/PlayerProvider';
+import { useTranslations } from 'next-intl';
 
 function telHref(phone) {
   const clean = String(phone || '').replace(/[^\d+]/g, '');
@@ -25,7 +26,9 @@ const fetcher = (u) => fetch(u, { cache: 'no-store' }).then(r => r.json());
 export default function Page() {
   const router = useRouter();
   const { playByItem } = usePlayer();
-  //
+  const tApp = useTranslations('app');
+  const tHome = useTranslations('home');
+
   // Fallback local (no se usa para el click, pero lo mantenemos por compat)
   const localContactRef = useRef(loadContact() || null);
 
@@ -63,7 +66,7 @@ export default function Page() {
   const latest   = items[0];
   const playable = favorite || latest;
 
-  // === SWR: LISTA DE CONTACTOS (NUEVO: base para label + click) ===
+  // === SWR: LISTA DE CONTACTOS ===
   const { data: contactsData } = useSWR('/api/contacts/list', fetcher, {
     revalidateOnFocus: true, dedupingInterval: 1500
   });
@@ -71,7 +74,7 @@ export default function Page() {
   const contactsCount = contacts.length;
   const favoriteContact = contacts.find(c => c.is_favorite) || null;
 
-  // Para compatibilidad con el viejo contacto único:
+  // Compatibilidad con el viejo contacto único
   const deprecatedSingleContact = localContactRef.current;
 
   // === Coalesce revalidations ===
@@ -115,11 +118,10 @@ export default function Page() {
     await playByItem({ id: playable.id, kind: playable.kind });
   };
 
-  // --------- Click de contacto (NUEVO) ----------
+  // --------- Click de contacto ----------
   const handleContactClick = () => {
     // Sin contactos → ir a gestionar
     if (contactsCount === 0) {
-      // compat: si existiera el legacy local, llamar. Si no, ir a /contacts
       if (deprecatedSingleContact?.phone && !isPremium) {
         window.location.href = telHref(deprecatedSingleContact.phone);
         return;
@@ -157,29 +159,29 @@ export default function Page() {
   // ---------- UI helpers ----------
   const hasAny = count > 0;
 
-  const playLabel = favorite ? 'Reproducir favorito' : 'Reproducir mensaje';
+  const playLabel = favorite ? tHome('playFav') : tHome('play');
 
   // Etiqueta del tile de contacto
-  let contactLabel = 'Contacto';
+  let contactLabel = tHome('contact');
   if (contactsCount === 0) {
-    contactLabel = 'Contacto';
+    contactLabel = tHome('contact');
   } else if (!isPremium) {
-    contactLabel = `Llamar a ${contacts[0]?.name || 'contacto'}`;
+    contactLabel = tHome('callName', { name: contacts[0]?.name || tHome('callFallback') });
   } else {
     if (contactsCount === 1) {
-      contactLabel = `Llamar a ${contacts[0]?.name || 'contacto'}`;
+      contactLabel = tHome('callName', { name: contacts[0]?.name || tHome('callFallback') });
     } else if (favoriteContact) {
-      contactLabel = `Llamar a ${favoriteContact.name || 'contacto'}`;
+      contactLabel = tHome('callName', { name: favoriteContact.name || tHome('callFallback') });
     } else {
-      contactLabel = 'Contactos';
+      contactLabel = tHome('contacts');
     }
   }
 
   return (
     <div className="App has-bottom-nav">
       <header className="App-header">
-        <h1>RESPIRA</h1>
-        <h2>Respuesta Efectiva para Situaciones de Pánico y Reducción de Ansiedad</h2>
+        <h1>{tApp('name')}</h1>
+        <h2>{tApp('tagline')}</h2>
 
         <div className="launcher-grid">
           {/* Mensaje */}
@@ -187,8 +189,6 @@ export default function Page() {
             <button
               className="launcher-item blue"
               onClick={handlePlayMessage}
-              aria-label="Reproducir mensaje"
-              title={mediaKind ? `Reproducir ${mediaKind}` : 'Reproducir mensaje'}
             >
               <div className="icon-bg bg-message" aria-hidden="true" />
               <div className="label">{playLabel}</div>
@@ -197,11 +197,9 @@ export default function Page() {
             <button
               className="launcher-item blue"
               onClick={() => router.push('/library')}
-              aria-label="Ir a Biblioteca"
-              title="Ir a Biblioteca para grabar tu primer mensaje"
             >
               <div className="icon-bg bg-message" aria-hidden="true" />
-              <div className="label">Ir a Biblioteca</div>
+              <div className="label">{tHome('goLibrary')}</div>
             </button>
           )}
 
@@ -209,18 +207,15 @@ export default function Page() {
           <button
             className="launcher-item green"
             onClick={() => router.push('/breathing')}
-            aria-label="Respirar juntos"
           >
             <div className="icon-bg bg-breath" aria-hidden="true" />
-            <div className="label">Respirar</div>
+            <div className="label">{tHome('breathe')}</div>
           </button>
 
-          {/* Contacto (NUEVO handler + label) */}
+          {/* Contacto */}
           <button
             className="launcher-item red"
             onClick={handleContactClick}
-            aria-label={contactLabel}
-            title={contactLabel}
           >
             <div className="icon-bg bg-contact" aria-hidden="true" />
             <div className="label">{contactLabel}</div>
@@ -230,10 +225,9 @@ export default function Page() {
           <button
             className="launcher-item yellow"
             onClick={() => router.push('/settings')}
-            aria-label="Configuración"
           >
             <div className="icon-bg bg-config" aria-hidden="true" />
-            <div className="label">Config.</div>
+            <div className="label">{tHome('config')}</div>
           </button>
         </div>
       </header>
