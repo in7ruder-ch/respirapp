@@ -39,9 +39,11 @@
     "deleteSuccess": "Message deleted.",
     "deleteError": "Couldn't delete the message.",
     "language": "Language",
-    "language.es": "Spanish",
-    "language.en": "English",
-    "language.de": "German"
+    "languages": {
+      "es": "Spanish",
+      "en": "English",
+      "de": "Deutsch"
+    }
   },
   "contacts": {
     "title": "Emergency contacts",

@@ -25,7 +25,7 @@
   },
   "settings": {
     "title": "Configuración",
-     "planTitle": "Tu plan",
+    "planTitle": "Tu plan",
     "currentPlan": "Plan actual:",
     "premiumNote": "Sos Premium: almacenamiento de mensajes ilimitado. Gestioná tus mensajes en",
     "freeNote": "Plan Free: 1 mensaje permitido (audio o video). Para ilimitados, canjeá tu código en",
@@ -39,9 +39,11 @@
     "deleteSuccess": "Mensaje eliminado.",
     "deleteError": "No se pudo borrar el mensaje.",
     "language": "Idioma",
-    "language.es": "Español",
-    "language.en": "Inglés",
-    "language.de": "Alemán"
+    "languages": {
+      "es": "Español",
+      "en": "Inglés",
+      "de": "Alemán"
+    }
   },
   "contacts": {
     "title": "Contactos de emergencia",
@@ -113,7 +115,7 @@
     "title": "Explorar",
     "soon": "Próximamente: recursos, artículos y contenido recomendado."
   },
-   "common": {
+  "common": {
     "loading": "Cargando…"
   },
   "profile": {
@@ -194,8 +196,16 @@
       "generic": "Técnica de respiración"
     },
     "count": {
-      "1": "Uno", "2": "Dos", "3": "Tres", "4": "Cuatro", "5": "Cinco",
-      "6": "Seis", "7": "Siete", "8": "Ocho", "9": "Nueve", "10": "Diez"
+      "1": "Uno",
+      "2": "Dos",
+      "3": "Tres",
+      "4": "Cuatro",
+      "5": "Cinco",
+      "6": "Seis",
+      "7": "Siete",
+      "8": "Ocho",
+      "9": "Nueve",
+      "10": "Diez"
     }
   }
 }

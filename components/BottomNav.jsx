@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import '@/styles/BottomNav.css';
 
@@ -11,63 +12,40 @@ const NAV_ITEMS = [
   { id: 'p2',      label: 'Perfil',     emoji: '👤', href: '/profile' },
 ];
 
-export default function BottomNav({
-  active,              // 'home' | 'library' | 'p1' | 'p2' (opcional, override)
-  onHome,
-  onLibrary,
-  onPlaceholder1,
-  onPlaceholder2,
-}) {
+export default function BottomNav({ items }) {
   const pathname = usePathname();
   const router   = useRouter();
+  const navItems = items?.length ? items : NAV_ITEMS;
 
   useEffect(() => {
-    NAV_ITEMS.forEach((i) => {
-      try {
-        router.prefetch?.(i.href);
-      } catch {}
-    });
-  }, [router]);
+    // Prefetch preventivo (Link ya prefetch-ea en viewport, esto es extra)
+    try {
+      navItems.forEach(i => router.prefetch?.(i.href));
+    } catch {}
+  }, [router, navItems]);
 
-  const autoActiveId = (() => {
-    if (pathname === '/' || pathname === '/(app)' || pathname === '/(app)/') return 'home';
-    if (pathname.startsWith('/library') || pathname.startsWith('/(app)/library')) return 'library';
-    if (pathname.startsWith('/explore') || pathname.startsWith('/(app)/explore')) return 'p1';
-    if (pathname.startsWith('/profile')) return 'p2';
-    return 'home';
-  })();
-
-  const resolvedActive = active || autoActiveId;
-
-  const cbMap = {
-    home: onHome,
-    library: onLibrary,
-    p1: onPlaceholder1,
-    p2: onPlaceholder2,
-  };
-
-  const Item = ({ id, label, emoji, href }) => {
-    const isActive = resolvedActive === id;
-    const onClick = cbMap[id] || (() => router.push(href));
-    return (
-      <button
-        className={`bn-item ${isActive ? 'is-active' : ''}`}
-        aria-label={label}
-        aria-current={isActive ? 'page' : undefined}
-        onClick={onClick}
-        type="button"
-      >
-        <span className="bn-icon" aria-hidden="true">{emoji}</span>
-        <span className="bn-label">{label}</span>
-      </button>
-    );
+  const isActive = (href) => {
+    if (href === '/') return pathname === '/' || pathname === '/(app)' || pathname === '/(app)/';
+    return pathname === href || pathname.startsWith(`${href}/`) || pathname.startsWith(`/(app)${href}`);
   };
 
   return (
     <nav className="bottom-nav" role="navigation" aria-label="Navegación inferior">
-      {NAV_ITEMS.map((i) => (
-        <Item key={i.id} id={i.id} label={i.label} emoji={i.emoji} href={i.href} />
-      ))}
+      {navItems.map(({ id, label, emoji, href }) => {
+        const active = isActive(href);
+        return (
+          <Link
+            key={id}
+            href={href}
+            className={`bn-item ${active ? 'is-active' : ''}`}
+            aria-label={label}
+            aria-current={active ? 'page' : undefined}
+          >
+            <span className="bn-icon" aria-hidden="true">{emoji}</span>
+            <span className="bn-label">{label}</span>
+          </Link>
+        );
+      })}
     </nav>
   );
 }

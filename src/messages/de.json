@@ -39,9 +39,11 @@
     "deleteSuccess": "Nachricht gelöscht.",
     "deleteError": "Nachricht konnte nicht gelöscht werden.",
     "language": "Sprache",
-    "language.es": "Spanisch",
-    "language.en": "Englisch",
-    "language.de": "Deutsch"
+    "languages": {
+      "es": "Spanisch",
+      "en": "Englisch",
+      "de": "Deutsch"
+    }
   },
   "contacts": {
     "title": "Notfallkontakte",
