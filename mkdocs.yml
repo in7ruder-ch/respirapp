@@ -6,7 +6,7 @@ copyright: © 2025 RespirApp
 
 theme:
   name: material
-  language: es             # idioma por defecto
+  language: es
   logo: assets/logo.png
   favicon: assets/favicon.png
   font:
@@ -15,7 +15,7 @@ theme:
   features:
     - navigation.sections
     - navigation.top
-    # - navigation.instant    # <-- REMOVIDO: incompatibilidad con language switcher
+    # - navigation.instant    # mantener desactivado por el language switcher
     - navigation.tracking
     - toc.integrate
     - content.code.copy
@@ -30,22 +30,25 @@ repo_url: https://github.com/in7ruder-ch/respirapp
 repo_name: in7ruder/respirapp
 edit_uri: edit/master/docs/
 
+# 👇 OJO: nav con basenames SIN sufijo de idioma
 nav:
-  - Inicio: index.es.md
-  - Producto: producto.es.md
-  - Guía: guia.es.md
-  - Premium: premium.es.md
-  - Seguridad: seguridad.es.md
-  - Contacto: contacto.es.md
+  - Inicio: index.md
+  - Producto: producto.md
+  - Guía: guia.md
+  - Premium: premium.md
+  - Seguridad: seguridad.md
+  - Contacto: contacto.md
   - Legal:
-      - Privacidad: legal/privacidad.es.md
-      - Términos: legal/terminos.es.md
+      - Privacidad: legal/privacidad.md
+      - Términos: legal/terminos.md
 
 plugins:
   - search:
-      lang: [es, en, de]     # búsqueda multi-idioma
+      lang: [es, en, de]
   - i18n:
       docs_structure: suffix
+      # Tener explícito el default ayuda con el mapeo del nav
+      default_language: es
       languages:
         - locale: es
           name: Español
