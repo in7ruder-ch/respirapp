@@ -5,6 +5,9 @@
 /* ---- Ajustes LIGHT ---- */
 :root {
   --rs-radius: 12px;
+  --lang-gap: .6rem;     /* separación entre idiomas */
+  --lang-weight: 600;    /* grosor del texto de idioma */
+  --lang-opacity: .85;   /* opacidad base */
 }
 
 /* ---- Ajustes DARK (scheme: slate) ---- */
@@ -16,9 +19,9 @@
   --md-code-bg-color: #0b0f14;             /* bloques de código */
   --md-shadow-z1: 0 6px 18px rgba(0,0,0,0.35);
 
-  /* Primary ya viene de palette: orange; afinamos un poco */
-  --md-primary-fg-color: #f97316;          /* naranja (Tailwind orange-500) */
-  --md-accent-fg-color: #f59e0b;           /* amber-500 */
+  /* Primary (puedes ajustar si cambias palette) */
+  --md-primary-fg-color: #3b82f6;          /* blue-500 */
+  --md-accent-fg-color: #60a5fa;           /* blue-400 */
 }
 
 /* Sidebar y header más “compactos” y definidos */
@@ -69,4 +72,60 @@
 /* Chips de idioma/código (si usas snippets) más redondeados */
 .md-clipboard, .md-tag {
   border-radius: 999px;
+}
+
+/* =========================
+   Selector de idioma (texto)
+   ========================= */
+
+/* Contenedor del selector de idioma en el header (Material 9.x) */
+.md-header [data-md-component="languages"] {
+  display: flex;
+  align-items: center;
+  gap: var(--lang-gap);
+}
+
+/* Enlace individual de idioma (texto) */
+.md-header [data-md-component="languages"] a,
+.md-header [data-md-component="languages"] button {
+  font-weight: var(--lang-weight);
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  opacity: var(--lang-opacity);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding: .1rem .2rem;
+}
+
+/* Hover/active */
+.md-header [data-md-component="languages"] a:hover,
+.md-header [data-md-component="languages"] a:focus {
+  opacity: 1;
+  border-bottom-color: currentColor;
+}
+
+/* Separador sutil entre items (antes de cada item excepto el primero) */
+.md-header [data-md-component="languages"] a + a::before,
+.md-header [data-md-component="languages"] button + a::before,
+.md-header [data-md-component="languages"] a + button::before {
+  content: "·";
+  margin: 0 .2rem 0 .1rem;
+  opacity: .5;
+}
+
+/* Responsive: en pantallas angostas, que no se apilen feo */
+@media (max-width: 700px) {
+  .md-header [data-md-component="languages"] {
+    gap: .4rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+/* Si Material cambiara el markup, fallback básico:
+   - oculta el ícono de translate si apareciera
+   - fuerza display inline del texto */
+.md-header__button.md-icon[aria-label*="Translat"],
+.md-header__button.md-icon[title*="Translat"] {
+  display: none;
 }

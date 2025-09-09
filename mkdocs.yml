@@ -87,3 +87,8 @@ markdown_extensions:
 
 extra_css:
   - styles/extra.css
+
+# 👇 Mostrar el selector de idioma SOLO con texto (sin icono)
+extra:
+  alternate:
+    icon: false
