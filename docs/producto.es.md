@@ -29,11 +29,4 @@ No necesitás ser experto, ni aprender nada nuevo. Todo está diseñado para que
 
 ---
 
-## 🛠️ Roadmap cercano
-
-- **Premium por código** (sin pagos en la app): grabá y guardá **múltiples mensajes**.  
-- **Biblioteca completa**: listar, reproducir, borrar y marcar un **favorito ⭐** (solo Premium).  
-
----
-
 ✨ RespirApp crece junto con vos: empezá con lo esencial hoy, y pronto tendrás más herramientas para sentirte acompañado y seguro en cualquier situación.

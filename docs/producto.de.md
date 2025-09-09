@@ -29,11 +29,4 @@ Du musst kein Experte sein und nichts Neues lernen. Alles ist so gestaltet, dass
 
 ---
 
-## 🛠️ Kurzfristige Roadmap
-
-- **Premium per Code** (ohne In-App-Zahlungen): nimm **mehrere Nachrichten** auf und speichere sie.  
-- **Komplette Bibliothek**: Nachrichten auflisten, abspielen, löschen und einen **Favoriten ⭐** markieren (nur Premium).  
-
----
-
 ✨ RespirApp wächst mit dir: starte heute mit dem Wesentlichen, und bald hast du noch mehr Werkzeuge, um dich in jeder Situation begleitet und sicher zu fühlen.

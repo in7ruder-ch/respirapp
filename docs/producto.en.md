@@ -29,11 +29,4 @@ You don’t need to be an expert or learn anything new. Everything is designed t
 
 ---
 
-## 🛠️ Near-term roadmap
-
-- **Premium via code** (no in-app payments): record and save **multiple messages**.  
-- **Full library**: list, play, delete, and mark a **favorite ⭐** (Premium only).  
-
----
-
 ✨ RespirApp grows with you: start with the essentials today, and soon you’ll have more tools to feel supported and safe in any situation.
