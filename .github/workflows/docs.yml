@@ -45,6 +45,38 @@ jobs:
         run: |
           python --version
           mkdocs --version
+          pip show mkdocs-static-i18n mkdocs-material mkdocs
+
+      # 🔎 DEBUG: inspeccionar exactamente qué llegó al runner
+      - name: Debug tree & expected files
+        run: |
+          echo "=== docs (nivel 1) ==="
+          ls -lah docs || true
+          echo
+          echo "=== docs (recursivo, máx 2 niveles) ==="
+          find docs -maxdepth 2 -type f -printf "%P\n" | sort || true
+          echo
+          echo "=== Verificación de archivos ES esperados por nav ==="
+          required_files=(
+            "index.es.md"
+            "producto.es.md"
+            "guia.es.md"
+            "premium.es.md"
+            "seguridad.es.md"
+            "contacto.es.md"
+            "legal/privacidad.es.md"
+            "legal/terminos.es.md"
+          )
+          for f in "${required_files[@]}"; do
+            if [ -f "docs/$f" ]; then
+              echo "OK     $f"
+            else
+              echo "FALTAN $f"
+            fi
+          done
+          echo
+          echo "=== mkdocs.yml (primeras 240 líneas) ==="
+          sed -n '1,240p' mkdocs.yml || true
 
       - name: Build (strict)
         run: mkdocs build --strict
