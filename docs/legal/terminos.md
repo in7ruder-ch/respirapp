@@ -28,14 +28,14 @@ RespirApp es una herramienta de apoyo en momentos de ansiedad, pánico o estrés
 ## 4. Seguridad y privacidad
 - Tus datos son tuyos.  
 - Protegemos todo con autenticación segura, reglas de acceso y almacenamiento privado.  
-- Más info en nuestras secciones de [Seguridad](seguridad.md) y [Privacidad](privacidad.md).
+- Más info en nuestras secciones de [Seguridad](seguridad.md) y [Privacidad](legal/privacidad.md).
 
 ---
 
 ## 5. Responsabilidad
 - RespirApp no se hace responsable del uso incorrecto de la app.  
 - La app no garantiza la eliminación completa de la ansiedad o el pánico, pero sí brinda recursos de apoyo.  
-- Ante emergencias graves, llamá siempre a un servicio profesional (ej. 112/911 según tu país).
+- Ante emergencias graves, llamá siempre a un servicio profesional (ej. 112/911 según tu país de residencia).
 
 ---
 
