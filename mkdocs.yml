@@ -6,7 +6,7 @@ copyright: © 2025 RespirApp
 
 theme:
   name: material
-  language: es             # idioma por defecto (coincide con default_language abajo)
+  language: es             # idioma por defecto
   logo: assets/logo.png
   favicon: assets/favicon.png
   font:
@@ -26,6 +26,7 @@ theme:
       primary: blue
       accent: blue
 
+
 repo_url: https://github.com/in7ruder-ch/respirapp
 repo_name: in7ruder/respirapp
 edit_uri: edit/master/docs/
@@ -42,7 +43,8 @@ nav:
       - Términos: legal/terminos.es.md
 
 plugins:
-  - search
+  - search:
+      lang: [es, en, de]   # mejora la búsqueda por idioma
   - i18n:
       default_language: es
       docs_structure: suffix
