@@ -26,7 +26,6 @@ theme:
       primary: blue
       accent: blue
 
-
 repo_url: https://github.com/in7ruder-ch/respirapp
 repo_name: in7ruder/respirapp
 edit_uri: edit/master/docs/
@@ -44,35 +43,40 @@ nav:
 
 plugins:
   - search:
-      lang: [es, en, de]   # mejora la búsqueda por idioma
+      lang: [es, en, de]
   - i18n:
-      default_language: es
       docs_structure: suffix
       languages:
-        es: Español
-        en: English
-        de: Deutsch
-      nav_translations:
-        en:
-          Inicio: Home
-          Producto: Product
-          Guía: Guide
-          Premium: Premium
-          Seguridad: Security
-          Contacto: Contact
-          Legal: Legal
-          Privacidad: Privacy
-          Términos: Terms
-        de:
-          Inicio: Start
-          Producto: Produkt
-          Guía: Anleitung
-          Premium: Premium
-          Seguridad: Sicherheit
-          Contacto: Kontakt
-          Legal: Rechtliches
-          Privacidad: Datenschutz
-          Términos: AGB
+        - locale: es
+          name: Español
+          default: true
+          build: true
+        - locale: en
+          name: English
+          build: true
+          nav_translations:
+            Inicio: Home
+            Producto: Product
+            Guía: Guide
+            Premium: Premium
+            Seguridad: Security
+            Contacto: Contact
+            Legal: Legal
+            Privacidad: Privacy
+            Términos: Terms
+        - locale: de
+          name: Deutsch
+          build: true
+          nav_translations:
+            Inicio: Start
+            Producto: Produkt
+            Guía: Anleitung
+            Premium: Premium
+            Seguridad: Sicherheit
+            Contacto: Kontakt
+            Legal: Rechtliches
+            Privacidad: Datenschutz
+            Términos: AGB
 
 markdown_extensions:
   - admonition
