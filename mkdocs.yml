@@ -15,7 +15,7 @@ theme:
   features:
     - navigation.sections
     - navigation.top
-    - navigation.instant
+    # - navigation.instant    # <-- REMOVIDO: incompatibilidad con language switcher
     - navigation.tracking
     - toc.integrate
     - content.code.copy
@@ -43,7 +43,7 @@ nav:
 
 plugins:
   - search:
-      lang: [es, en, de]
+      lang: [es, en, de]     # búsqueda multi-idioma
   - i18n:
       docs_structure: suffix
       languages:

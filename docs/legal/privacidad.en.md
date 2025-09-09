@@ -30,7 +30,7 @@ Our mission is to bring you calm, not to collect data. That’s why we keep ever
 ---
 
 ## 🤝 Transparency
-You can read more technical details in the [Security](seguridad.md) section.  
+You can read more technical details in the [Security](../seguridad.md) section.  
 
 ---
 

@@ -30,7 +30,7 @@ Nuestra misión es darte calma, no recolectar datos. Por eso mantenemos todo lo 
 ---
 
 ## 🤝 Transparencia
-Podés leer más detalles técnicos en la sección de [Seguridad](seguridad.md).  
+Podés leer más detalles técnicos en la sección de [Seguridad](../seguridad.md).  
 Y si tenés dudas, escribinos: **soporte@respirapp.com**.
 
 ---

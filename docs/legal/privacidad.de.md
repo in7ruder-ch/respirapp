@@ -30,7 +30,7 @@ Unsere Mission ist es, dir Ruhe zu geben – nicht Daten zu sammeln. Deshalb hal
 ---
 
 ## 🤝 Transparenz
-Weitere technische Details findest du im Abschnitt [Sicherheit](seguridad.md).  
+Weitere technische Details findest du im Abschnitt [Sicherheit](../seguridad.md).  
 
 ---
 
