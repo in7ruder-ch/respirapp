@@ -28,7 +28,7 @@ RespirApp es una herramienta de apoyo en momentos de ansiedad, pánico o estrés
 ## 4. Seguridad y privacidad
 - Tus datos son tuyos.  
 - Protegemos todo con autenticación segura, reglas de acceso y almacenamiento privado.  
-- Más info en nuestras secciones de [Seguridad](seguridad.md) y [Privacidad](legal/privacidad.md).
+- Más info en nuestras secciones de [Seguridad](../seguridad.md) y [Privacidad](privacidad.md).
 
 ---
 
