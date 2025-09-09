@@ -30,7 +30,7 @@ repo_url: https://github.com/in7ruder/respirapp
 repo_name: in7ruder/respirapp
 edit_uri: edit/master/docs/
 
-# OJO: nav con basename SIN sufijo (el plugin resuelve es/en/de)
+# nav: basenames SIN sufijo (el plugin resuelve es/en/de)
 nav:
   - Inicio: index.md
   - Producto: producto.md
@@ -87,8 +87,3 @@ markdown_extensions:
 
 extra_css:
   - styles/extra.css
-
-# 👇 Mostrar el selector de idioma SOLO con texto (sin icono)
-extra:
-  alternate:
-    icon: false

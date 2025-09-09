@@ -1,131 +1,110 @@
-/* Tipografías (opcional): si querés cargar desde Google Fonts) */
-/* Puedes comentar esto si ya usas Inter localmente. */
+/* Tipografías (opcional) */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
 /* ---- Ajustes LIGHT ---- */
 :root {
   --rs-radius: 12px;
-  --lang-gap: .6rem;     /* separación entre idiomas */
-  --lang-weight: 600;    /* grosor del texto de idioma */
-  --lang-opacity: .85;   /* opacidad base */
+  --lang-gap: .6rem;
+  --lang-weight: 600;
+  --lang-opacity: .9;
 }
 
 /* ---- Ajustes DARK (scheme: slate) ---- */
 [data-md-color-scheme="slate"] {
-  /* Colores base ligeramente más contrastados que el default */
-  --md-default-bg-color: #0e1116;          /* fondo general */
-  --md-default-fg-color: #e7eaf0;          /* texto base */
-  --md-default-fg-color--light: #cfd6e3;   /* texto secundario */
-  --md-code-bg-color: #0b0f14;             /* bloques de código */
+  --md-default-bg-color: #0e1116;
+  --md-default-fg-color: #e7eaf0;
+  --md-default-fg-color--light: #cfd6e3;
+  --md-code-bg-color: #0b0f14;
   --md-shadow-z1: 0 6px 18px rgba(0,0,0,0.35);
-
-  /* Primary (puedes ajustar si cambias palette) */
-  --md-primary-fg-color: #3b82f6;          /* blue-500 */
-  --md-accent-fg-color: #60a5fa;           /* blue-400 */
+  --md-primary-fg-color: #3b82f6;
+  --md-accent-fg-color: #60a5fa;
 }
 
-/* Sidebar y header más “compactos” y definidos */
-.md-header, .md-tabs {
-  box-shadow: var(--md-shadow-z1);
-}
-.md-nav--primary .md-nav__title[for=__drawer] {
-  font-weight: 700;
-}
+/* Header y navegación */
+.md-header, .md-tabs { box-shadow: var(--md-shadow-z1); }
+.md-nav--primary .md-nav__title[for=__drawer] { font-weight: 700; }
 
-/* Tarjetas y tablas redondeadas */
+/* Tarjetas, tablas, código */
 .md-typeset .admonition,
 .md-typeset details,
-.md-typeset table:not([class]) {
-  border-radius: var(--rs-radius);
-  overflow: hidden;
+.md-typeset table:not([class]) { border-radius: var(--rs-radius); overflow: hidden; }
+.md-typeset code, .md-typeset pre { border-radius: var(--rs-radius); }
+
+/* Links */
+.md-typeset a { text-decoration: none; border-bottom: 1px dashed transparent; }
+.md-typeset a:hover { border-bottom-color: currentColor; }
+
+/* Sidebar dark */
+[data-md-color-scheme="slate"] .md-nav__link { color: var(--md-default-fg-color); opacity: .92; }
+[data-md-color-scheme="slate"] .md-nav__link:hover { opacity: 1; }
+
+/* Tablas zebra */
+.md-typeset table:not([class]) tbody tr:nth-child(odd) { background: rgba(255,255,255,0.02); }
+
+/* Chips */
+.md-clipboard, .md-tag { border-radius: 999px; }
+
+/* =========================================================
+   Selector de idioma como TEXTO (sin icono del traductor)
+   ========================================================= */
+
+/* Botón del selector (globo/translate) -> ocultar el SVG y mostrar texto */
+.md-header__button.md-icon[aria-label*="Translat"] svg,
+.md-header__button.md-icon[title*="Translat"] svg,
+.md-header__button.md-icon[aria-label*="Idioma"] svg,
+.md-header__button.md-icon[title*="Idioma"] svg,
+.md-header__button.md-icon[aria-label*="Language"] svg,
+.md-header__button.md-icon[title*="Language"] svg {
+  display: none !important;
 }
 
-/* Código y bloques */
-.md-typeset code,
-.md-typeset pre {
-  border-radius: var(--rs-radius);
-}
-
-/* Links: un poco más visibles */
-.md-typeset a {
-  text-decoration: none;
-  border-bottom: 1px dashed transparent;
-}
-.md-typeset a:hover {
-  border-bottom-color: currentColor;
-}
-
-/* Listas de navegación (sidebar) más legibles en dark */
-[data-md-color-scheme="slate"] .md-nav__link {
-  color: var(--md-default-fg-color);
-  opacity: .92;
-}
-[data-md-color-scheme="slate"] .md-nav__link:hover {
-  opacity: 1;
-}
-
-/* Tablas con zebra ligera */
-.md-typeset table:not([class]) tbody tr:nth-child(odd) {
-  background: rgba(255,255,255,0.02);
-}
-
-/* Chips de idioma/código (si usas snippets) más redondeados */
-.md-clipboard, .md-tag {
-  border-radius: 999px;
-}
-
-/* =========================
-   Selector de idioma (texto)
-   ========================= */
-
-/* Contenedor del selector de idioma en el header (Material 9.x) */
-.md-header [data-md-component="languages"] {
-  display: flex;
-  align-items: center;
-  gap: var(--lang-gap);
-}
-
-/* Enlace individual de idioma (texto) */
-.md-header [data-md-component="languages"] a,
-.md-header [data-md-component="languages"] button {
+/* Estilo base del botón textual */
+.md-header__button.md-icon[aria-label*="Translat"],
+.md-header__button.md-icon[title*="Translat"],
+.md-header__button.md-icon[aria-label*="Idioma"],
+.md-header__button.md-icon[title*="Idioma"],
+.md-header__button.md-icon[aria-label*="Language"],
+.md-header__button.md-icon[title*="Language"] {
   font-weight: var(--lang-weight);
   text-transform: uppercase;
   letter-spacing: .02em;
   opacity: var(--lang-opacity);
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  padding: .1rem .2rem;
+  padding: .1rem .25rem;
 }
 
-/* Hover/active */
-.md-header [data-md-component="languages"] a:hover,
-.md-header [data-md-component="languages"] a:focus {
+/* Mostrar etiqueta según el idioma actual del documento */
+html[lang="es"] .md-header__button.md-icon[aria-label*="Translat"]::after,
+html[lang="es"] .md-header__button.md-icon[title*="Translat"]::after,
+html[lang="es"] .md-header__button.md-icon[aria-label*="Idioma"]::after,
+html[lang="es"] .md-header__button.md-icon[title*="Idioma"]::after,
+html[lang="es"] .md-header__button.md-icon[aria-label*="Language"]::after,
+html[lang="es"] .md-header__button.md-icon[title*="Language"]::after { content: "ESPAÑOL"; }
+
+html[lang="en"] .md-header__button.md-icon[aria-label*="Translat"]::after,
+html[lang="en"] .md-header__button.md-icon[title*="Translat"]::after,
+html[lang="en"] .md-header__button.md-icon[aria-label*="Idioma"]::after,
+html[lang="en"] .md-header__button.md-icon[title*="Idioma"]::after,
+html[lang="en"] .md-header__button.md-icon[aria-label*="Language"]::after,
+html[lang="en"] .md-header__button.md-icon[title*="Language"]::after { content: "ENGLISH"; }
+
+html[lang="de"] .md-header__button.md-icon[aria-label*="Translat"]::after,
+html[lang="de"] .md-header__button.md-icon[title*="Translat"]::after,
+html[lang="de"] .md-header__button.md-icon[aria-label*="Idioma"]::after,
+html[lang="de"] .md-header__button.md-icon[title*="Idioma"]::after,
+html[lang="de"] .md-header__button.md-icon[aria-label*="Language"]::after,
+html[lang="de"] .md-header__button.md-icon[title*="Language"]::after { content: "DEUTSCH"; }
+
+/* Hover */
+.md-header__button.md-icon[aria-label*="Translat"]:hover,
+.md-header__button.md-icon[title*="Translat"]:hover,
+.md-header__button.md-icon[aria-label*="Idioma"]:hover,
+.md-header__button.md-icon[title*="Idioma"]:hover,
+.md-header__button.md-icon[aria-label*="Language"]:hover,
+.md-header__button.md-icon[title*="Language"]:hover {
   opacity: 1;
-  border-bottom-color: currentColor;
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
 }
 
-/* Separador sutil entre items (antes de cada item excepto el primero) */
-.md-header [data-md-component="languages"] a + a::before,
-.md-header [data-md-component="languages"] button + a::before,
-.md-header [data-md-component="languages"] a + button::before {
-  content: "·";
-  margin: 0 .2rem 0 .1rem;
-  opacity: .5;
-}
-
-/* Responsive: en pantallas angostas, que no se apilen feo */
-@media (max-width: 700px) {
-  .md-header [data-md-component="languages"] {
-    gap: .4rem;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-}
-
-/* Si Material cambiara el markup, fallback básico:
-   - oculta el ícono de translate si apareciera
-   - fuerza display inline del texto */
-.md-header__button.md-icon[aria-label*="Translat"],
-.md-header__button.md-icon[title*="Translat"] {
-  display: none;
-}
+/* Menú desplegable: que los items se vean bien como texto */
+.md-select__link { text-transform: none; letter-spacing: 0; font-weight: 500; }
