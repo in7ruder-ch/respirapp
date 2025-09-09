@@ -15,7 +15,7 @@ theme:
   features:
     - navigation.sections
     - navigation.top
-    # - navigation.instant    # mantener desactivado por el language switcher
+    # - navigation.instant
     - navigation.tracking
     - toc.integrate
     - content.code.copy
@@ -26,11 +26,11 @@ theme:
       primary: blue
       accent: blue
 
-repo_url: https://github.com/in7ruder-ch/respirapp
+repo_url: https://github.com/in7ruder/respirapp
 repo_name: in7ruder/respirapp
 edit_uri: edit/master/docs/
 
-# 👇 OJO: nav con basenames SIN sufijo de idioma
+# OJO: nav con basename SIN sufijo (el plugin resuelve es/en/de)
 nav:
   - Inicio: index.md
   - Producto: producto.md
@@ -47,8 +47,6 @@ plugins:
       lang: [es, en, de]
   - i18n:
       docs_structure: suffix
-      # Tener explícito el default ayuda con el mapeo del nav
-      default_language: es
       languages:
         - locale: es
           name: Español
