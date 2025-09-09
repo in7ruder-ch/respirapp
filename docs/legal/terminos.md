@@ -35,7 +35,7 @@ RespirApp es una herramienta de apoyo en momentos de ansiedad, pánico o estrés
 ## 5. Responsabilidad
 - RespirApp no se hace responsable del uso incorrecto de la app.  
 - La app no garantiza la eliminación completa de la ansiedad o el pánico, pero sí brinda recursos de apoyo.  
-- Ante emergencias graves, llamá siempre a un servicio profesional (ej. 112/911 según tu país).
+- Ante emergencias graves, llamá siempre a un servicio profesional (ej. 112/911 según tu país de residencia).
 
 ---
 
