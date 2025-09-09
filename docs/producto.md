@@ -1,14 +1,39 @@
-# Producto
+# Producto 🚀
 
-## ¿Qué es?
-Una webapp simple para ayudar en episodios de ansiedad/pánico con un mensaje personal, respiración y contacto de emergencia.
+## 🌱 ¿Qué es RespirApp?
+RespirApp es una **webapp simple y poderosa** creada para acompañarte en momentos de ansiedad o pánico.  
+Su objetivo: darte un recurso inmediato de calma a través de **tu voz, tu respiración y tu red de apoyo**.  
 
-## Funciones
-- **Mensaje personal**: grabá **audio o video** (plan Free: 1 total).
-- **Respirar**: rutina guiada y minimalista.
-- **Contacto**: guardá un número de confianza y llamalo al instante.
-- **Cross-device**: todo en la nube.
+No necesitás ser experto, ni aprender nada nuevo. Todo está diseñado para que funcione con un par de toques.
 
-## Roadmap corto
-- **Premium por código** (sin pagos): múltiples mensajes.
-- **Biblioteca**: listar, reproducir, borrar y **marcar favorito** (Premium).
+---
+
+## 🔑 Funciones principales
+
+- **🎙️ Mensaje personal**  
+  Grabá un **audio o video** con tus propias palabras o de alguien querido.  
+  👉 *¿Por qué?* Porque en medio de un episodio es difícil pensar con claridad. Tener un recordatorio listo puede marcar la diferencia.  
+  *(Plan Free: 1 mensaje total).*
+
+- **🌬️ Respirar**  
+  Accedé a rutinas guiadas, visuales y minimalistas.  
+  👉 *¿Por qué?* Porque seguir un ritmo externo es mucho más fácil que contar mentalmente cuando estás nervioso.  
+
+- **☎️ Contacto de confianza**  
+  Guardá un número importante y llamalo con un toque.  
+  👉 *¿Por qué?* Porque pedir ayuda no debería ser complicado cuando la necesitás YA.  
+
+- **☁️ Cross-device**  
+  Todo está sincronizado en la nube.  
+  👉 Usá RespirApp desde cualquier dispositivo, de forma segura y privada.
+
+---
+
+## 🛠️ Roadmap cercano
+
+- **Premium por código** (sin pagos en la app): grabá y guardá **múltiples mensajes**.  
+- **Biblioteca completa**: listar, reproducir, borrar y marcar un **favorito ⭐** (solo Premium).  
+
+---
+
+✨ RespirApp crece junto con vos: empezá con lo esencial hoy, y pronto tendrás más herramientas para sentirte acompañado y seguro en cualquier situación.
