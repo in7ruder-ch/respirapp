@@ -6,9 +6,9 @@ copyright: © 2025 RespirApp
 
 theme:
   name: material
-  language: es
-  logo: assets/logo.png         # opcional (colocá un logo en docs/assets/)
-  favicon: assets/favicon.png   # opcional
+  language: es             # idioma por defecto (coincide con default_language abajo)
+  logo: assets/logo.png
+  favicon: assets/favicon.png
   font:
     text: Inter
     code: JetBrains Mono
@@ -31,18 +31,46 @@ repo_name: in7ruder/respirapp
 edit_uri: edit/master/docs/
 
 nav:
-  - Inicio: index.md
-  - Producto: producto.md
-  - Guía: guia.md
-  - Premium: premium.md
-  - Seguridad: seguridad.md
-  - Contacto: contacto.md
+  - Inicio: index.es.md
+  - Producto: producto.es.md
+  - Guía: guia.es.md
+  - Premium: premium.es.md
+  - Seguridad: seguridad.es.md
+  - Contacto: contacto.es.md
   - Legal:
-      - Privacidad: legal/privacidad.md
-      - Términos: legal/terminos.md
+      - Privacidad: legal/privacidad.es.md
+      - Términos: legal/terminos.es.md
 
 plugins:
   - search
+  - i18n:
+      default_language: es
+      docs_structure: suffix
+      languages:
+        es: Español
+        en: English
+        de: Deutsch
+      nav_translations:
+        en:
+          Inicio: Home
+          Producto: Product
+          Guía: Guide
+          Premium: Premium
+          Seguridad: Security
+          Contacto: Contact
+          Legal: Legal
+          Privacidad: Privacy
+          Términos: Terms
+        de:
+          Inicio: Start
+          Producto: Produkt
+          Guía: Anleitung
+          Premium: Premium
+          Seguridad: Sicherheit
+          Contacto: Kontakt
+          Legal: Rechtliches
+          Privacidad: Datenschutz
+          Términos: AGB
 
 markdown_extensions:
   - admonition

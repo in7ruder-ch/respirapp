@@ -7,7 +7,7 @@ En segundos, podés acceder a recursos simples pero poderosos que cambian tu exp
 
 ---
 
-## ✨ ¿Qué vas a encontrar?
+## ¿Qué vas a encontrar?
 
 - **🎙️ Tu propio mensaje de apoyo (audio o video)**  
   Escuchá tu voz —o la de alguien de confianza— recordándote que todo va a estar bien.  
@@ -26,7 +26,7 @@ En segundos, podés acceder a recursos simples pero poderosos que cambian tu exp
 
 ---
 
-## 🚀 ¿Por qué probar RespirApp?
+## ¿Por qué probar RespirApp?
 
 Porque la calma no se improvisa.  
 En medio de un ataque de ansiedad, **tu mejor recurso es el que ya está preparado**.  
