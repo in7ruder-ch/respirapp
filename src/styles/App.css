@@ -350,3 +350,7 @@ h3 { margin-top: 1.25rem; font-size: 1.1rem; color: #1f2937; }
   max-width: none !important;
   width: 100%;
 }
+
+/* ===========================
+   DEBUG (eliminar en producción)
+   =========================== */
